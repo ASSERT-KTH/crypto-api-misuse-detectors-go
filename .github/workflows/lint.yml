@@ -1,0 +1,28 @@
+name: lint
+
+on: [push, pull_request]
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Lint
+        uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          src: "./llm-dataset-collector"
+          version: "24.4.2"
+  
+  golint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Golangci-lint
+        uses: golangci/golangci-lint-action@v6.3.2
+        with:
+          working-directory: "./go-module-collector"
