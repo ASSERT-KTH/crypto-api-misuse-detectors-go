@@ -17,22 +17,22 @@ type GopherConfig struct {
 // Execution logic
 type GopherRunner struct {
 	Config    GopherConfig
-	RepoLocks sync.Map // Maps RepoPath -> *sync.Mutex
-	Sem       *semaphore.Weighted
-	Logs      map[int][]LogEntry // needs a store log function
+	Sem       *semaphore.Weighted // Non-blocking
+	RepoLocks sync.Map            // Maps RepoPath -> *sync.Mutex Map (safe for concurrent use)
+	//Logs      map[int][]LogEntry // needs a store log function
 }
 
-// Captures execution logs per vulnerability package
-type LogEntry struct {
-	Package string
-	GitTag  string
-	Stdout  string
-	Stderr  string
-	Error   error
-}
+// // Captures execution logs per vulnerability package
+// type LogEntry struct {
+// 	Package string
+// 	GitTag  string
+// 	Stdout  string
+// 	Stderr  string
+// 	Error   error
+// }
 
-// TODO extra implement a queue for locked repos (a channel that )
-func (gr *GopherRunner) RunGopherTool(module Repo, gitTag string) {
+// TODO extra implement a queue for locked repos
+func (gr *GopherRunner) Run(repo Repo, gitTag string) {
 
 	//create and acquire lock, defer it
 	// checkout
