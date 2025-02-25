@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/analyzer"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/utils"
+
+	"golang.org/x/sync/semaphore"
 )
 
 func main() {
 	vulInfoPath, gopherPath := parseArgs()
-	checkPathExists(vulInfoPath, "vulnerability JSON file")
-	checkPathExists(gopherPath, "gopher path")
+	utils.CheckPathExists(vulInfoPath, "vulnerability JSON file")
+	utils.CheckPathExists(gopherPath, "gopher path")
 
 	// read json
 	file, err := os.Open(vulInfoPath)
@@ -22,37 +26,49 @@ func main() {
 	}
 	defer file.Close()
 
+	// parse into Vulnerability struct
 	var vulnerabilities []analyzer.Vulnerability
-	// parse into struct
-	decoder := json.NewDecoder(file)       // Create a new JSON decoder
-	err = decoder.Decode(&vulnerabilities) // Decode JSON into struct
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&vulnerabilities)
 	if err != nil {
 		log.Fatal(err) // Handle error
 	}
 
+	// TODO chmod execute for gopher path
+	if err = os.Chmod(gopherPath, 0755); err != nil {
+		log.Fatalf("Failed to set permissions on %s: %v", gopherPath, err)
+	}
+
 	config := analyzer.GopherConfig{
-		ToolPath:   gopherPath, // Construct the path to gopher
-		Timeout:    2 * time.Second,
-		MaxThreads: 5,
+		ToolPath:   gopherPath,
+		Timeout:    220 * time.Second,
+		MaxThreads: 1,
 	}
 
 	fmt.Println(config)
-	// run gopher for all vuls
+
+	var wg sync.WaitGroup // orchestrates multiple runner.run
+	// new gopher runner with repo locks and semaphore (shared)
+	runner := &analyzer.GopherRunner{
+		Config:    config,
+		Sem:       semaphore.NewWeighted(int64(config.MaxThreads)),
+		RepoLocks: sync.Map{},
+	}
+
+	for _, v := range vulnerabilities {
+		wg.Add(1)
+		go v.AnalyzeVulnerability(&wg, runner) // finishes after all packages analyzed
+	}
+	wg.Wait()
+	log.Print("All vulnerabilities analyzed.")
+
 	// collect the results
+
 }
 
-
-// parseArgs retrieves command line arguments and checks their validity
 func parseArgs() (string, string) {
 	if len(os.Args) < 3 {
-		log.Fatal("Please provide the path to the tagged vulnerability JSON file and the gopher path as arguments.")
+		log.Fatal("Usage: analyzer <path_to_vulnerability_json_with_tags> <gopher_path>")
 	}
 	return os.Args[1], os.Args[2]
-}
-
-// check if the paths exist and log errors
-func checkPathExists(path string, pathType string) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Fatalf("The specified %s does not exist: %s", pathType, path)
-	}
 }

@@ -1,11 +1,11 @@
 package analyzer
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"time"
+
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/utils"
 )
 
 // Represents a (local) repository that contains potentially vulnerable packages.
@@ -14,7 +14,6 @@ type Repo struct {
 	RepoPath string   `json:"repo_path"`
 	GitTags  []string `json:"git_tags"`
 }
-
 
 func (r Repo) String() string {
 	return fmt.Sprintf("Repo:\n\tRepoSlug: %s\n\tRepoPath: %s", r.RepoSlug, r.RepoPath)
@@ -28,17 +27,10 @@ func (r *Repo) Exists() bool {
 
 // Checks out the repo at given tag with timeout
 func (r *Repo) Checkout(gitTag string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+	utils.RunCommandWithTimeout(r.RepoPath, "git", []string{"checkout", gitTag}, time.Second*12)
 
-	cmd := exec.CommandContext(ctx, "git", "checkout", gitTag)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("error downloading repository: %w, output: %s", err, output)
-	}
-	return err
+	// if err != nil {
+	// 	return fmt.Errorf("error checking out repository: %s at `%s`: %w", r.RepoPath, gitTag, err)
+	// }
+	return nil
 }
-
-
-// func (r *Repo) Lock() (f.file, error) {
-// }

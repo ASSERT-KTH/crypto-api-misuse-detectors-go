@@ -7,6 +7,8 @@ import (
 	"math"
 	"net/http"
 	"os"
+
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/utils"
 )
 
 const (
@@ -76,7 +78,7 @@ func (mc *ModuleInfoCollector) Validate() error {
 	if mc.Outpath == "" {
 		return fmt.Errorf("output directory cannot be empty")
 	}
-	if err := createOutputDir(mc.Outpath); err != nil {
+	if err := utils.CreateOutputDir(mc.Outpath); err != nil {
 		return err
 	}
 	if mc.PageSize < minPageSize || mc.PageSize > maxPageSize {

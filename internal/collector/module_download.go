@@ -36,16 +36,16 @@ func DownloadAll(modules []Module, outdir string) ([]Module, error) {
 	}
 
 	maxThreads := 10
-	semaphore := make(chan struct{}, maxThreads)
-	var wg sync.WaitGroup	
+	semaphore := make(chan struct{}, maxThreads) // buffered channel
+	var wg sync.WaitGroup
 	errChan := make(chan error, len(modules))
 
 	for _, module := range modules {
 		wg.Add(1)
-		semaphore <- struct{}{}
+		semaphore <- struct{}{} // blocking when chammel has maxThread
 		go func(m Module) {
 			defer wg.Done()
-			defer func() { <-semaphore }()
+			defer func() { <-semaphore }() // release slot when outside scope finishes
 			if err := module.download(); err != nil {
 				//log.Printf("Warning: failed to download module %s: %w", module.Name, err)
 				errChan <- err
@@ -68,7 +68,7 @@ func DownloadAll(modules []Module, outdir string) ([]Module, error) {
 }
 
 func (repo *Module) download() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30) 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "get", fmt.Sprintf("%s@%s", repo.Name, repo.LatestReleaseNumber))
