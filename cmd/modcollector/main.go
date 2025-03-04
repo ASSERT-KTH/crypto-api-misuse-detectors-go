@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	download "github.com/vivi365/crypto-api-analysis/internal/download"
+	download "github.com/ASSERT-KTH/go-cryptoapi/internal/collector"
 )
 
 func main() {
