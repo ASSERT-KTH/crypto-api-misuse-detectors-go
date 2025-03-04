@@ -10,6 +10,22 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+type LogEntry struct {
+	VulnerabilityID int       `json:"vulnerability_id"`
+	RepoSlug        string    `json:"repo_slug"`
+	RepoPath        string    `json:"repo_path"`
+	CWE             string    `json:"cwe"`
+	Package         string    `json:"package"`
+	GitTag          string    `json:"git_tag"`
+	Command         string    `json:"command"`
+	Stdout          string    `json:"stdout"`
+	Stderr          string    `json:"stderr"`
+	Error           string    `json:"error,omitempty"`
+	StartTime       time.Time `json:"start_time"`
+	EndTime         time.Time `json:"end_time"`
+	Duration        string    `json:"duration"`
+}
+
 // Defines settings for the Gopher tool execution
 type GopherConfig struct {
 	ToolPath   string
@@ -34,15 +50,6 @@ func (gc GopherConfig) String() string {
 func (gr GopherRunner) String() string {
 	return fmt.Sprintf("GopherRunner{Config: %s, MaxThreads: %d}", gr.Config.String(), gr.Config.MaxThreads)
 }
-
-// // Captures execution logs per vulnerability package
-// type LogEntry struct {
-// 	Package string
-// 	GitTag  string
-// 	Stdout  string
-// 	Stderr  string
-// 	Error   error
-// }
 
 // TODO extra implement a queue for locked repos
 func (gr *GopherRunner) Run(repo *Repo, gitTag string) {

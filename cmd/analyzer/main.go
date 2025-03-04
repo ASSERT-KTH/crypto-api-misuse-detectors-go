@@ -55,6 +55,7 @@ func main() {
 		RepoLocks: sync.Map{},
 	}
 
+	// analyze each vulnerability in parallel, hoping they do not lock the same repo
 	for _, v := range vulnerabilities {
 		wg.Add(1)
 		go v.AnalyzeVulnerability(&wg, runner) // finishes after all packages analyzed
