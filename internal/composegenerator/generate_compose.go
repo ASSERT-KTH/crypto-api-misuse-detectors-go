@@ -85,11 +85,11 @@ func main() {
 	sb.WriteString("      o: bind\n")
 
 	// Write to file
-	outputFile := "./docker-compose.yml"
+	outputFile := "./compose.yaml"
 	if err := os.WriteFile(outputFile, []byte(sb.String()), 0644); err != nil {
 		fmt.Println("Error writing file:", err)
 		return
 	}
 
-	fmt.Println("Docker Compose file generated successfully!")
+	fmt.Println("compose file generated.")
 }
