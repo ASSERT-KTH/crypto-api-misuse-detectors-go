@@ -6,18 +6,16 @@ import (
 
 // Represents a package affected by a vulnerability and metadata about how it's affected.
 type VulPackage struct {
-	Name                   string `json:"name"`
-	Publish                string `json:"publish"`
-	VulName                string `json:"vul_name"`
-	VulRange               string `json:"vul_range"`
-	Level                  string `json:"level"`
-	Score                  string `json:"score"`
-	RemediationDescription string `json:"remediation_description"`
-	Summary                string `json:"summary"`
-	VulGitTags             []struct {
-		FullVersion string `json:"full_version"`
-	} `json:"vul_git_tags"`
-	TriedTags int
+	Name                   string   `json:"name"`
+	Publish                string   `json:"publish"`
+	VulName                string   `json:"vul_name"`
+	VulRange               string   `json:"vul_range"`
+	Level                  string   `json:"level"`
+	Score                  string   `json:"score"`
+	RemediationDescription string   `json:"remediation_description"`
+	Summary                string   `json:"summary"`
+	VulGitTags             []string `json:"vul_git_tags"`
+	TriedTags              int
 }
 
 func (p VulPackage) String() string {
@@ -38,7 +36,7 @@ func (p *VulPackage) PopVulTag() (string, error) {
 	}
 	// get the latest tag based on tried tags
 	numTags := len(p.VulGitTags)
-	tag := p.VulGitTags[numTags-p.TriedTags-1].FullVersion
+	tag := p.VulGitTags[numTags-p.TriedTags-1]
 	p.TriedTags++
 	return tag, nil
 }
