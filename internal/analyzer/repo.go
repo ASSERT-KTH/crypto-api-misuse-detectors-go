@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/utils"
@@ -10,11 +9,10 @@ import (
 
 // Represents a (local) repository that contains potentially vulnerable packages.
 type Repo struct {
-	RepoSlug string   `json:"repo_slug"`
-	RepoPath string   
+	RepoSlug string `json:"repo_slug"`
+	RepoPath string
 	GitTags  []string `json:"git_tags"`
 }
-
 
 func (r Repo) String() string {
 	return fmt.Sprintf("Repo:\n\tRepoSlug: %s\n\tRepoPath: %s", r.RepoSlug, r.RepoPath)
