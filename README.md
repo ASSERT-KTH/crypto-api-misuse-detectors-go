@@ -1,3 +1,16 @@
+# Go CryptoAPI
+
+## docker
+
+run gopher on specified repos.
+
+## composegenerator
+
+generates a compose.yaml based on vulnerability info in given file, e.g. `data/tagged_vulnerabilties_conservative.json`
+
+## modcollector
+
+gets popular repos and downloads them locally.
 
 
 ## llm-dataset-collector

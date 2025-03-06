@@ -7,6 +7,8 @@ import (
 	"math"
 	"net/http"
 	"os"
+
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/utils"
 )
 
 const (
@@ -22,8 +24,8 @@ type APIClient struct {
 	HTTPClient *http.Client // this is https
 }
 
-// ModuleCollector collects repository data.
-type ModuleCollector struct {
+// ModuleInfoCollector collects repository data.
+type ModuleInfoCollector struct {
 	Client       APIClient
 	Outpath      string
 	PageSize     int
@@ -69,14 +71,14 @@ func (client *APIClient) Validate() error {
 }
 
 // Validate checks the RepositoryCollector for required fields.
-func (mc *ModuleCollector) Validate() error {
+func (mc *ModuleInfoCollector) Validate() error {
 	if mc.ModulesCount <= 0 {
 		return fmt.Errorf("ModulesCount must be greater than 0")
 	}
 	if mc.Outpath == "" {
 		return fmt.Errorf("output directory cannot be empty")
 	}
-	if err := createOutputDir(mc.Outpath); err != nil {
+	if err := utils.CreateOutputDir(mc.Outpath); err != nil {
 		return err
 	}
 	if mc.PageSize < minPageSize || mc.PageSize > maxPageSize {
@@ -86,7 +88,7 @@ func (mc *ModuleCollector) Validate() error {
 }
 
 // FetchAndWriteRepoMeta fetches repository metadata and writes it to a file.
-func (mc *ModuleCollector) FetchAndWriteRepoMeta(excludeURLs []string) error {
+func (mc *ModuleInfoCollector) FetchAndWriteRepoMeta(excludeURLs []string) error {
 	criteria := SearchCriteria{
 		ExcludeURLs: excludeURLs,
 		Platform:    "Go",
@@ -111,7 +113,7 @@ func (mc *ModuleCollector) FetchAndWriteRepoMeta(excludeURLs []string) error {
 }
 
 // fetchPageData fetches data for a specific page and appends it to allModules.
-func (mc *ModuleCollector) fetchPageData(page int, criteria SearchCriteria, allModules *[]Module) error {
+func (mc *ModuleInfoCollector) fetchPageData(page int, criteria SearchCriteria, allModules *[]Module) error {
 	url := fmt.Sprintf("%s?order=%s&platforms=%s&sort=%s&per_page=%d&page=%d&api_key=%s",
 		librariesIOAPIURL, criteria.Order, criteria.Platform, criteria.SortBy, mc.PageSize, page, mc.Client.APIToken)
 
@@ -135,7 +137,7 @@ func (mc *ModuleCollector) fetchPageData(page int, criteria SearchCriteria, allM
 }
 
 // processResponseBody processes the response body and filters the modules.
-func (mc *ModuleCollector) processResponseBody(body io.Reader, criteria SearchCriteria, allModules *[]Module) error {
+func (mc *ModuleInfoCollector) processResponseBody(body io.Reader, criteria SearchCriteria, allModules *[]Module) error {
 	var modules []Module
 	if err := json.NewDecoder(body).Decode(&modules); err != nil {
 		return fmt.Errorf("unmarshaling JSON: %w", err)
@@ -151,7 +153,7 @@ func (mc *ModuleCollector) processResponseBody(body io.Reader, criteria SearchCr
 }
 
 // filterModules filters the modules based on the given criteria.
-func (mc *ModuleCollector) filterModules(modules []Module, criteria SearchCriteria) ([]Module, error) {
+func (mc *ModuleInfoCollector) filterModules(modules []Module, criteria SearchCriteria) ([]Module, error) {
 	var filteredModules []Module
 	for _, module := range modules {
 		keep, err := module.filterByString("RepositoryURL", criteria.ExcludeURLs)
@@ -173,7 +175,7 @@ func (mc *ModuleCollector) filterModules(modules []Module, criteria SearchCriter
 }
 
 // writeJSONToFile writes the collected modules to a JSON file.
-func (mc *ModuleCollector) writeJSONToFile(allModules []Module) error {
+func (mc *ModuleInfoCollector) writeJSONToFile(allModules []Module) error {
 	jsonData, err := json.MarshalIndent(allModules, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling JSON data: %w", err)

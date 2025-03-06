@@ -1,4 +1,6 @@
 
-`docker compose up --build --remove-orphans`
+1. `docker compose up --build --remove-orphans`
 
-`docker compose down`
+2. `docker compose down --remove-orphans`
+
+>Recall that gopher needs to be run from its own directory to produce any reports.
