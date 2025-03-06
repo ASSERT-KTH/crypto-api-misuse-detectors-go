@@ -15,6 +15,7 @@ type VulPackage struct {
 	RemediationDescription string   `json:"remediation_description"`
 	Summary                string   `json:"summary"`
 	VulGitTags             []string `json:"vul_git_tags"`
+	GoVersion              string   `json:"go_version"`
 	TriedTags              int
 }
 
