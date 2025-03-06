@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	api := "LIBRARIESIO" // TODO make this configurable
+	api := "LIBRARIESIO"
 	tokenName := fmt.Sprintf("%s_TOKEN", api)
 	apiToken, exists := os.LookupEnv(tokenName)
 
@@ -54,25 +54,12 @@ func main() {
 		log.Fatalf("Failed to parse JSON: %v\n", err)
 	}
 
-	modulesDir := filepath.Join(outdir, "modules")
-	modules, err = download.DownloadAll(modules, modulesDir)
-	if err != nil {
-		log.Fatalf("Failed to download modules: %v\n", err)
-	}
+	print(modules)
+	// TODO: clone and analyse in containers?
 
-	// gopherConf := download.GopherConfig{
-	// 	ToolPath:         "",
-	// 	Timeout:          135,
-	// 	IncludeTestFiles: false,
-	// }
-	// for _, module := range modules {
-	// 	if module.LocalPath != "" {
-	// 		// check if the localPath exists
-	// 		if _, err := os.Stat(module.LocalPath); err == nil {
-	// 			download.RunGopherTool(module, gopherConf)
-	// 		} else {
-	// 			log.Printf("LocalPath does not exist: %s\n", module.LocalPath)
-	// 		}
-	// 	}
+	// modulesDir := filepath.Join(outdir, "modules")
+	// modules, err = download.DownloadAll(modules, modulesDir)
+	// if err != nil {
+	// 	log.Fatalf("Failed to download modules: %v\n", err)
 	// }
 }
