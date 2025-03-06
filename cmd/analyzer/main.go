@@ -47,21 +47,21 @@ func main() {
 
 	fmt.Println(config)
 
-	var wg sync.WaitGroup // orchestrates multiple runner.run
+	//var wg sync.WaitGroup // orchestrates multiple runner.run
 	// new gopher runner with repo locks and semaphore (shared)
-	runner := &analyzer.GopherRunner{
+	_ = &analyzer.GopherRunner{
 		Config:    config,
 		Sem:       semaphore.NewWeighted(int64(config.MaxThreads)),
 		RepoLocks: sync.Map{},
 	}
 
-	// analyze each vulnerability in parallel, hoping they do not lock the same repo
-	for _, v := range vulnerabilities {
-		wg.Add(1)
-		go v.AnalyzeVulnerability(&wg, runner) // finishes after all packages analyzed
-	}
-	wg.Wait()
-	log.Print("All vulnerabilities analyzed.")
+	// // analyze each vulnerability in parallel, hoping they do not lock the same repo
+	// for _, v := range vulnerabilities {
+	// 	wg.Add(1)
+	// 	go v.AnalyzeVulnerability(&wg, runner) // finishes after all packages analyzed
+	// }
+	// wg.Wait()
+	// log.Print("All vulnerabilities analyzed.")
 
 	// collect the results
 
