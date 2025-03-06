@@ -31,7 +31,7 @@ func main() {
 	}
 	outdir := filepath.Join(wd, "data")
 
-	mc := &download.ModuleCollector{
+	mc := &download.ModuleInfoCollector{
 		Outpath:      filepath.Join(outdir, "modules_info.json"),
 		Client:       *client,
 		PageSize:     100,
@@ -53,7 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to parse JSON: %v\n", err)
 	}
-	
+
 	modulesDir := filepath.Join(outdir, "modules")
 	modules, err = download.DownloadAll(modules, modulesDir)
 	if err != nil {
