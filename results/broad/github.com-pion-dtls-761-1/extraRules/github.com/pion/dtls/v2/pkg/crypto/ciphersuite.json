@@ -1,0 +1,145 @@
+{
+	"Package_Name": "github.com/pion/dtls/v2/pkg/crypto/ciphersuite",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*CBC).Decrypt": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::3",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nDecrypt (in []byte) ([]byte, error)\n\t145:\tactualMAC, err := c.hmac(h.Epoch, h.SequenceNumber, h.ContentType, h.Version, body[:dataEnd], c.readMac, c.h)\n\t106:\tfunc (c *CBC) Decrypt(in []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::3"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nDecrypt (in []byte) ([]byte, error)\n\t145:\tactualMAC, err := c.hmac(h.Epoch, h.SequenceNumber, h.ContentType, h.Version, body[:dataEnd], c.readMac, c.h)\n\t106:\tfunc (c *CBC) Decrypt(in []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*CBC).Encrypt": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::2",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nEncrypt (pkt *github.com/pion/dtls/v2/pkg/protocol/recordlayer.RecordLayer, raw []byte) ([]byte, error)\n\t71:\tMAC, err := c.hmac(h.Epoch, h.SequenceNumber, h.ContentType, h.Version, payload, c.writeMac, c.h)\n\t63:\tfunc (c *CBC) Encrypt(pkt *recordlayer.RecordLayer, raw []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::2"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nEncrypt (pkt *github.com/pion/dtls/v2/pkg/protocol/recordlayer.RecordLayer, raw []byte) ([]byte, error)\n\t71:\tMAC, err := c.hmac(h.Epoch, h.SequenceNumber, h.ContentType, h.Version, payload, c.writeMac, c.h)\n\t63:\tfunc (c *CBC) Encrypt(pkt *recordlayer.RecordLayer, raw []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*CBC).hmac": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"6",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"6"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "SECURE_HMAC_HASH",
+				"Object": [
+					"7"
+				],
+				"Reason": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nhmac (epoch uint16, sequenceNumber uint64, contentType github.com/pion/dtls/v2/pkg/protocol.ContentType, protocolVersion github.com/pion/dtls/v2/pkg/protocol.Version, payload []byte, key []byte, hf \n\t156:\th := hmac.New(hf, key)\n\t155:\tfunc (c *CBC) hmac(epoch uint16, sequenceNumber uint64, contentType protocol.ContentType, protocolVersion protocol.Version, payload []byte, key []byte, hf func() hash.Hash) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*GCM).Encrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::2"
+				],
+				"Reason": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/gcm.go\nEncrypt (pkt *github.com/pion/dtls/v2/pkg/protocol/recordlayer.RecordLayer, raw []byte) ([]byte, error)\n\t65:\tencryptedPayload := g.localGCM.Seal(nil, nonce, payload, additionalData)\n\t59:\tcopy(nonce, g.localWriteIV[:4])\n\t59:\tcopy(nonce, g.localWriteIV[:4])\n\t59:\tcopy(nonce, g.localWriteIV[:4])\n\t54:\tfunc (g *GCM) Encrypt(pkt *recordlayer.RecordLayer, raw []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"NewCBC": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "IVs should be random in CBC mode, it potentially lead to a Padding Oracle attack and CPA attack\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nNewCBC (localKey []byte, localWriteIV []byte, localMac []byte, remoteKey []byte, remoteWriteIV []byte, remoteMac []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CBC, error)\n\t42:\twriteCBC, ok := cipher.NewCBCEncrypter(writeBlock, localWriteIV).(cbcMode)\n\t31:\tfunc NewCBC(localKey, localWriteIV, localMac, remoteKey, remoteWriteIV, remoteMac []byte, h prf.HashFunc) (*CBC, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"3"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nNewCBC (localKey []byte, localWriteIV []byte, localMac []byte, remoteKey []byte, remoteWriteIV []byte, remoteMac []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CBC, error)\n\t37:\treadBlock, err := aes.NewCipher(remoteKey)\n\t31:\tfunc NewCBC(localKey, localWriteIV, localMac, remoteKey, remoteWriteIV, remoteMac []byte, h prf.HashFunc) (*CBC, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/cbc.go\nNewCBC (localKey []byte, localWriteIV []byte, localMac []byte, remoteKey []byte, remoteWriteIV []byte, remoteMac []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CBC, error)\n\t32:\twriteBlock, err := aes.NewCipher(localKey)\n\t31:\tfunc NewCBC(localKey, localWriteIV, localMac, remoteKey, remoteWriteIV, remoteMac []byte, h prf.HashFunc) (*CBC, error) {",
+				"InferDepth": 1
+			}
+		],
+		"NewCCM": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"3"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/ccm.go\nNewCCM (tagLen github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CCMTagLen, localKey []byte, localWriteIV []byte, remoteKey []byte, remoteWriteIV []byte) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CCM, error)\n\t42:\tremoteBlock, err := aes.NewCipher(remoteKey)\n\t32:\tfunc NewCCM(tagLen CCMTagLen, localKey, localWriteIV, remoteKey, remoteWriteIV []byte) (*CCM, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/ccm.go\nNewCCM (tagLen github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CCMTagLen, localKey []byte, localWriteIV []byte, remoteKey []byte, remoteWriteIV []byte) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.CCM, error)\n\t33:\tlocalBlock, err := aes.NewCipher(localKey)\n\t32:\tfunc NewCCM(tagLen CCMTagLen, localKey, localWriteIV, remoteKey, remoteWriteIV []byte) (*CCM, error) {",
+				"InferDepth": 1
+			}
+		],
+		"NewGCM": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/gcm.go\nNewGCM (localKey []byte, localWriteIV []byte, remoteKey []byte, remoteWriteIV []byte) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.GCM, error)\n\t27:\tlocalBlock, err := aes.NewCipher(localKey)\n\t26:\tfunc NewGCM(localKey, localWriteIV, remoteKey, remoteWriteIV []byte) (*GCM, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/crypto/ciphersuite/gcm.go\nNewGCM (localKey []byte, localWriteIV []byte, remoteKey []byte, remoteWriteIV []byte) (*github.com/pion/dtls/v2/pkg/crypto/ciphersuite.GCM, error)\n\t36:\tremoteBlock, err := aes.NewCipher(remoteKey)\n\t26:\tfunc NewGCM(localKey, localWriteIV, remoteKey, remoteWriteIV []byte) (*GCM, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

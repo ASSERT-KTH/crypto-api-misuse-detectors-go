@@ -1,0 +1,27 @@
+{
+	"Package_Name": "github.com/pion/dtls/v2",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*State).ExportKeyingMaterial": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::5",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/state.go\nExportKeyingMaterial (label string, context []byte, length int) ([]byte, error)\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t182:\tfunc (s *State) ExportKeyingMaterial(label string, context []byte, length int) ([]byte, error) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/state.go\nExportKeyingMaterial (label string, context []byte, length int) ([]byte, error)\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t182:\tfunc (s *State) ExportKeyingMaterial(label string, context []byte, length int) ([]byte, error) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}
