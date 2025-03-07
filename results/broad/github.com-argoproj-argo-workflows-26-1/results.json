@@ -1,0 +1,102 @@
+[
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/server/auth/sso/sso.go",
+			"SourceLineNum": 136,
+			"ParentFunction": "newSso (factory github.com/argoproj/argo-workflows/v3/server/auth/sso.providerFactory, c github.com/argoproj/argo-workflows/v3/server/auth/sso.Config, secretsIf k8s.io/client-go/kubernetes/typed/core/v1.SecretInterface, baseHRef string, secure bool) (github.com/argoproj/argo-workflows/v3/server/auth/sso.Interface, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/server/auth/sso/sso.go",
+				"SourceLineNum": 136,
+				"ParentFunction": "newSso (factory github.com/argoproj/argo-workflows/v3/server/auth/sso.providerFactory, c github.com/argoproj/argo-workflows/v3/server/auth/sso.Config, secretsIf k8s.io/client-go/kubernetes/typed/core/v1.SecretInterface, baseHRef string, secure bool) (github.com/argoproj/argo-workflows/v3/server/auth/sso.Interface, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+		"Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+		"Slicing_Criteria": {
+			"SourceCode": "auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()",
+			"SourceFilename": "/analysis/repo/workflow/artifacts/git/git.go",
+			"SourceLineNum": 58,
+			"ParentFunction": "auth (sshUser string) ("
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+		"Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+		"Slicing_Criteria": {
+			"SourceCode": "auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()",
+			"SourceFilename": "/analysis/repo/workflow/artifacts/git/git.go",
+			"SourceLineNum": 68,
+			"ParentFunction": "auth (sshUser string) ("
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/cmd/argo/commands/server.go",
+			"SourceLineNum": 104,
+			"ParentFunction": "NewServerCommand$1 (c *github.com/spf13/cobra.Command, args []string) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/cmd/argo/commands/server.go",
+				"SourceLineNum": 104,
+				"ParentFunction": "NewServerCommand$1 (c *github.com/spf13/cobra.Command, args []string) error"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/workflow/executor/kubelet/client.go",
+			"SourceLineNum": 66,
+			"ParentFunction": "newKubeletClient (namespace string, podName string) (*github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet.kubeletClient, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/workflow/executor/kubelet/client.go",
+				"SourceLineNum": 66,
+				"ParentFunction": "newKubeletClient (namespace string, podName string) (*github.com/argoproj/argo-workflows/v3/workflow/executor/kubelet.kubeletClient, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "Transport: \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}},",
+			"SourceFilename": "/analysis/repo/test/e2e/client.go",
+			"SourceLineNum": 9,
+			"ParentFunction": "init ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "Transport: \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}},",
+				"SourceFilename": "/analysis/repo/test/e2e/client.go",
+				"SourceLineNum": 9,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	}
+]
