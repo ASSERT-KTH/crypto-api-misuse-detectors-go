@@ -1,0 +1,112 @@
+[
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "clientTLSConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/api/client.go",
+			"SourceLineNum": 298,
+			"ParentFunction": "configureTLS (t *github.com/sigstore/policy-controller/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/api.TLSConfig) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "clientTLSConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/api/client.go",
+				"SourceLineNum": 298,
+				"ParentFunction": "configureTLS (t *github.com/sigstore/policy-controller/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/api.TLSConfig) error"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "skid := sha1.Sum(publicKeyBytes)",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+			"SourceLineNum": 114,
+			"ParentFunction": "getSubjectKeyID (pub interface{}) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.P224",
+		"Message": "P224 is Acceptable but not recommended.",
+		"Slicing_Criteria": {
+			"SourceCode": "curve = elliptic.P224()",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+			"SourceLineNum": 300,
+			"ParentFunction": "generatePrivateKey (keyType string, keyBits int, container github.com/sigstore/policy-controller/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil.ParsedPrivateKeyContainer, entropyReader io.Reader) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.P224",
+		"Message": "P224 is Acceptable but not recommended.",
+		"Slicing_Criteria": {
+			"SourceCode": "case elliptic.P224(), elliptic.P256():",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+			"SourceLineNum": 936,
+			"ParentFunction": "selectSignatureAlgorithmForECDSA (pub crypto.PublicKey, signatureBits int) crypto/x509.SignatureAlgorithm"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Marshal",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "publicKeyBytes = elliptic.Marshal(pub.Curve, pub.X, pub.Y)",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+			"SourceLineNum": 108,
+			"ParentFunction": "getSubjectKeyID (pub interface{}) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.IsEncryptedPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "} else if x509.IsEncryptedPEMBlock(pemBlock) {",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+			"SourceLineNum": 231,
+			"ParentFunction": "ParsePEMBundle (pemBundle string) (*github.com/sigstore/policy-controller/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil.ParsedCertBundle, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/blake2b.New256",
+		"Message": "If used as a MAC, the length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "hf, _ := blake2b.New256(nil)",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/cryptoutil/cryptoutil.go",
+			"SourceLineNum": 6,
+			"ParentFunction": "Blake2b256Hash (key string) []byte"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "hf, _ := blake2b.New256(nil)",
+				"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/cryptoutil/cryptoutil.go",
+				"SourceLineNum": 6,
+				"ParentFunction": "Blake2b256Hash (key string) []byte"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hash := sha1.Sum([]byte(fmt.Sprintf(\"Modulus=%X\\n\", key.N.Bytes())))",
+			"SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/letsencrypt/boulder/goodkey/weak.go",
+			"SourceLineNum": 61,
+			"ParentFunction": "Known (key *crypto/rsa.PublicKey) bool"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

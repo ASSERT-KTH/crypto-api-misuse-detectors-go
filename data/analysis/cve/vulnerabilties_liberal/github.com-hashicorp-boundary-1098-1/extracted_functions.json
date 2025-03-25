@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "ClientTlsConfig",
+    "file_path": "/analysis/repo/internal/cmd/commands/connect/client_tls_config.go",
+    "line_number": 41,
+    "full_implementation": "func ClientTlsConfig(sessionAuthzData *targetspb.SessionAuthorizationData, host string) (*tls.Config, error) {\n\tconst op = \"connect.ClientTlsConfig\"\n\tif sessionAuthzData == nil {\n\t\treturn nil, fmt.Errorf(\"%s: nil session authorization data\", op)\n\t}\n\tparsedCert, err := x509.ParseCertificate(sessionAuthzData.Certificate)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"unable to decode mTLS certificate: %w\", err)\n\t}\n\n\tcertPool := x509.NewCertPool()\n\tcertPool.AddCert(parsedCert)\n\n\ttlsConf := \u0026tls.Config{\n\t\tCertificates: []tls.Certificate{\n\t\t\t{\n\t\t\t\tCertificate: [][]byte{sessionAuthzData.Certificate},\n\t\t\t\tPrivateKey:  ed25519.PrivateKey(sessionAuthzData.PrivateKey),\n\t\t\t\tLeaf:        parsedCert,\n\t\t\t},\n\t\t},\n\t\tServerName: host,\n\t\tMinVersion: tls.VersionTLS13,\n\t\tNextProtos: []string{\"http/1.1\", sessionAuthzData.SessionId},\n\n\t\t// This is set this way so we can make use of VerifyConnection, which we\n\t\t// set on this TLS config below. We are not skipping verification!\n\t\tInsecureSkipVerify: true,\n\t}\n\tif host == \"\" {\n\t\ttlsConf.ServerName = parsedCert.DNSNames[0]\n\t}\n\n\t// We disable normal DNS SAN behavior as we don't rely on DNS or IP\n\t// addresses for security and want to avoid issues with including localhost\n\t// etc.\n\tverifyOpts := x509.VerifyOptions{\n\t\tDNSName: sessionAuthzData.SessionId,\n\t\tRoots:   certPool,\n\t\tKeyUsages: []x509.ExtKeyUsage{\n\t\t\tx509.ExtKeyUsageClientAuth,\n\t\t\tx509.ExtKeyUsageServerAuth,\n\t\t},\n\t}\n\ttlsConf.VerifyConnection = func(cs tls.ConnectionState) error {\n\t\t// Go will not run this without at least one peer certificate, but\n\t\t// doesn't hurt to check\n\t\tif len(cs.PeerCertificates) == 0 {\n\t\t\treturn fmt.Errorf(\"%s: no peer certificates provided\", op)\n\t\t}\n\t\t_, err := cs.PeerCertificates[0].Verify(verifyOpts)\n\t\treturn err\n\t}\n\n\treturn tlsConf, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/internal/cmd/commands/connect/client_tls_config.go",
+        "SourceLineNum": 41,
+        "ParentFunction": "ClientTlsConfig (sessionAuthzData *github.com/hashicorp/boundary/sdk/pbs/controller/api/resources/targets.SessionAuthorizationData, host string) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/internal/cmd/commands/connect/client_tls_config.go",
+          "SourceLineNum": 41,
+          "ParentFunction": "ClientTlsConfig (sessionAuthzData *github.com/hashicorp/boundary/sdk/pbs/controller/api/resources/targets.SessionAuthorizationData, host string) (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

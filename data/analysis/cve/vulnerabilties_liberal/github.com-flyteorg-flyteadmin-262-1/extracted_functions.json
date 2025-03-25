@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "NewSecrets",
+    "file_path": "/analysis/repo/auth/init_secrets.go",
+    "line_number": 129,
+    "full_implementation": "func NewSecrets() (SecretsSet, error) {\n\tsecret := make([]byte, SymmetricKeyLength)\n\t_, err := rand.Read(secret)\n\tif err != nil {\n\t\treturn SecretsSet{}, fmt.Errorf(\"failed to issue token hash key. Error: %w\", err)\n\t}\n\n\tprivateKey, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn SecretsSet{}, fmt.Errorf(\"failed to issue token signing key. Error: %w\", err)\n\t}\n\n\tcookieHashKey := make([]byte, CookieHashKeyLength)\n\t_, err = rand.Read(cookieHashKey)\n\tif err != nil {\n\t\treturn SecretsSet{}, fmt.Errorf(\"failed to issue cookie hash key. Error: %w\", err)\n\t}\n\n\tcookieBlockKey := make([]byte, CookieBlockKeyLength)\n\t_, err = rand.Read(cookieBlockKey)\n\tif err != nil {\n\t\treturn SecretsSet{}, fmt.Errorf(\"failed to issue cookie block key. Error: %w\", err)\n\t}\n\n\treturn SecretsSet{\n\t\tTokenHashKey:              secret,\n\t\tTokenSigningRSAPrivateKey: privateKey,\n\t\tCookieHashKey:             cookieHashKey,\n\t\tCookieBlockKey:            cookieBlockKey,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/auth/init_secrets.go",
+        "SourceLineNum": 129,
+        "ParentFunction": "NewSecrets () (github.com/flyteorg/flyteadmin/auth.SecretsSet, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/auth/init_secrets.go",
+          "SourceLineNum": 129,
+          "ParentFunction": "NewSecrets () (github.com/flyteorg/flyteadmin/auth.SecretsSet, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]
