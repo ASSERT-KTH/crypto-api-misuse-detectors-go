@@ -4,24 +4,92 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 type VulPackage struct {
-	Name       string   `json:"name"`
-	VulGitTags []string `json:"vul_git_tags"`
-	GoVersion  string   `json:"go_version"`
+	Name        string   `json:"name"`
+	Publish     string   `json:"publish"`
+	VulName     string   `json:"vul_name"`
+	VulRange    string   `json:"vul_range"`
+	Level       string   `json:"level"`
+	Score       string   `json:"score"`
+	Remediation string   `json:"remediation_description"`
+	Summary     string   `json:"summary"`
+	VulGitTags  []string `json:"vul_git_tags"`
+	GoVersion   string   `json:"go_version"`
 }
 
 type Repo struct {
-	RepoSlug string   `json:"repo_slug"`
-	GitTags  []string `json:"git_tags"`
+	RepoSlug   string   `json:"repo_slug"`
+	GitTags    []string `json:"git_tags"`
+	References []string `json:"references"`
+	CVE        string   `json:"cve"`
+	CWE        string   `json:"cwe"`
 }
 
 type Vulnerability struct {
 	ID          int          `json:"id"`
 	Repo        Repo         `json:"repo"`
 	VulPackages []VulPackage `json:"vul_packages"`
+}
+
+// Add a new function to write metadata
+func writeMetadata(vuln Vulnerability, repo Repo, vp VulPackage, pkgNum int, baseName string) error {
+	metadata := struct {
+		ID          int      `json:"id"`
+		Package     string   `json:"package"`
+		GoVersion   string   `json:"go_version"`
+		VulName     string   `json:"vul_name"`
+		Publish     string   `json:"publish"`
+		CWE         string   `json:"cwe"`
+		CVE         string   `json:"cve"`
+		Summary     string   `json:"summary"`
+		Level       string   `json:"level"`
+		Score       string   `json:"score"`
+		Remediation string   `json:"remediation_description"`
+		VulRange    string   `json:"vul_range"`
+		VulGitTags  []string `json:"vul_git_tags"`
+	}{
+		ID:          vuln.ID,
+		Package:     vp.Name,
+		GoVersion:   vp.GoVersion,
+		VulName:     vp.VulName,
+		Publish:     vp.Publish,
+		CWE:         repo.CWE,
+		CVE:         repo.CVE,
+		Summary:     vp.Summary,
+		Level:       vp.Level,
+		Score:       vp.Score,
+		Remediation: vp.Remediation,
+		VulRange:    vp.VulRange,
+		VulGitTags:  vp.VulGitTags,
+	}
+
+	outputDir := fmt.Sprintf("./data/analysis/cve/%s/%s-%d-%d",
+		baseName,
+		strings.ReplaceAll(vuln.Repo.RepoSlug, "/", "-"),
+		vuln.ID,
+		pkgNum)
+
+	// Create directory if it doesn't exist
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("creating directory: %w", err)
+	}
+
+	// Write metadata to file
+	metadataJson, err := json.MarshalIndent(metadata, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshaling metadata: %w", err)
+	}
+
+	metadataPath := filepath.Join(outputDir, "vulnerability_info.json")
+	if err := os.WriteFile(metadataPath, metadataJson, 0644); err != nil {
+		return fmt.Errorf("writing metadata file: %w", err)
+	}
+
+	return nil
 }
 
 func GenerateCompose(filepath string, outputFile string) error {
@@ -59,6 +127,13 @@ func GenerateCompose(filepath string, outputFile string) error {
 			if vp.GoVersion == "" {
 				vp.GoVersion = "1.11"
 			}
+
+			// Write metadata for this vulnerability
+			if err := writeMetadata(vuln, vuln.Repo, vp, pkgNum, baseName); err != nil {
+				return fmt.Errorf("writing metadata for %s-%d-%d: %w",
+					vuln.Repo.RepoSlug, vuln.ID, pkgNum, err)
+			}
+
 			latestTag := vp.VulGitTags[len(vp.VulGitTags)-1]
 
 			sb.WriteString(fmt.Sprintf("  id%d-%d:\n", vuln.ID, pkgNum))
