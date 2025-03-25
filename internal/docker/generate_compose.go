@@ -1,9 +1,8 @@
-package main
+package dataset
 
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 )
@@ -25,24 +24,23 @@ type Vulnerability struct {
 	VulPackages []VulPackage `json:"vul_packages"`
 }
 
-func main() {
-	// Read JSON file
-	// check path args given
-	if len(os.Args) < 2 {
-		log.Fatal("Usage: generate_compose <path_to_vulnerability_json>")
+func GenerateCompose(filepath string, outputFile string) error {
+	// Extract just the filename without the full path and .json extension
+	filename := filepath
+	if lastSlash := strings.LastIndex(filepath, "/"); lastSlash >= 0 {
+		filename = filepath[lastSlash+1:]
 	}
-	filepath := os.Args[1]
+	baseName := strings.TrimSuffix(filename, ".json")
+
 	data, err := os.ReadFile(filepath)
 	if err != nil {
-		fmt.Println("Error reading file:", err)
-		return
+		return fmt.Errorf("reading file: %w", err)
 	}
 
 	// Parse JSON
 	var vulnerabilities []Vulnerability
 	if err := json.Unmarshal(data, &vulnerabilities); err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		return
+		return fmt.Errorf("parsing JSON: %w", err)
 	}
 
 	// Generate Docker Compose YAML
@@ -72,7 +70,11 @@ func main() {
 			sb.WriteString(fmt.Sprintf("    container_name: %s-%d-%d\n", strings.ReplaceAll(vuln.Repo.RepoSlug, "/", "-"), vuln.ID, pkgNum))
 			sb.WriteString("    volumes:\n")
 			sb.WriteString("      - gopher-shared:/analysis/gopher\n")
-			sb.WriteString(fmt.Sprintf("      - \"${BASE_DIR}/results/ground_truth/%s-%d-%d:/analysis/repo/scan_results\"\n", strings.ReplaceAll(vuln.Repo.RepoSlug, "/", "-"), vuln.ID, pkgNum))
+			sb.WriteString(fmt.Sprintf("      - \"${BASE_DIR}/results/%s/%s-%d-%d:/analysis/repo/scan_results\"\n",
+				baseName,
+				strings.ReplaceAll(vuln.Repo.RepoSlug, "/", "-"),
+				vuln.ID,
+				pkgNum))
 		}
 	}
 
@@ -84,12 +86,9 @@ func main() {
 	sb.WriteString("      device: ${BASE_DIR}/gopher\n")
 	sb.WriteString("      o: bind\n")
 
-	// Write to file
-	outputFile := "./compose.yaml"
 	if err := os.WriteFile(outputFile, []byte(sb.String()), 0644); err != nil {
-		fmt.Println("Error writing file:", err)
-		return
+		return fmt.Errorf("writing file: %w", err)
 	}
 
-	fmt.Println("compose file generated.")
+	return nil
 }
