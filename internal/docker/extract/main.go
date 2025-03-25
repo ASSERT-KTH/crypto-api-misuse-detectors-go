@@ -113,7 +113,7 @@ func ExtractFunctions(resultsFile, repoRootDir string) error {
 	}
 	// TODO move to
 	outputPath := "/analysis/repo/scan_results/extracted_functions.json"
-	if err := os.WriteFile(outputPath, outputJson, 0644); err != nil {
+	if err := ioutil.WriteFile(outputPath, outputJson, 0644); err != nil {
 		return fmt.Errorf("writing output file: %w", err)
 	}
 
