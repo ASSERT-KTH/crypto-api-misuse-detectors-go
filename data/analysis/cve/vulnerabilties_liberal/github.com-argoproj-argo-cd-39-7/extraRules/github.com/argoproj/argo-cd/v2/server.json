@@ -1,0 +1,18 @@
+{
+	"Package_Name": "github.com/argoproj/argo-cd/v2/server",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*ArgoCDServer).getClaims": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::2::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nEncrypt (data []byte, key []byte) ([]byte, error)\n\t26:\tblock, err := aes.NewCipher(key)\n\t25:\tfunc Encrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nGetUserInfo (actualClaims github.com/golang-jwt/jwt/v4.MapClaims, issuerURL string, userInfoPath string) (github.com/golang-jwt/jwt/v4.MapClaims, bool, error)\n\t658:\tencClaims, err = crypto.Encrypt(rawClaims, a.encryptionKey)\n\t658:\tencClaims, err = crypto.Encrypt(rawClaims, a.encryptionKey)\n\t554:\tfunc (a *ClientApp) GetUserInfo(actualClaims jwt.MapClaims, issuerURL, userInfoPath string) (jwt.MapClaims, bool, error) {\n\u003e\u003e/analysis/repo/server/server.go\ngetClaims (ctx context.Context) (github.com/golang-jwt/jwt/v4.Claims, string, error)\n\t1538:\tuserInfo, unauthorized, err := a.ssoClientApp.GetUserInfo(groupClaims, a.settings.IssuerURL(), a.settings.UserInfoPath())\n\t1538:\tuserInfo, unauthorized, err := a.ssoClientApp.GetUserInfo(groupClaims, a.settings.IssuerURL(), a.settings.UserInfoPath())\n\t1512:\tfunc (a *ArgoCDServer) getClaims(ctx context.Context) (jwt.Claims, string, error) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

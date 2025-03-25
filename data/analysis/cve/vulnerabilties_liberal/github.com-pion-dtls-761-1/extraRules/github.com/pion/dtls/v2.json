@@ -1,0 +1,106 @@
+{
+	"Package_Name": "github.com/pion/dtls/v2",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*State).ExportKeyingMaterial": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::5",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/state.go\nExportKeyingMaterial (label string, context []byte, length int) ([]byte, error)\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t182:\tfunc (s *State) ExportKeyingMaterial(label string, context []byte, length int) ([]byte, error) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/state.go\nExportKeyingMaterial (label string, context []byte, length int) ([]byte, error)\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t182:\tfunc (s *State) ExportKeyingMaterial(label string, context []byte, length int) ([]byte, error) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::5",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/state.go\nExportKeyingMaterial (label string, context []byte, length int) ([]byte, error)\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t200:\treturn prf.PHash(s.masterSecret, seed, length, s.cipherSuite.HashFunc())\n\t182:\tfunc (s *State) ExportKeyingMaterial(label string, context []byte, length int) ([]byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"flight4bGenerate": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataServer (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t250:\tfunc VerifyDataServer(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight4bhandler.go\nflight4bGenerate (c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) ([]*github.com/pion/dtls/v2.packet, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t100:\tstate.localVerifyData, err = prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t100:\tstate.localVerifyData, err = prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t47:\tfunc flight4bGenerate(c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) ([]*packet, *alert.Alert, error) {",
+				"InferDepth": 3
+			}
+		],
+		"flight4bParse": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataClient (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t245:\tfunc VerifyDataClient(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight4bhandler.go\nflight4bParse (ctx context.Context, c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) (github.com/pion/dtls/v2.flightVal, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t35:\texpectedVerifyData, err := prf.VerifyDataClient(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t35:\texpectedVerifyData, err := prf.VerifyDataClient(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t15:\tfunc flight4bParse(ctx context.Context, c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) (flightVal, *alert.Alert, error) {",
+				"InferDepth": 3
+			}
+		],
+		"flight5Generate": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataClient (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t245:\tfunc VerifyDataClient(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight5handler.go\nflight5Generate (c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) ([]*github.com/pion/dtls/v2.packet, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t248:\tstate.localVerifyData, err = prf.VerifyDataClient(state.masterSecret, append(plainText, merged...), state.cipherSuite.HashFunc())\n\t248:\tstate.localVerifyData, err = prf.VerifyDataClient(state.masterSecret, append(plainText, merged...), state.cipherSuite.HashFunc())\n\t65:\tfunc flight5Generate(c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) ([]*packet, *alert.Alert, error) { //nolint:gocognit",
+				"InferDepth": 3
+			}
+		],
+		"flight5Parse": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataServer (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t250:\tfunc VerifyDataServer(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight5handler.go\nflight5Parse (ctx context.Context, c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) (github.com/pion/dtls/v2.flightVal, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t43:\texpectedVerifyData, err := prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t43:\texpectedVerifyData, err := prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t17:\tfunc flight5Parse(ctx context.Context, c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) (flightVal, *alert.Alert, error) {",
+				"InferDepth": 3
+			}
+		],
+		"flight5bGenerate": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataClient (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t245:\tfunc VerifyDataClient(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight5bhandler.go\nflight5bGenerate (c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) ([]*github.com/pion/dtls/v2.packet, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t51:\tstate.localVerifyData, err = prf.VerifyDataClient(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t51:\tstate.localVerifyData, err = prf.VerifyDataClient(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t30:\tfunc flight5bGenerate(c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) ([]*packet, *alert.Alert, error) { //nolint:gocognit",
+				"InferDepth": 3
+			}
+		],
+		"flight6Generate": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataServer (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t250:\tfunc VerifyDataServer(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight6handler.go\nflight6Generate (c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) ([]*github.com/pion/dtls/v2.packet, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t58:\tstate.localVerifyData, err = prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t58:\tstate.localVerifyData, err = prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t30:\tfunc flight6Generate(c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) ([]*packet, *alert.Alert, error) {",
+				"InferDepth": 3
+			}
+		],
+		"handleResumption": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2::5"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash$1 (key []byte, data []byte) ([]byte, error)\n\t157:\tmac := hmac.New(h, key)\n\t156:\thmacSHA256 := func(key, data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nPHash (secret []byte, seed []byte, requestedLength int, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t155:\tfunc PHash(secret, seed []byte, requestedLength int, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nprfVerifyData (masterSecret []byte, handshakeBodies []byte, label string, hashFunc github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t234:\tfunc prfVerifyData(masterSecret, handshakeBodies []byte, label string, hashFunc HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/crypto/prf/prf.go\nVerifyDataServer (masterSecret []byte, handshakeBodies []byte, h github.com/pion/dtls/v2/pkg/crypto/prf.HashFunc) ([]byte, error)\n\t250:\tfunc VerifyDataServer(masterSecret, handshakeBodies []byte, h HashFunc) ([]byte, error) {\n\u003e\u003e/analysis/repo/flight3handler.go\nhandleResumption (ctx context.Context, c github.com/pion/dtls/v2.flightConn, state *github.com/pion/dtls/v2.State, cache *github.com/pion/dtls/v2.handshakeCache, cfg *github.com/pion/dtls/v2.handshakeConfig) (github.com/pion/dtls/v2.flightVal, *github.com/pion/dtls/v2/pkg/protocol/alert.Alert, error)\n\t175:\texpectedVerifyData, err := prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t175:\texpectedVerifyData, err := prf.VerifyDataServer(state.masterSecret, plainText, state.cipherSuite.HashFunc())\n\t148:\tfunc handleResumption(ctx context.Context, c flightConn, state *State, cache *handshakeCache, cfg *handshakeConfig) (flightVal, *alert.Alert, error) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

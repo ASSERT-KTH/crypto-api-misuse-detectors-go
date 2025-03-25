@@ -1,4 +1,4 @@
-package dataset
+package docker
 
 import (
 	"encoding/json"
@@ -70,7 +70,7 @@ func GenerateCompose(filepath string, outputFile string) error {
 			sb.WriteString(fmt.Sprintf("    container_name: %s-%d-%d\n", strings.ReplaceAll(vuln.Repo.RepoSlug, "/", "-"), vuln.ID, pkgNum))
 			sb.WriteString("    volumes:\n")
 			sb.WriteString("      - gopher-shared:/analysis/gopher\n")
-			sb.WriteString(fmt.Sprintf("      - \"${BASE_DIR}/results/%s/%s-%d-%d:/analysis/repo/scan_results\"\n",
+			sb.WriteString(fmt.Sprintf("      - \"${BASE_DIR}/data/analysis/cve/%s/%s-%d-%d:/analysis/repo/scan_results\"\n",
 				baseName,
 				strings.ReplaceAll(vuln.Repo.RepoSlug, "/", "-"),
 				vuln.ID,

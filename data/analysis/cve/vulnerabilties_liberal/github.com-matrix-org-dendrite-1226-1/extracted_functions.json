@@ -1,0 +1,89 @@
+[
+  {
+    "function_name": "Defaults",
+    "file_path": "/analysis/repo/setup/config/config_global.go",
+    "line_number": 90,
+    "full_implementation": "func (c *Global) Defaults(opts DefaultOpts) {\n\tif opts.Generate {\n\t\tc.ServerName = \"localhost\"\n\t\tc.PrivateKeyPath = \"matrix_key.pem\"\n\t\t_, c.PrivateKey, _ = ed25519.GenerateKey(rand.New(rand.NewSource(0)))\n\t\tc.KeyID = \"ed25519:auto\"\n\t\tc.TrustedIDServers = []string{\n\t\t\t\"matrix.org\",\n\t\t\t\"vector.im\",\n\t\t}\n\t}\n\tc.KeyValidityPeriod = time.Hour * 24 * 7\n\tif opts.Monolithic {\n\t\tc.DatabaseOptions.Defaults(90)\n\t}\n\tc.JetStream.Defaults(opts)\n\tc.Metrics.Defaults(opts)\n\tc.DNSCache.Defaults()\n\tc.Sentry.Defaults()\n\tc.ServerNotices.Defaults(opts)\n\tc.ReportStats.Defaults()\n\tc.Cache.Defaults()\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ed25519.GenerateKey",
+      "Message": "Cryptologically secure IO should be used to generate private key.",
+      "Slicing_Criteria": {
+        "SourceCode": "_, c.PrivateKey, _ = ed25519.GenerateKey(rand.New(rand.NewSource(0)))",
+        "SourceFilename": "/analysis/repo/setup/config/config_global.go",
+        "SourceLineNum": 90,
+        "ParentFunction": "Defaults (opts github.com/matrix-org/dendrite/setup/config.DefaultOpts)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "_, c.PrivateKey, _ = ed25519.GenerateKey(rand.New(rand.NewSource(0)))",
+          "SourceFilename": "/analysis/repo/setup/config/config_global.go",
+          "SourceLineNum": 90,
+          "ParentFunction": "Defaults (opts github.com/matrix-org/dendrite/setup/config.DefaultOpts)"
+        }
+      ],
+      "Predicate_Type": "RANDOM_IO"
+    }
+  },
+  {
+    "function_name": "setupNATS",
+    "file_path": "/analysis/repo/setup/jetstream/nats.go",
+    "line_number": 83,
+    "full_implementation": "func setupNATS(process *process.ProcessContext, cfg *config.JetStream, nc *natsclient.Conn) (natsclient.JetStreamContext, *natsclient.Conn) {\n\tif nc == nil {\n\t\tvar err error\n\t\topts := []natsclient.Option{}\n\t\tif cfg.DisableTLSValidation {\n\t\t\topts = append(opts, natsclient.Secure(\u0026tls.Config{\n\t\t\t\tInsecureSkipVerify: true,\n\t\t\t}))\n\t\t}\n\t\tnc, err = natsclient.Connect(strings.Join(cfg.Addresses, \",\"), opts...)\n\t\tif err != nil {\n\t\t\tlogrus.WithError(err).Panic(\"Unable to connect to NATS\")\n\t\t\treturn nil, nil\n\t\t}\n\t}\n\n\ts, err := nc.JetStream()\n\tif err != nil {\n\t\tlogrus.WithError(err).Panic(\"Unable to get JetStream context\")\n\t\treturn nil, nil\n\t}\n\n\tfor _, stream := range streams { // streams are defined in streams.go\n\t\tname := cfg.Prefixed(stream.Name)\n\t\tinfo, err := s.StreamInfo(name)\n\t\tif err != nil \u0026\u0026 err != natsclient.ErrStreamNotFound {\n\t\t\tlogrus.WithError(err).Fatal(\"Unable to get stream info\")\n\t\t}\n\t\tsubjects := stream.Subjects\n\t\tif len(subjects) == 0 {\n\t\t\t// By default we want each stream to listen for the subjects\n\t\t\t// that are either an exact match for the stream name, or where\n\t\t\t// the first part of the subject is the stream name. \"\u003e\" is a\n\t\t\t// wildcard in NATS for one or more subject tokens. In the case\n\t\t\t// that the stream is called \"Foo\", this will match any message\n\t\t\t// with the subject \"Foo\", \"Foo.Bar\" or \"Foo.Bar.Baz\" etc.\n\t\t\tsubjects = []string{name, name + \".\u003e\"}\n\t\t}\n\t\tif info != nil {\n\t\t\tswitch {\n\t\t\tcase !reflect.DeepEqual(info.Config.Subjects, subjects):\n\t\t\t\tfallthrough\n\t\t\tcase info.Config.Retention != stream.Retention:\n\t\t\t\tfallthrough\n\t\t\tcase info.Config.Storage != stream.Storage:\n\t\t\t\tif err = s.DeleteStream(name); err != nil {\n\t\t\t\t\tlogrus.WithError(err).Fatal(\"Unable to delete stream\")\n\t\t\t\t}\n\t\t\t\tinfo = nil\n\t\t\t}\n\t\t}\n\t\tif info == nil {\n\t\t\t// If we're trying to keep everything in memory (e.g. unit tests)\n\t\t\t// then overwrite the storage policy.\n\t\t\tif cfg.InMemory {\n\t\t\t\tstream.Storage = natsclient.MemoryStorage\n\t\t\t}\n\n\t\t\t// Namespace the streams without modifying the original streams\n\t\t\t// array, otherwise we end up with namespaces on namespaces.\n\t\t\tnamespaced := *stream\n\t\t\tnamespaced.Name = name\n\t\t\tnamespaced.Subjects = subjects\n\t\t\tif _, err = s.AddStream(\u0026namespaced); err != nil {\n\t\t\t\tlogger := logrus.WithError(err).WithFields(logrus.Fields{\n\t\t\t\t\t\"stream\":   namespaced.Name,\n\t\t\t\t\t\"subjects\": namespaced.Subjects,\n\t\t\t\t})\n\n\t\t\t\t// If the stream was supposed to be in-memory to begin with\n\t\t\t\t// then an error here is fatal so we'll give up.\n\t\t\t\tif namespaced.Storage == natsclient.MemoryStorage {\n\t\t\t\t\tlogger.WithError(err).Fatal(\"Unable to add in-memory stream\")\n\t\t\t\t}\n\n\t\t\t\t// The stream was supposed to be on disk. Let's try starting\n\t\t\t\t// Dendrite with the stream in-memory instead. That'll mean that\n\t\t\t\t// we can't recover anything that was queued on the disk but we\n\t\t\t\t// will still be able to start and run hopefully in the meantime.\n\t\t\t\tlogger.WithError(err).Error(\"Unable to add stream\")\n\t\t\t\tsentry.CaptureException(fmt.Errorf(\"Unable to add stream %q: %w\", namespaced.Name, err))\n\n\t\t\t\tnamespaced.Storage = natsclient.MemoryStorage\n\t\t\t\tif _, err = s.AddStream(\u0026namespaced); err != nil {\n\t\t\t\t\t// We tried to add the stream in-memory instead but something\n\t\t\t\t\t// went wrong. That's an unrecoverable situation so we will\n\t\t\t\t\t// give up at this point.\n\t\t\t\t\tlogger.WithError(err).Fatal(\"Unable to add in-memory stream\")\n\t\t\t\t}\n\n\t\t\t\tif stream.Storage != namespaced.Storage {\n\t\t\t\t\t// We've managed to add the stream in memory.  What's on the\n\t\t\t\t\t// disk will be left alone, but our ability to recover from a\n\t\t\t\t\t// future crash will be limited. Yell about it.\n\t\t\t\t\tsentry.CaptureException(fmt.Errorf(\"Stream %q is running in-memory; this may be due to data corruption in the JetStream storage directory, investigate as soon as possible\", namespaced.Name))\n\t\t\t\t\tlogrus.Warn(\"Stream is running in-memory; this may be due to data corruption in the JetStream storage directory, investigate as soon as possible\")\n\t\t\t\t\tprocess.Degraded()\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\t// Clean up old consumers so that interest-based consumers do the\n\t// right thing.\n\tfor stream, consumers := range map[string][]string{\n\t\tOutputClientData:        {\"SyncAPIClientAPIConsumer\"},\n\t\tOutputReceiptEvent:      {\"SyncAPIEDUServerReceiptConsumer\", \"FederationAPIEDUServerConsumer\"},\n\t\tOutputSendToDeviceEvent: {\"SyncAPIEDUServerSendToDeviceConsumer\", \"FederationAPIEDUServerConsumer\"},\n\t\tOutputTypingEvent:       {\"SyncAPIEDUServerTypingConsumer\", \"FederationAPIEDUServerConsumer\"},\n\t\tOutputRoomEvent:         {\"AppserviceRoomserverConsumer\"},\n\t} {\n\t\tstreamName := cfg.Matrix.JetStream.Prefixed(stream)\n\t\tfor _, consumer := range consumers {\n\t\t\tconsumerName := cfg.Matrix.JetStream.Prefixed(consumer) + \"Pull\"\n\t\t\tconsumerInfo, err := s.ConsumerInfo(streamName, consumerName)\n\t\t\tif err != nil || consumerInfo == nil {\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\tif err = s.DeleteConsumer(streamName, consumerName); err != nil {\n\t\t\t\tlogrus.WithError(err).Errorf(\"Unable to clean up old consumer %q for stream %q\", consumer, stream)\n\t\t\t}\n\t\t}\n\t}\n\n\treturn s, nc\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/setup/jetstream/nats.go",
+        "SourceLineNum": 83,
+        "ParentFunction": "setupNATS (process *github.com/matrix-org/dendrite/setup/process.ProcessContext, cfg *github.com/matrix-org/dendrite/setup/config.JetStream, nc *github.com/nats-io/nats.go.Conn) (github.com/nats-io/nats.go.JetStreamContext, *github.com/nats-io/nats.go.Conn)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/setup/jetstream/nats.go",
+          "SourceLineNum": 83,
+          "ParentFunction": "setupNATS (process *github.com/matrix-org/dendrite/setup/process.ProcessContext, cfg *github.com/matrix-org/dendrite/setup/config.JetStream, nc *github.com/nats-io/nats.go.Conn) (github.com/nats-io/nats.go.JetStreamContext, *github.com/nats-io/nats.go.Conn)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "generateTLSTemplate",
+    "file_path": "/analysis/repo/test/keys.go",
+    "line_number": 78,
+    "full_implementation": "func generateTLSTemplate(dnsNames []string, bitSize int) (*rsa.PrivateKey, *x509.Certificate, error) {\n\tpriv, err := rsa.GenerateKey(rand.Reader, bitSize)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\tnotBefore := time.Now()\n\tnotAfter := notBefore.Add(certificateDuration)\n\tserialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)\n\tserialNumber, err := rand.Int(rand.Reader, serialNumberLimit)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\ttemplate := x509.Certificate{\n\t\tSerialNumber:          serialNumber,\n\t\tNotBefore:             notBefore,\n\t\tNotAfter:              notAfter,\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t\tDNSNames:              dnsNames,\n\t}\n\treturn priv, \u0026template, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 1024",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, bitSize)",
+        "SourceFilename": "/analysis/repo/test/keys.go",
+        "SourceLineNum": 78,
+        "ParentFunction": "generateTLSTemplate (dnsNames []string, bitSize int) (*crypto/rsa.PrivateKey, *crypto/x509.Certificate, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func generateTLSTemplate(dnsNames []string, bitSize int) (*rsa.PrivateKey, *x509.Certificate, error) {",
+          "SourceFilename": "/analysis/repo/test/keys.go",
+          "SourceLineNum": 77,
+          "ParentFunction": "generateTLSTemplate (dnsNames []string, bitSize int) (*crypto/rsa.PrivateKey, *crypto/x509.Certificate, error)"
+        },
+        {
+          "SourceCode": "func NewTLSKey(tlsKeyPath, tlsCertPath string, keySize int) error {",
+          "SourceFilename": "/analysis/repo/test/keys.go",
+          "SourceLineNum": 126,
+          "ParentFunction": "NewTLSKey (tlsKeyPath string, tlsCertPath string, keySize int) error"
+        },
+        {
+          "SourceCode": "err = NewTLSKey(keyFile, certFile, 1024)",
+          "SourceFilename": "/analysis/repo/test/http.go",
+          "SourceLineNum": 71,
+          "ParentFunction": "ListenAndServe$1 ()"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

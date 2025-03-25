@@ -1,0 +1,84 @@
+{
+	"Package_Name": "github.com/argoproj/argo-cd/v2/util/oidc",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*ClientApp).GetUserInfo": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"2"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nGetUserInfo (actualClaims github.com/golang-jwt/jwt/v4.MapClaims, issuerURL string, userInfoPath string) (github.com/golang-jwt/jwt/v4.MapClaims, bool, error)\n\t593:\trequest, err := http.NewRequest(http.MethodGet, url, nil)\n\t592:\turl := issuerURL + userInfoPath\n\t554:\tfunc (a *ClientApp) GetUserInfo(actualClaims jwt.MapClaims, issuerURL, userInfoPath string) (jwt.MapClaims, bool, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nEncrypt (data []byte, key []byte) ([]byte, error)\n\t26:\tblock, err := aes.NewCipher(key)\n\t25:\tfunc Encrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nGetUserInfo (actualClaims github.com/golang-jwt/jwt/v4.MapClaims, issuerURL string, userInfoPath string) (github.com/golang-jwt/jwt/v4.MapClaims, bool, error)\n\t658:\tencClaims, err = crypto.Encrypt(rawClaims, a.encryptionKey)\n\t658:\tencClaims, err = crypto.Encrypt(rawClaims, a.encryptionKey)\n\t554:\tfunc (a *ClientApp) GetUserInfo(actualClaims jwt.MapClaims, issuerURL, userInfoPath string) (jwt.MapClaims, bool, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "Https",
+				"Object": [
+					"2"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nGetUserInfo (actualClaims github.com/golang-jwt/jwt/v4.MapClaims, issuerURL string, userInfoPath string) (github.com/golang-jwt/jwt/v4.MapClaims, bool, error)\n\t593:\trequest, err := http.NewRequest(http.MethodGet, url, nil)\n\t592:\turl := issuerURL + userInfoPath\n\t554:\tfunc (a *ClientApp) GetUserInfo(actualClaims jwt.MapClaims, issuerURL, userInfoPath string) (jwt.MapClaims, bool, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*ClientApp).HandleCallback": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nEncrypt (data []byte, key []byte) ([]byte, error)\n\t26:\tblock, err := aes.NewCipher(key)\n\t25:\tfunc Encrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nHandleCallback (w net/http.ResponseWriter, r *net/http.Request)\n\t398:\tencToken, err := crypto.Encrypt([]byte(token.AccessToken), a.encryptionKey)\n\t398:\tencToken, err := crypto.Encrypt([]byte(token.AccessToken), a.encryptionKey)\n\t340:\tfunc (a *ClientApp) HandleCallback(w http.ResponseWriter, r *http.Request) {",
+				"InferDepth": 2
+			}
+		],
+		"(*ClientApp).HandleLogin": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nEncrypt (data []byte, key []byte) ([]byte, error)\n\t26:\tblock, err := aes.NewCipher(key)\n\t25:\tfunc Encrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\ngenerateAppState (returnURL string, w net/http.ResponseWriter) (string, error)\n\t182:\tif encrypted, err := crypto.Encrypt([]byte(cookieValue), a.encryptionKey); err != nil {\n\t182:\tif encrypted, err := crypto.Encrypt([]byte(cookieValue), a.encryptionKey); err != nil {\n\t171:\tfunc (a *ClientApp) generateAppState(returnURL string, w http.ResponseWriter) (string, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nHandleLogin (w net/http.ResponseWriter, r *net/http.Request)\n\t290:\tfunc (a *ClientApp) HandleLogin(w http.ResponseWriter, r *http.Request) {",
+				"InferDepth": 3
+			}
+		],
+		"(*ClientApp).generateAppState": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nEncrypt (data []byte, key []byte) ([]byte, error)\n\t26:\tblock, err := aes.NewCipher(key)\n\t25:\tfunc Encrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\ngenerateAppState (returnURL string, w net/http.ResponseWriter) (string, error)\n\t182:\tif encrypted, err := crypto.Encrypt([]byte(cookieValue), a.encryptionKey); err != nil {\n\t182:\tif encrypted, err := crypto.Encrypt([]byte(cookieValue), a.encryptionKey); err != nil {\n\t171:\tfunc (a *ClientApp) generateAppState(returnURL string, w http.ResponseWriter) (string, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*ClientApp).handleImplicitFlow": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nDecrypt (data []byte, key []byte) ([]byte, error)\n\t44:\tblock, err := aes.NewCipher(key)\n\t43:\tfunc Decrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nverifyAppState (r *net/http.Request, w net/http.ResponseWriter, state string) (string, error)\n\t208:\tval, err = crypto.Decrypt(val, a.encryptionKey)\n\t208:\tval, err = crypto.Decrypt(val, a.encryptionKey)\n\t199:\tfunc (a *ClientApp) verifyAppState(r *http.Request, w http.ResponseWriter, state string) (string, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nhandleImplicitFlow (r *net/http.Request, w net/http.ResponseWriter, state string)\n\t465:\tfunc (a *ClientApp) handleImplicitFlow(r *http.Request, w http.ResponseWriter, state string) {",
+				"InferDepth": 3
+			}
+		],
+		"(*ClientApp).verifyAppState": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::9"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/util/crypto/crypto.go\nDecrypt (data []byte, key []byte) ([]byte, error)\n\t44:\tblock, err := aes.NewCipher(key)\n\t43:\tfunc Decrypt(data []byte, key []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/util/oidc/oidc.go\nverifyAppState (r *net/http.Request, w net/http.ResponseWriter, state string) (string, error)\n\t208:\tval, err = crypto.Decrypt(val, a.encryptionKey)\n\t208:\tval, err = crypto.Decrypt(val, a.encryptionKey)\n\t199:\tfunc (a *ClientApp) verifyAppState(r *http.Request, w http.ResponseWriter, state string) (string, error) {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

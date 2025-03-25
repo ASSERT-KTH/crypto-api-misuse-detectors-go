@@ -11,7 +11,7 @@ import (
 )
 
 func Usage() {
-	fmt.Println("Usage: vulnrun generate -file <vulnerability_json_file> [-up]")
+	fmt.Println("Usage: vulnrunner generate -file <vulnerability_json_file> [-up]")
 }
 
 func main() {
