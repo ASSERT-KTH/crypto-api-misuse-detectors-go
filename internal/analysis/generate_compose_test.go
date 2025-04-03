@@ -1,4 +1,4 @@
-package docker
+package main
 
 import (
 	"os"
@@ -32,7 +32,7 @@ func TestExtractBaseName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := extractBaseName(tt.filepath)
+			got := getFileName(tt.filepath)
 			if got != tt.want {
 				t.Errorf("extractBaseName() = %v, want %v", got, tt.want)
 			}
@@ -69,7 +69,7 @@ func TestGetMetadataPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getMetadataPath(tt.baseName, tt.repoSlug, tt.id, tt.pkgNum)
+			got := generateMetadataFilePath(tt.baseName, tt.repoSlug, tt.id, tt.pkgNum)
 			if got != tt.want {
 				t.Errorf("getMetadataPath() = %v, want %v", got, tt.want)
 			}
@@ -82,9 +82,9 @@ func TestCreateMetadata(t *testing.T) {
 		ID: 1,
 		Repo: Repo{
 			RepoSlug: "github.com/test/repo",
-			CVE:      "CVE-2023-1234",
-			CWE:      "CWE-123",
 		},
+		CVE: "CVE-2023-1234",
+		CWE: "CWE-123",
 	}
 
 	vp := VulPackage{
@@ -109,8 +109,8 @@ func TestCreateMetadata(t *testing.T) {
 	if metadata.Package != vp.Name {
 		t.Errorf("metadata.Package = %v, want %v", metadata.Package, vp.Name)
 	}
-	if metadata.CVE != vuln.Repo.CVE {
-		t.Errorf("metadata.CVE = %v, want %v", metadata.CVE, vuln.Repo.CVE)
+	if metadata.CVE != vuln.CVE {
+		t.Errorf("metadata.CVE = %v, want %v", metadata.CVE, vuln.CVE)
 	}
 }
 
