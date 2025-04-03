@@ -41,6 +41,7 @@ type VulnerabilityMetadata struct {
 	Package     string   `json:"package"`
 	GoVersion   string   `json:"go_version"`
 	VulName     string   `json:"vul_name"`
+	References  []string `json:"references"`
 	Publish     string   `json:"publish"`
 	CWE         string   `json:"cwe"`
 	CVE         string   `json:"cve"`
@@ -59,6 +60,7 @@ func createMetadata(vuln Vulnerability, repo Repo, vp VulPackage) VulnerabilityM
 		Package:     vp.Name,
 		GoVersion:   vp.GoVersion,
 		VulName:     vp.VulName,
+		References:  repo.References,
 		Publish:     vp.Publish,
 		CWE:         repo.CWE,
 		CVE:         repo.CVE,
