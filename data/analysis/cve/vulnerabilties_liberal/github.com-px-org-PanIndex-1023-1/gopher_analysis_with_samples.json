@@ -36,6 +36,24 @@
     }
   },
   {
+    "function_name": "RsaEncode",
+    "file_path": "/analysis/repo/util/common.go",
+    "line_number": 584,
+    "full_implementation": "func RsaEncode(origData []byte, j_rsakey string) string {\n\tpublicKey := []byte(\"-----BEGIN PUBLIC KEY-----\\n\" + j_rsakey + \"\\n-----END PUBLIC KEY-----\")\n\tblock, _ := pem.Decode(publicKey)\n\tpubInterface, _ := x509.ParsePKIXPublicKey(block.Bytes)\n\tpub := pubInterface.(*rsa.PublicKey)\n\tb, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)\n\tif err != nil {\n\t\tlog.Errorf(\"err: %s\", err.Error())\n\t}\n\treturn b64tohex(base64.StdEncoding.EncodeToString(b))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.EncryptPKCS1v15",
+      "Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
+      "Slicing_Criteria": {
+        "SourceCode": "b, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)",
+        "SourceFilename": "/analysis/repo/util/common.go",
+        "SourceLineNum": 584,
+        "ParentFunction": "RsaEncode (origData []byte, j_rsakey string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
     "function_name": "GetClient",
     "file_path": "/analysis/repo/util/common.go",
     "line_number": 677,
@@ -58,24 +76,6 @@
         }
       ],
       "Predicate_Type": "EQ_FALSE"
-    }
-  },
-  {
-    "function_name": "RsaEncode",
-    "file_path": "/analysis/repo/util/common.go",
-    "line_number": 584,
-    "full_implementation": "func RsaEncode(origData []byte, j_rsakey string) string {\n\tpublicKey := []byte(\"-----BEGIN PUBLIC KEY-----\\n\" + j_rsakey + \"\\n-----END PUBLIC KEY-----\")\n\tblock, _ := pem.Decode(publicKey)\n\tpubInterface, _ := x509.ParsePKIXPublicKey(block.Bytes)\n\tpub := pubInterface.(*rsa.PublicKey)\n\tb, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)\n\tif err != nil {\n\t\tlog.Errorf(\"err: %s\", err.Error())\n\t}\n\treturn b64tohex(base64.StdEncoding.EncodeToString(b))\n}",
-    "vulnerability_info": {
-      "FuncName": "crypto/rsa.EncryptPKCS1v15",
-      "Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
-      "Slicing_Criteria": {
-        "SourceCode": "b, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)",
-        "SourceFilename": "/analysis/repo/util/common.go",
-        "SourceLineNum": 584,
-        "ParentFunction": "RsaEncode (origData []byte, j_rsakey string) string"
-      },
-      "Def_Use_Link": null,
-      "Predicate_Type": "Dangerous_Function"
     }
   },
   {

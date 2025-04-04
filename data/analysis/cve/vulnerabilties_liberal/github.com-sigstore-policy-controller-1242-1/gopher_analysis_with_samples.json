@@ -43,24 +43,6 @@
     }
   },
   {
-    "function_name": "generatePrivateKey",
-    "file_path": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
-    "line_number": 300,
-    "full_implementation": "func generatePrivateKey(keyType string, keyBits int, container ParsedPrivateKeyContainer, entropyReader io.Reader) error {\n\tvar err error\n\tvar privateKeyType PrivateKeyType\n\tvar privateKeyBytes []byte\n\tvar privateKey crypto.Signer\n\n\tvar randReader io.Reader = rand.Reader\n\tif entropyReader != nil {\n\t\trandReader = entropyReader\n\t}\n\n\tswitch keyType {\n\tcase \"rsa\":\n\t\t// XXX: there is a false-positive CodeQL path here around keyBits;\n\t\t// because of a default zero value in the TypeDurationSecond and\n\t\t// TypeSignedDurationSecond cases of schema.DefaultOrZero(), it\n\t\t// thinks it is possible to end up with \u003c 2048 bit RSA Key here.\n\t\t// While this is true for SSH keys, it isn't true for PKI keys\n\t\t// due to ValidateKeyTypeLength(...) below. While we could close\n\t\t// the report as a false-positive, enforcing a minimum keyBits size\n\t\t// here of 2048 would ensure no other paths exist.\n\t\tif keyBits \u003c 2048 {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"insecure bit length for RSA private key: %d\", keyBits)}\n\t\t}\n\t\tprivateKeyType = RSAPrivateKey\n\t\tprivateKey, err = rsa.GenerateKey(randReader, keyBits)\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error generating RSA private key: %v\", err)}\n\t\t}\n\t\tprivateKeyBytes = x509.MarshalPKCS1PrivateKey(privateKey.(*rsa.PrivateKey))\n\tcase \"ec\":\n\t\tprivateKeyType = ECPrivateKey\n\t\tvar curve elliptic.Curve\n\t\tswitch keyBits {\n\t\tcase 224:\n\t\t\tcurve = elliptic.P224()\n\t\tcase 256:\n\t\t\tcurve = elliptic.P256()\n\t\tcase 384:\n\t\t\tcurve = elliptic.P384()\n\t\tcase 521:\n\t\t\tcurve = elliptic.P521()\n\t\tdefault:\n\t\t\treturn errutil.UserError{Err: fmt.Sprintf(\"unsupported bit length for EC key: %d\", keyBits)}\n\t\t}\n\t\tprivateKey, err = ecdsa.GenerateKey(curve, randReader)\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error generating EC private key: %v\", err)}\n\t\t}\n\t\tprivateKeyBytes, err = x509.MarshalECPrivateKey(privateKey.(*ecdsa.PrivateKey))\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error marshalling EC private key: %v\", err)}\n\t\t}\n\tcase \"ed25519\":\n\t\tprivateKeyType = Ed25519PrivateKey\n\t\t_, privateKey, err = ed25519.GenerateKey(randReader)\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error generating ed25519 private key: %v\", err)}\n\t\t}\n\t\tprivateKeyBytes, err = x509.MarshalPKCS8PrivateKey(privateKey.(ed25519.PrivateKey))\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error marshalling Ed25519 private key: %v\", err)}\n\t\t}\n\tdefault:\n\t\treturn errutil.UserError{Err: fmt.Sprintf(\"unknown key type: %s\", keyType)}\n\t}\n\n\tcontainer.SetParsedPrivateKey(privateKey, privateKeyType, privateKeyBytes)\n\treturn nil\n}",
-    "vulnerability_info": {
-      "FuncName": "crypto/elliptic.P224",
-      "Message": "P224 is Acceptable but not recommended.",
-      "Slicing_Criteria": {
-        "SourceCode": "curve = elliptic.P224()",
-        "SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
-        "SourceLineNum": 300,
-        "ParentFunction": "generatePrivateKey (keyType string, keyBits int, container github.com/sigstore/policy-controller/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil.ParsedPrivateKeyContainer, entropyReader io.Reader) error"
-      },
-      "Def_Use_Link": null,
-      "Predicate_Type": "Warning_Function"
-    }
-  },
-  {
     "function_name": "selectSignatureAlgorithmForECDSA",
     "file_path": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
     "line_number": 936,
@@ -73,6 +55,24 @@
         "SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
         "SourceLineNum": 936,
         "ParentFunction": "selectSignatureAlgorithmForECDSA (pub crypto.PublicKey, signatureBits int) crypto/x509.SignatureAlgorithm"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "generatePrivateKey",
+    "file_path": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+    "line_number": 300,
+    "full_implementation": "func generatePrivateKey(keyType string, keyBits int, container ParsedPrivateKeyContainer, entropyReader io.Reader) error {\n\tvar err error\n\tvar privateKeyType PrivateKeyType\n\tvar privateKeyBytes []byte\n\tvar privateKey crypto.Signer\n\n\tvar randReader io.Reader = rand.Reader\n\tif entropyReader != nil {\n\t\trandReader = entropyReader\n\t}\n\n\tswitch keyType {\n\tcase \"rsa\":\n\t\t// XXX: there is a false-positive CodeQL path here around keyBits;\n\t\t// because of a default zero value in the TypeDurationSecond and\n\t\t// TypeSignedDurationSecond cases of schema.DefaultOrZero(), it\n\t\t// thinks it is possible to end up with \u003c 2048 bit RSA Key here.\n\t\t// While this is true for SSH keys, it isn't true for PKI keys\n\t\t// due to ValidateKeyTypeLength(...) below. While we could close\n\t\t// the report as a false-positive, enforcing a minimum keyBits size\n\t\t// here of 2048 would ensure no other paths exist.\n\t\tif keyBits \u003c 2048 {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"insecure bit length for RSA private key: %d\", keyBits)}\n\t\t}\n\t\tprivateKeyType = RSAPrivateKey\n\t\tprivateKey, err = rsa.GenerateKey(randReader, keyBits)\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error generating RSA private key: %v\", err)}\n\t\t}\n\t\tprivateKeyBytes = x509.MarshalPKCS1PrivateKey(privateKey.(*rsa.PrivateKey))\n\tcase \"ec\":\n\t\tprivateKeyType = ECPrivateKey\n\t\tvar curve elliptic.Curve\n\t\tswitch keyBits {\n\t\tcase 224:\n\t\t\tcurve = elliptic.P224()\n\t\tcase 256:\n\t\t\tcurve = elliptic.P256()\n\t\tcase 384:\n\t\t\tcurve = elliptic.P384()\n\t\tcase 521:\n\t\t\tcurve = elliptic.P521()\n\t\tdefault:\n\t\t\treturn errutil.UserError{Err: fmt.Sprintf(\"unsupported bit length for EC key: %d\", keyBits)}\n\t\t}\n\t\tprivateKey, err = ecdsa.GenerateKey(curve, randReader)\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error generating EC private key: %v\", err)}\n\t\t}\n\t\tprivateKeyBytes, err = x509.MarshalECPrivateKey(privateKey.(*ecdsa.PrivateKey))\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error marshalling EC private key: %v\", err)}\n\t\t}\n\tcase \"ed25519\":\n\t\tprivateKeyType = Ed25519PrivateKey\n\t\t_, privateKey, err = ed25519.GenerateKey(randReader)\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error generating ed25519 private key: %v\", err)}\n\t\t}\n\t\tprivateKeyBytes, err = x509.MarshalPKCS8PrivateKey(privateKey.(ed25519.PrivateKey))\n\t\tif err != nil {\n\t\t\treturn errutil.InternalError{Err: fmt.Sprintf(\"error marshalling Ed25519 private key: %v\", err)}\n\t\t}\n\tdefault:\n\t\treturn errutil.UserError{Err: fmt.Sprintf(\"unknown key type: %s\", keyType)}\n\t}\n\n\tcontainer.SetParsedPrivateKey(privateKey, privateKeyType, privateKeyBytes)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.P224",
+      "Message": "P224 is Acceptable but not recommended.",
+      "Slicing_Criteria": {
+        "SourceCode": "curve = elliptic.P224()",
+        "SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+        "SourceLineNum": 300,
+        "ParentFunction": "generatePrivateKey (keyType string, keyBits int, container github.com/sigstore/policy-controller/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil.ParsedPrivateKeyContainer, entropyReader io.Reader) error"
       },
       "Def_Use_Link": null,
       "Predicate_Type": "Warning_Function"

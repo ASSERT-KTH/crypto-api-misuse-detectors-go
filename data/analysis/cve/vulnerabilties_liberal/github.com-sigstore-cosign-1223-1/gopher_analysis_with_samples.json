@@ -68,24 +68,6 @@
     }
   },
   {
-    "function_name": "selectSignatureAlgorithmForECDSA",
-    "file_path": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
-    "line_number": 936,
-    "full_implementation": "func selectSignatureAlgorithmForECDSA(pub crypto.PublicKey, signatureBits int) x509.SignatureAlgorithm {\n\t// Previously we preferred the user-specified signature bits for ECDSA\n\t// keys. However, this could result in using a longer hash function than\n\t// the underlying NIST P-curve will encode (e.g., a SHA-512 hash with a\n\t// P-256 key). This isn't ideal: the hash is implicitly truncated\n\t// (effectively turning it into SHA-512/256) and we then need to rely\n\t// on the prefix security of the hash. Since both NIST and Mozilla guidance\n\t// suggest instead using the correct hash function, we should prefer that\n\t// over the operator-specified signatureBits.\n\t//\n\t// Lastly, note that pub above needs to be the _signer's_ public key;\n\t// the issue with DefaultOrValueHashBits is that it is called at role\n\t// configuration time, which might _precede_ issuer generation. Thus\n\t// it only has access to the desired key type and not the actual issuer.\n\t// The reference from that function is reproduced below:\n\t//\n\t// \u003e To comply with BSI recommendations Section 4.2 and Mozilla root\n\t// \u003e store policy section 5.1.2, enforce that NIST P-curves use a hash\n\t// \u003e length corresponding to curve length. Note that ed25519 does not\n\t// \u003e implement the \"ec\" key type.\n\tkey, ok := pub.(*ecdsa.PublicKey)\n\tif !ok {\n\t\treturn x509.ECDSAWithSHA256\n\t}\n\tswitch key.Curve {\n\tcase elliptic.P224(), elliptic.P256():\n\t\treturn x509.ECDSAWithSHA256\n\tcase elliptic.P384():\n\t\treturn x509.ECDSAWithSHA384\n\tcase elliptic.P521():\n\t\treturn x509.ECDSAWithSHA512\n\tdefault:\n\t\treturn x509.ECDSAWithSHA256\n\t}\n}",
-    "vulnerability_info": {
-      "FuncName": "crypto/elliptic.P224",
-      "Message": "P224 is Acceptable but not recommended.",
-      "Slicing_Criteria": {
-        "SourceCode": "case elliptic.P224(), elliptic.P256():",
-        "SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
-        "SourceLineNum": 936,
-        "ParentFunction": "selectSignatureAlgorithmForECDSA (pub crypto.PublicKey, signatureBits int) crypto/x509.SignatureAlgorithm"
-      },
-      "Def_Use_Link": null,
-      "Predicate_Type": "Warning_Function"
-    }
-  },
-  {
     "function_name": "generatePrivateKey",
     "file_path": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
     "line_number": 300,
@@ -98,6 +80,24 @@
         "SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
         "SourceLineNum": 300,
         "ParentFunction": "generatePrivateKey (keyType string, keyBits int, container github.com/sigstore/cosign/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil.ParsedPrivateKeyContainer, entropyReader io.Reader) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "selectSignatureAlgorithmForECDSA",
+    "file_path": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+    "line_number": 936,
+    "full_implementation": "func selectSignatureAlgorithmForECDSA(pub crypto.PublicKey, signatureBits int) x509.SignatureAlgorithm {\n\t// Previously we preferred the user-specified signature bits for ECDSA\n\t// keys. However, this could result in using a longer hash function than\n\t// the underlying NIST P-curve will encode (e.g., a SHA-512 hash with a\n\t// P-256 key). This isn't ideal: the hash is implicitly truncated\n\t// (effectively turning it into SHA-512/256) and we then need to rely\n\t// on the prefix security of the hash. Since both NIST and Mozilla guidance\n\t// suggest instead using the correct hash function, we should prefer that\n\t// over the operator-specified signatureBits.\n\t//\n\t// Lastly, note that pub above needs to be the _signer's_ public key;\n\t// the issue with DefaultOrValueHashBits is that it is called at role\n\t// configuration time, which might _precede_ issuer generation. Thus\n\t// it only has access to the desired key type and not the actual issuer.\n\t// The reference from that function is reproduced below:\n\t//\n\t// \u003e To comply with BSI recommendations Section 4.2 and Mozilla root\n\t// \u003e store policy section 5.1.2, enforce that NIST P-curves use a hash\n\t// \u003e length corresponding to curve length. Note that ed25519 does not\n\t// \u003e implement the \"ec\" key type.\n\tkey, ok := pub.(*ecdsa.PublicKey)\n\tif !ok {\n\t\treturn x509.ECDSAWithSHA256\n\t}\n\tswitch key.Curve {\n\tcase elliptic.P224(), elliptic.P256():\n\t\treturn x509.ECDSAWithSHA256\n\tcase elliptic.P384():\n\t\treturn x509.ECDSAWithSHA384\n\tcase elliptic.P521():\n\t\treturn x509.ECDSAWithSHA512\n\tdefault:\n\t\treturn x509.ECDSAWithSHA256\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.P224",
+      "Message": "P224 is Acceptable but not recommended.",
+      "Slicing_Criteria": {
+        "SourceCode": "case elliptic.P224(), elliptic.P256():",
+        "SourceFilename": "/analysis/repo/third_party/VENDOR-LICENSE/github.com/hashicorp/vault/sdk/helper/certutil/helpers.go",
+        "SourceLineNum": 936,
+        "ParentFunction": "selectSignatureAlgorithmForECDSA (pub crypto.PublicKey, signatureBits int) crypto/x509.SignatureAlgorithm"
       },
       "Def_Use_Link": null,
       "Predicate_Type": "Warning_Function"

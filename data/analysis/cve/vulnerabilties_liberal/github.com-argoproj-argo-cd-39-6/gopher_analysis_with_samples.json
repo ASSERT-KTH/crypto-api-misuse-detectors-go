@@ -1,30 +1,5 @@
 [
   {
-    "function_name": "GetRepoHTTPClient",
-    "file_path": "/analysis/repo/util/git/client.go",
-    "line_number": 254,
-    "full_implementation": "func GetRepoHTTPClient(repoURL string, insecure bool, creds Creds, proxyURL string, noProxy string) *http.Client {\n\t// Default HTTP client\n\tcustomHTTPClient := \u0026http.Client{\n\t\t// 15 second timeout by default\n\t\tTimeout: gitClientTimeout,\n\t\t// don't follow redirect\n\t\tCheckRedirect: func(req *http.Request, via []*http.Request) error {\n\t\t\treturn http.ErrUseLastResponse\n\t\t},\n\t}\n\n\tproxyFunc := proxy.GetCallback(proxyURL, noProxy)\n\n\t// Callback function to return any configured client certificate\n\t// We never return err, but an empty cert instead.\n\tclientCertFunc := func(req *tls.CertificateRequestInfo) (*tls.Certificate, error) {\n\t\tvar err error\n\t\tcert := tls.Certificate{}\n\n\t\t// If we aren't called with GenericHTTPSCreds, then we just return an empty cert\n\t\thttpsCreds, ok := creds.(GenericHTTPSCreds)\n\t\tif !ok {\n\t\t\treturn \u0026cert, nil\n\t\t}\n\n\t\t// If the creds contain client certificate data, we return a TLS.Certificate\n\t\t// populated with the cert and its key.\n\t\tif httpsCreds.HasClientCert() {\n\t\t\tcert, err = tls.X509KeyPair([]byte(httpsCreds.GetClientCertData()), []byte(httpsCreds.GetClientCertKey()))\n\t\t\tif err != nil {\n\t\t\t\tlog.Errorf(\"Could not load Client Certificate: %v\", err)\n\t\t\t\treturn \u0026cert, nil\n\t\t\t}\n\t\t}\n\n\t\treturn \u0026cert, nil\n\t}\n\ttransport := \u0026http.Transport{\n\t\tProxy: proxyFunc,\n\t\tTLSClientConfig: \u0026tls.Config{\n\t\t\tGetClientCertificate: clientCertFunc,\n\t\t},\n\t\tDisableKeepAlives: true,\n\t}\n\tcustomHTTPClient.Transport = transport\n\tif insecure {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t\treturn customHTTPClient\n\t}\n\tparsedURL, err := url.Parse(repoURL)\n\tif err != nil {\n\t\treturn customHTTPClient\n\t}\n\tserverCertificatePem, err := certutil.GetCertificateForConnect(parsedURL.Host)\n\tif err != nil {\n\t\treturn customHTTPClient\n\t}\n\tif len(serverCertificatePem) \u003e 0 {\n\t\tcertPool := certutil.GetCertPoolFromPEMData(serverCertificatePem)\n\t\ttransport.TLSClientConfig.RootCAs = certPool\n\t}\n\treturn customHTTPClient\n}",
-    "vulnerability_info": {
-      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
-      "Message": "Insecure Verification",
-      "Slicing_Criteria": {
-        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
-        "SourceFilename": "/analysis/repo/util/git/client.go",
-        "SourceLineNum": 254,
-        "ParentFunction": "GetRepoHTTPClient (repoURL string, insecure bool, creds github.com/argoproj/argo-cd/v2/util/git.Creds, proxyURL string, noProxy string) *net/http.Client"
-      },
-      "Def_Use_Link": [
-        {
-          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
-          "SourceFilename": "/analysis/repo/util/git/client.go",
-          "SourceLineNum": 254,
-          "ParentFunction": "GetRepoHTTPClient (repoURL string, insecure bool, creds github.com/argoproj/argo-cd/v2/util/git.Creds, proxyURL string, noProxy string) *net/http.Client"
-        }
-      ],
-      "Predicate_Type": "EQ_FALSE"
-    }
-  },
-  {
     "function_name": "newAuth",
     "file_path": "/analysis/repo/util/git/client.go",
     "line_number": 287,
@@ -89,6 +64,31 @@
         }
       ],
       "Predicate_Type": "SECURE_SSH_SUITE"
+    }
+  },
+  {
+    "function_name": "GetRepoHTTPClient",
+    "file_path": "/analysis/repo/util/git/client.go",
+    "line_number": 254,
+    "full_implementation": "func GetRepoHTTPClient(repoURL string, insecure bool, creds Creds, proxyURL string, noProxy string) *http.Client {\n\t// Default HTTP client\n\tcustomHTTPClient := \u0026http.Client{\n\t\t// 15 second timeout by default\n\t\tTimeout: gitClientTimeout,\n\t\t// don't follow redirect\n\t\tCheckRedirect: func(req *http.Request, via []*http.Request) error {\n\t\t\treturn http.ErrUseLastResponse\n\t\t},\n\t}\n\n\tproxyFunc := proxy.GetCallback(proxyURL, noProxy)\n\n\t// Callback function to return any configured client certificate\n\t// We never return err, but an empty cert instead.\n\tclientCertFunc := func(req *tls.CertificateRequestInfo) (*tls.Certificate, error) {\n\t\tvar err error\n\t\tcert := tls.Certificate{}\n\n\t\t// If we aren't called with GenericHTTPSCreds, then we just return an empty cert\n\t\thttpsCreds, ok := creds.(GenericHTTPSCreds)\n\t\tif !ok {\n\t\t\treturn \u0026cert, nil\n\t\t}\n\n\t\t// If the creds contain client certificate data, we return a TLS.Certificate\n\t\t// populated with the cert and its key.\n\t\tif httpsCreds.HasClientCert() {\n\t\t\tcert, err = tls.X509KeyPair([]byte(httpsCreds.GetClientCertData()), []byte(httpsCreds.GetClientCertKey()))\n\t\t\tif err != nil {\n\t\t\t\tlog.Errorf(\"Could not load Client Certificate: %v\", err)\n\t\t\t\treturn \u0026cert, nil\n\t\t\t}\n\t\t}\n\n\t\treturn \u0026cert, nil\n\t}\n\ttransport := \u0026http.Transport{\n\t\tProxy: proxyFunc,\n\t\tTLSClientConfig: \u0026tls.Config{\n\t\t\tGetClientCertificate: clientCertFunc,\n\t\t},\n\t\tDisableKeepAlives: true,\n\t}\n\tcustomHTTPClient.Transport = transport\n\tif insecure {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t\treturn customHTTPClient\n\t}\n\tparsedURL, err := url.Parse(repoURL)\n\tif err != nil {\n\t\treturn customHTTPClient\n\t}\n\tserverCertificatePem, err := certutil.GetCertificateForConnect(parsedURL.Host)\n\tif err != nil {\n\t\treturn customHTTPClient\n\t}\n\tif len(serverCertificatePem) \u003e 0 {\n\t\tcertPool := certutil.GetCertPoolFromPEMData(serverCertificatePem)\n\t\ttransport.TLSClientConfig.RootCAs = certPool\n\t}\n\treturn customHTTPClient\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/util/git/client.go",
+        "SourceLineNum": 254,
+        "ParentFunction": "GetRepoHTTPClient (repoURL string, insecure bool, creds github.com/argoproj/argo-cd/v2/util/git.Creds, proxyURL string, noProxy string) *net/http.Client"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/util/git/client.go",
+          "SourceLineNum": 254,
+          "ParentFunction": "GetRepoHTTPClient (repoURL string, insecure bool, creds github.com/argoproj/argo-cd/v2/util/git.Creds, proxyURL string, noProxy string) *net/http.Client"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
     }
   },
   {
@@ -350,31 +350,6 @@
         }
       ],
       "Predicate_Type": "EQ_FALSE"
-    }
-  },
-  {
-    "function_name": "VerifyUsernamePassword",
-    "file_path": "/analysis/repo/util/session/sessionmanager.go",
-    "line_number": 452,
-    "full_implementation": "func (mgr *SessionManager) VerifyUsernamePassword(username string, password string) error {\n\tif password == \"\" {\n\t\treturn status.Errorf(codes.Unauthenticated, blankPasswordError)\n\t}\n\t// Enforce maximum length of username on local accounts\n\tif len(username) \u003e maxUsernameLength {\n\t\treturn status.Errorf(codes.InvalidArgument, usernameTooLongError, maxUsernameLength)\n\t}\n\n\tstart := time.Now()\n\tif mgr.verificationDelayNoiseEnabled {\n\t\tdefer func() {\n\t\t\t// introduces random delay to protect from timing-based user enumeration attack\n\t\t\tdelayNanoseconds := verificationDelayNoiseMin.Nanoseconds() +\n\t\t\t\tint64(rand.Intn(int(verificationDelayNoiseMax.Nanoseconds()-verificationDelayNoiseMin.Nanoseconds())))\n\t\t\t// take into account amount of time spent since the request start\n\t\t\tdelayNanoseconds = delayNanoseconds - time.Since(start).Nanoseconds()\n\t\t\tif delayNanoseconds \u003e 0 {\n\t\t\t\tmgr.sleep(time.Duration(delayNanoseconds))\n\t\t\t}\n\t\t}()\n\t}\n\n\tattempt := mgr.getFailureCount(username)\n\tif mgr.exceededFailedLoginAttempts(attempt) {\n\t\tlog.Warnf(\"User %s had too many failed logins (%d)\", username, attempt.FailCount)\n\t\treturn InvalidLoginErr\n\t}\n\n\taccount, err := mgr.settingsMgr.GetAccount(username)\n\tif err != nil {\n\t\tif errStatus, ok := status.FromError(err); ok \u0026\u0026 errStatus.Code() == codes.NotFound {\n\t\t\tmgr.updateFailureCount(username, true)\n\t\t\terr = InvalidLoginErr\n\t\t}\n\t\t// to prevent time-based user enumeration, we must perform a password\n\t\t// hash cycle to keep response time consistent (if the function were\n\t\t// to continue and not return here)\n\t\t_, _ = passwordutil.HashPassword(\"for_consistent_response_time\")\n\t\treturn err\n\t}\n\n\tvalid, _ := passwordutil.VerifyPassword(password, account.PasswordHash)\n\tif !valid {\n\t\tmgr.updateFailureCount(username, true)\n\t\treturn InvalidLoginErr\n\t}\n\n\tif !account.Enabled {\n\t\treturn status.Errorf(codes.Unauthenticated, accountDisabled, username)\n\t}\n\n\tif !account.HasCapability(settings.AccountCapabilityLogin) {\n\t\treturn status.Errorf(codes.Unauthenticated, userDoesNotHaveCapability, username, settings.AccountCapabilityLogin)\n\t}\n\tmgr.updateFailureCount(username, false)\n\treturn nil\n}",
-    "vulnerability_info": {
-      "FuncName": "github.com/argoproj/argo-cd/v2/util/password.HashPassword",
-      "Message": "PassWord should be random\n\u003e\u003e/analysis/repo/util/password/password.go\nHashPassword (password string) (string, error)\n\t92:\thashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)\n\t92:\thashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)\n\t87:\tfunc (h BcryptPasswordHasher) HashPassword(password string) (string, error) {\n\u003e\u003e/analysis/repo/util/password/password.go\nhashPasswordWithHashers (password string, hashers []github.com/argoproj/argo-cd/v2/util/password.PasswordHasher) (string, error)\n\t35:\tfunc hashPasswordWithHashers(password string, hashers []PasswordHasher) (string, error) {\n\u003e\u003e/analysis/repo/util/password/password.go\nHashPassword (password string) (string, error)\n\t66:\tfunc HashPassword(password string) (string, error) {",
-      "Slicing_Criteria": {
-        "SourceCode": "_, _ = passwordutil.HashPassword(\"for_consistent_response_time\")",
-        "SourceFilename": "/analysis/repo/util/session/sessionmanager.go",
-        "SourceLineNum": 452,
-        "ParentFunction": "VerifyUsernamePassword (username string, password string) error"
-      },
-      "Def_Use_Link": [
-        {
-          "SourceCode": "_, _ = passwordutil.HashPassword(\"for_consistent_response_time\")",
-          "SourceFilename": "/analysis/repo/util/session/sessionmanager.go",
-          "SourceLineNum": 452,
-          "ParentFunction": "VerifyUsernamePassword (username string, password string) error"
-        }
-      ],
-      "Predicate_Type": "RANDOM_BYTES"
     }
   },
   {

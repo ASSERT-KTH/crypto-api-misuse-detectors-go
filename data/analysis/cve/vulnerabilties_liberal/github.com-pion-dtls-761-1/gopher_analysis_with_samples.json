@@ -1,0 +1,110 @@
+[
+  {
+    "function_name": "ellipticCurveKeypair",
+    "file_path": "/analysis/repo/pkg/crypto/elliptic/elliptic.go",
+    "line_number": 93,
+    "full_implementation": "func ellipticCurveKeypair(nc Curve, c1, c2 elliptic.Curve) (*Keypair, error) {\n\tprivateKey, x, y, err := elliptic.GenerateKey(c1, rand.Reader)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn \u0026Keypair{nc, elliptic.Marshal(c2, x, y), privateKey}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.GenerateKey",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, x, y, err := elliptic.GenerateKey(c1, rand.Reader)",
+        "SourceFilename": "/analysis/repo/pkg/crypto/elliptic/elliptic.go",
+        "SourceLineNum": 93,
+        "ParentFunction": "ellipticCurveKeypair (nc github.com/pion/dtls/v2/pkg/crypto/elliptic.Curve, c1 crypto/elliptic.Curve, c2 crypto/elliptic.Curve) (*github.com/pion/dtls/v2/pkg/crypto/elliptic.Keypair, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "ellipticCurveKeypair",
+    "file_path": "/analysis/repo/pkg/crypto/elliptic/elliptic.go",
+    "line_number": 98,
+    "full_implementation": "func ellipticCurveKeypair(nc Curve, c1, c2 elliptic.Curve) (*Keypair, error) {\n\tprivateKey, x, y, err := elliptic.GenerateKey(c1, rand.Reader)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn \u0026Keypair{nc, elliptic.Marshal(c2, x, y), privateKey}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "return \u0026Keypair{nc, elliptic.Marshal(c2, x, y), privateKey}, nil",
+        "SourceFilename": "/analysis/repo/pkg/crypto/elliptic/elliptic.go",
+        "SourceLineNum": 98,
+        "ParentFunction": "ellipticCurveKeypair (nc github.com/pion/dtls/v2/pkg/crypto/elliptic.Curve, c1 crypto/elliptic.Curve, c2 crypto/elliptic.Curve) (*github.com/pion/dtls/v2/pkg/crypto/elliptic.Keypair, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "ellipticCurvePreMasterSecret",
+    "file_path": "/analysis/repo/pkg/crypto/prf/prf.go",
+    "line_number": 120,
+    "full_implementation": "func ellipticCurvePreMasterSecret(publicKey, privateKey []byte, c1, c2 ellipticStdlib.Curve) ([]byte, error) {\n\tx, y := ellipticStdlib.Unmarshal(c1, publicKey)\n\tif x == nil || y == nil {\n\t\treturn nil, errInvalidNamedCurve\n\t}\n\n\tresult, _ := c2.ScalarMult(x, y, privateKey)\n\tpreMasterSecret := make([]byte, (c2.Params().BitSize+7)\u003e\u003e3)\n\tresultBytes := result.Bytes()\n\tcopy(preMasterSecret[len(preMasterSecret)-len(resultBytes):], resultBytes)\n\treturn preMasterSecret, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Unmarshal",
+      "Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+      "Slicing_Criteria": {
+        "SourceCode": "x, y := ellipticStdlib.Unmarshal(c1, publicKey)",
+        "SourceFilename": "/analysis/repo/pkg/crypto/prf/prf.go",
+        "SourceLineNum": 120,
+        "ParentFunction": "ellipticCurvePreMasterSecret (publicKey []byte, privateKey []byte, c1 crypto/elliptic.Curve, c2 crypto/elliptic.Curve) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Digest",
+    "file_path": "/analysis/repo/pkg/crypto/hash/hash.go",
+    "line_number": 58,
+    "full_implementation": "func (a Algorithm) Digest(b []byte) []byte {\n\tswitch a {\n\tcase None:\n\t\treturn nil\n\tcase MD5:\n\t\thash := md5.Sum(b) // #nosec\n\t\treturn hash[:]\n\tcase SHA1:\n\t\thash := sha1.Sum(b) // #nosec\n\t\treturn hash[:]\n\tcase SHA224:\n\t\thash := sha256.Sum224(b)\n\t\treturn hash[:]\n\tcase SHA256:\n\t\thash := sha256.Sum256(b)\n\t\treturn hash[:]\n\tcase SHA384:\n\t\thash := sha512.Sum384(b)\n\t\treturn hash[:]\n\tcase SHA512:\n\t\thash := sha512.Sum512(b)\n\t\treturn hash[:]\n\tdefault:\n\t\treturn nil\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := md5.Sum(b) // #nosec",
+        "SourceFilename": "/analysis/repo/pkg/crypto/hash/hash.go",
+        "SourceLineNum": 58,
+        "ParentFunction": "Digest (b []byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Digest",
+    "file_path": "/analysis/repo/pkg/crypto/hash/hash.go",
+    "line_number": 61,
+    "full_implementation": "func (a Algorithm) Digest(b []byte) []byte {\n\tswitch a {\n\tcase None:\n\t\treturn nil\n\tcase MD5:\n\t\thash := md5.Sum(b) // #nosec\n\t\treturn hash[:]\n\tcase SHA1:\n\t\thash := sha1.Sum(b) // #nosec\n\t\treturn hash[:]\n\tcase SHA224:\n\t\thash := sha256.Sum224(b)\n\t\treturn hash[:]\n\tcase SHA256:\n\t\thash := sha256.Sum256(b)\n\t\treturn hash[:]\n\tcase SHA384:\n\t\thash := sha512.Sum384(b)\n\t\treturn hash[:]\n\tcase SHA512:\n\t\thash := sha512.Sum512(b)\n\t\treturn hash[:]\n\tdefault:\n\t\treturn nil\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum(b) // #nosec",
+        "SourceFilename": "/analysis/repo/pkg/crypto/hash/hash.go",
+        "SourceLineNum": 61,
+        "ParentFunction": "Digest (b []byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Digest",
+    "file_path": "/analysis/repo/pkg/crypto/hash/hash.go",
+    "line_number": 64,
+    "full_implementation": "func (a Algorithm) Digest(b []byte) []byte {\n\tswitch a {\n\tcase None:\n\t\treturn nil\n\tcase MD5:\n\t\thash := md5.Sum(b) // #nosec\n\t\treturn hash[:]\n\tcase SHA1:\n\t\thash := sha1.Sum(b) // #nosec\n\t\treturn hash[:]\n\tcase SHA224:\n\t\thash := sha256.Sum224(b)\n\t\treturn hash[:]\n\tcase SHA256:\n\t\thash := sha256.Sum256(b)\n\t\treturn hash[:]\n\tcase SHA384:\n\t\thash := sha512.Sum384(b)\n\t\treturn hash[:]\n\tcase SHA512:\n\t\thash := sha512.Sum512(b)\n\t\treturn hash[:]\n\tdefault:\n\t\treturn nil\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha256.Sum224",
+      "Message": "SHA-224 - NIST 800-57 : In 2031 and beyond, SHA-224 shall not be used for applying cryptographic protection.",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha256.Sum224(b)",
+        "SourceFilename": "/analysis/repo/pkg/crypto/hash/hash.go",
+        "SourceLineNum": 64,
+        "ParentFunction": "Digest (b []byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

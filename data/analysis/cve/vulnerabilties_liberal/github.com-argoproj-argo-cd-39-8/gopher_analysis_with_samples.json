@@ -1,5 +1,23 @@
 [
   {
+    "function_name": "newAuth",
+    "file_path": "/analysis/repo/util/git/client.go",
+    "line_number": 287,
+    "full_implementation": "func newAuth(repoURL string, creds Creds) (transport.AuthMethod, error) {\n\tswitch creds := creds.(type) {\n\tcase SSHCreds:\n\t\tvar sshUser string\n\t\tif isSSH, user := IsSSHURL(repoURL); isSSH {\n\t\t\tsshUser = user\n\t\t}\n\t\tsigner, err := ssh.ParsePrivateKey([]byte(creds.sshPrivateKey))\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tauth := \u0026PublicKeysWithOptions{}\n\t\tauth.User = sshUser\n\t\tauth.Signer = signer\n\t\tif creds.insecure {\n\t\t\tauth.HostKeyCallback = ssh.InsecureIgnoreHostKey()\n\t\t} else {\n\t\t\t// Set up validation of SSH known hosts for using our ssh_known_hosts\n\t\t\t// file.\n\t\t\tauth.HostKeyCallback, err = knownhosts.New(certutil.GetSSHKnownHostsDataPath())\n\t\t\tif err != nil {\n\t\t\t\tlog.Errorf(\"Could not set-up SSH known hosts callback: %v\", err)\n\t\t\t}\n\t\t}\n\t\treturn auth, nil\n\tcase HTTPSCreds:\n\t\tauth := githttp.BasicAuth{Username: creds.username, Password: creds.password}\n\t\tif auth.Username == \"\" {\n\t\t\tauth.Username = \"x-access-token\"\n\t\t}\n\t\treturn \u0026auth, nil\n\tcase GitHubAppCreds:\n\t\ttoken, err := creds.getAccessToken()\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tauth := githttp.BasicAuth{Username: \"x-access-token\", Password: token}\n\t\treturn \u0026auth, nil\n\tcase GoogleCloudCreds:\n\t\tusername, err := creds.getUsername()\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to get username from creds: %w\", err)\n\t\t}\n\t\ttoken, err := creds.getAccessToken()\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to get access token from creds: %w\", err)\n\t\t}\n\n\t\tauth := githttp.BasicAuth{Username: username, Password: token}\n\t\treturn \u0026auth, nil\n\t}\n\treturn nil, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()",
+        "SourceFilename": "/analysis/repo/util/git/client.go",
+        "SourceLineNum": 287,
+        "ParentFunction": "newAuth (repoURL string, creds github.com/argoproj/argo-cd/v2/util/git.Creds) (github.com/go-git/go-git/v5/plumbing/transport.AuthMethod, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
     "function_name": "GetRepoHTTPClient",
     "file_path": "/analysis/repo/util/git/client.go",
     "line_number": 254,
@@ -22,24 +40,6 @@
         }
       ],
       "Predicate_Type": "EQ_FALSE"
-    }
-  },
-  {
-    "function_name": "newAuth",
-    "file_path": "/analysis/repo/util/git/client.go",
-    "line_number": 287,
-    "full_implementation": "func newAuth(repoURL string, creds Creds) (transport.AuthMethod, error) {\n\tswitch creds := creds.(type) {\n\tcase SSHCreds:\n\t\tvar sshUser string\n\t\tif isSSH, user := IsSSHURL(repoURL); isSSH {\n\t\t\tsshUser = user\n\t\t}\n\t\tsigner, err := ssh.ParsePrivateKey([]byte(creds.sshPrivateKey))\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tauth := \u0026PublicKeysWithOptions{}\n\t\tauth.User = sshUser\n\t\tauth.Signer = signer\n\t\tif creds.insecure {\n\t\t\tauth.HostKeyCallback = ssh.InsecureIgnoreHostKey()\n\t\t} else {\n\t\t\t// Set up validation of SSH known hosts for using our ssh_known_hosts\n\t\t\t// file.\n\t\t\tauth.HostKeyCallback, err = knownhosts.New(certutil.GetSSHKnownHostsDataPath())\n\t\t\tif err != nil {\n\t\t\t\tlog.Errorf(\"Could not set-up SSH known hosts callback: %v\", err)\n\t\t\t}\n\t\t}\n\t\treturn auth, nil\n\tcase HTTPSCreds:\n\t\tauth := githttp.BasicAuth{Username: creds.username, Password: creds.password}\n\t\tif auth.Username == \"\" {\n\t\t\tauth.Username = \"x-access-token\"\n\t\t}\n\t\treturn \u0026auth, nil\n\tcase GitHubAppCreds:\n\t\ttoken, err := creds.getAccessToken()\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tauth := githttp.BasicAuth{Username: \"x-access-token\", Password: token}\n\t\treturn \u0026auth, nil\n\tcase GoogleCloudCreds:\n\t\tusername, err := creds.getUsername()\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to get username from creds: %w\", err)\n\t\t}\n\t\ttoken, err := creds.getAccessToken()\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to get access token from creds: %w\", err)\n\t\t}\n\n\t\tauth := githttp.BasicAuth{Username: username, Password: token}\n\t\treturn \u0026auth, nil\n\t}\n\treturn nil, nil\n}",
-    "vulnerability_info": {
-      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
-      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
-      "Slicing_Criteria": {
-        "SourceCode": "auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()",
-        "SourceFilename": "/analysis/repo/util/git/client.go",
-        "SourceLineNum": 287,
-        "ParentFunction": "newAuth (repoURL string, creds github.com/argoproj/argo-cd/v2/util/git.Creds) (github.com/go-git/go-git/v5/plumbing/transport.AuthMethod, error)"
-      },
-      "Def_Use_Link": null,
-      "Predicate_Type": "Dangerous_Function"
     }
   },
   {
