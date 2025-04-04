@@ -112,7 +112,7 @@ func ExtractFunctions(resultsFile, repoRootDir string) error {
 		return fmt.Errorf("creating output JSON: %w", err)
 	}
 	// TODO move to
-	outputPath := "/analysis/repo/scan_results/extracted_functions.json"
+	outputPath := "/analysis/repo/scan_results/gopher_analysis_with_samples.json"
 	if err := ioutil.WriteFile(outputPath, outputJson, 0644); err != nil {
 		return fmt.Errorf("writing output file: %w", err)
 	}

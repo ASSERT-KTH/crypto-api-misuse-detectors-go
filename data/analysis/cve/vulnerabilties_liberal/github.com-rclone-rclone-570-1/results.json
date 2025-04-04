@@ -41,6 +41,37 @@
 				"ParentFunction": "init ()"
 			},
 			{
+				"SourceCode": "0x9c, 0x93, 0x5b, 0x48, 0x73, 0x0a, 0x55, 0x4d,",
+				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+				"SourceLineNum": 18,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "crypto/aes.NewCipher",
+		"Message": "AES-key should be random.",
+		"Slicing_Criteria": {
+			"SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+			"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+			"SourceLineNum": 35,
+			"ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+				"SourceLineNum": 35,
+				"ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+			},
+			{
+				"SourceCode": "cryptKey = []byte{",
+				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+				"SourceLineNum": 17,
+				"ParentFunction": "init ()"
+			},
+			{
 				"SourceCode": "0xf4, 0xde, 0x16, 0x2b, 0x8b, 0x95, 0xf6, 0x38,",
 				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
 				"SourceLineNum": 21,
@@ -112,37 +143,6 @@
 		"Predicate_Type": "RANDOM_BYTES"
 	},
 	{
-		"FuncName": "crypto/aes.NewCipher",
-		"Message": "AES-key should be random.",
-		"Slicing_Criteria": {
-			"SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
-			"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
-			"SourceLineNum": 35,
-			"ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
-		},
-		"Def_Use_Link": [
-			{
-				"SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
-				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
-				"SourceLineNum": 35,
-				"ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
-			},
-			{
-				"SourceCode": "cryptKey = []byte{",
-				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
-				"SourceLineNum": 17,
-				"ParentFunction": "init ()"
-			},
-			{
-				"SourceCode": "0x9c, 0x93, 0x5b, 0x48, 0x73, 0x0a, 0x55, 0x4d,",
-				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
-				"SourceLineNum": 18,
-				"ParentFunction": "init ()"
-			}
-		],
-		"Predicate_Type": "RANDOM_BYTES"
-	},
-	{
 		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
 		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
 		"Slicing_Criteria": {
@@ -208,18 +208,6 @@
 		"FuncName": "crypto/sha1.New",
 		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
 		"Slicing_Criteria": {
-			"SourceCode": "hash: sha1.New(),",
-			"SourceFilename": "/analysis/repo/backend/b2/b2.go",
-			"SourceLineNum": 1615,
-			"ParentFunction": "newOpenFile (o *github.com/rclone/rclone/backend/b2.Object, resp *net/http.Response) *github.com/rclone/rclone/backend/b2.openFile"
-		},
-		"Def_Use_Link": null,
-		"Predicate_Type": "Dangerous_Function"
-	},
-	{
-		"FuncName": "crypto/sha1.New",
-		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
-		"Slicing_Criteria": {
 			"SourceCode": "in := newHashAppendingReader(bytes.NewReader(body), sha1.New())",
 			"SourceFilename": "/analysis/repo/backend/b2/upload.go",
 			"SourceLineNum": 217,
@@ -236,6 +224,18 @@
 			"SourceFilename": "/analysis/repo/backend/b2/b2.go",
 			"SourceLineNum": 1808,
 			"ParentFunction": "Update (ctx context.Context, in io.Reader, src github.com/rclone/rclone/fs.ObjectInfo, options ...github.com/rclone/rclone/fs.OpenOption) (err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hash: sha1.New(),",
+			"SourceFilename": "/analysis/repo/backend/b2/b2.go",
+			"SourceLineNum": 1615,
+			"ParentFunction": "newOpenFile (o *github.com/rclone/rclone/backend/b2.Object, resp *net/http.Response) *github.com/rclone/rclone/backend/b2.openFile"
 		},
 		"Def_Use_Link": null,
 		"Predicate_Type": "Dangerous_Function"
@@ -501,25 +501,6 @@
 		},
 		"Def_Use_Link": null,
 		"Predicate_Type": "Dangerous_Function"
-	},
-	{
-		"FuncName": "github.com/rclone/rclone/cmd/serve/sftp.makeSSHKeyPair",
-		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/cmd/serve/sftp/server.go\nmakeSSHKeyPair (bits int, pubKeyPath string, privateKeyPath string) (err error)\n\t322:\tprivateKey, err := rsa.GenerateKey(rand.Reader, bits)\n\t321:\tfunc makeSSHKeyPair(bits int, pubKeyPath, privateKeyPath string) (err error) {\nWe Found: 2048",
-		"Slicing_Criteria": {
-			"SourceCode": "err = makeSSHKeyPair(bits, keyPath+\".pub\", keyPath)",
-			"SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
-			"SourceLineNum": 225,
-			"ParentFunction": "serve () (err error)"
-		},
-		"Def_Use_Link": [
-			{
-				"SourceCode": "err = makeSSHKeyPair(bits, keyPath+\".pub\", keyPath)",
-				"SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
-				"SourceLineNum": 225,
-				"ParentFunction": "serve () (err error)"
-			}
-		],
-		"Predicate_Type": "GEQ"
 	},
 	{
 		"FuncName": "crypto/rsa.GenerateKey",

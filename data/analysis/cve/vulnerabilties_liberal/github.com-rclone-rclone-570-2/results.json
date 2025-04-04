@@ -41,9 +41,9 @@
 				"ParentFunction": "init ()"
 			},
 			{
-				"SourceCode": "0xd3, 0x90, 0x19, 0x8e, 0xb8, 0x12, 0x8a, 0xfb,",
+				"SourceCode": "0x6b, 0xfd, 0x7c, 0x63, 0xc8, 0x86, 0xa9, 0x2b,",
 				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
-				"SourceLineNum": 20,
+				"SourceLineNum": 19,
 				"ParentFunction": "init ()"
 			}
 		],
@@ -134,9 +134,9 @@
 				"ParentFunction": "init ()"
 			},
 			{
-				"SourceCode": "0x6b, 0xfd, 0x7c, 0x63, 0xc8, 0x86, 0xa9, 0x2b,",
+				"SourceCode": "0xd3, 0x90, 0x19, 0x8e, 0xb8, 0x12, 0x8a, 0xfb,",
 				"SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
-				"SourceLineNum": 19,
+				"SourceLineNum": 20,
 				"ParentFunction": "init ()"
 			}
 		],
@@ -208,6 +208,18 @@
 		"FuncName": "crypto/sha1.New",
 		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
 		"Slicing_Criteria": {
+			"SourceCode": "hash: sha1.New(),",
+			"SourceFilename": "/analysis/repo/backend/b2/b2.go",
+			"SourceLineNum": 1615,
+			"ParentFunction": "newOpenFile (o *github.com/rclone/rclone/backend/b2.Object, resp *net/http.Response) *github.com/rclone/rclone/backend/b2.openFile"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
 			"SourceCode": "in := newHashAppendingReader(bytes.NewReader(body), sha1.New())",
 			"SourceFilename": "/analysis/repo/backend/b2/upload.go",
 			"SourceLineNum": 217,
@@ -224,18 +236,6 @@
 			"SourceFilename": "/analysis/repo/backend/b2/b2.go",
 			"SourceLineNum": 1808,
 			"ParentFunction": "Update (ctx context.Context, in io.Reader, src github.com/rclone/rclone/fs.ObjectInfo, options ...github.com/rclone/rclone/fs.OpenOption) (err error)"
-		},
-		"Def_Use_Link": null,
-		"Predicate_Type": "Dangerous_Function"
-	},
-	{
-		"FuncName": "crypto/sha1.New",
-		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
-		"Slicing_Criteria": {
-			"SourceCode": "hash: sha1.New(),",
-			"SourceFilename": "/analysis/repo/backend/b2/b2.go",
-			"SourceLineNum": 1615,
-			"ParentFunction": "newOpenFile (o *github.com/rclone/rclone/backend/b2.Object, resp *net/http.Response) *github.com/rclone/rclone/backend/b2.openFile"
 		},
 		"Def_Use_Link": null,
 		"Predicate_Type": "Dangerous_Function"
@@ -379,10 +379,10 @@
 		"FuncName": "crypto/sha1.New",
 		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
 		"Slicing_Criteria": {
-			"SourceCode": "clone = sha1.New()",
+			"SourceCode": "d.sha = sha1.New()",
 			"SourceFilename": "/analysis/repo/backend/mailru/mrhash/mrhash.go",
-			"SourceLineNum": 89,
-			"ParentFunction": "cloneSHA1 (orig hash.Hash) (clone hash.Hash, err error)"
+			"SourceLineNum": 96,
+			"ParentFunction": "Reset ()"
 		},
 		"Def_Use_Link": null,
 		"Predicate_Type": "Dangerous_Function"
@@ -391,10 +391,10 @@
 		"FuncName": "crypto/sha1.New",
 		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
 		"Slicing_Criteria": {
-			"SourceCode": "d.sha = sha1.New()",
+			"SourceCode": "clone = sha1.New()",
 			"SourceFilename": "/analysis/repo/backend/mailru/mrhash/mrhash.go",
-			"SourceLineNum": 96,
-			"ParentFunction": "Reset ()"
+			"SourceLineNum": 89,
+			"ParentFunction": "cloneSHA1 (orig hash.Hash) (clone hash.Hash, err error)"
 		},
 		"Def_Use_Link": null,
 		"Predicate_Type": "Dangerous_Function"
@@ -518,25 +518,6 @@
 				"SourceLineNum": 321,
 				"ParentFunction": "makeSSHKeyPair (bits int, pubKeyPath string, privateKeyPath string) (err error)"
 			},
-			{
-				"SourceCode": "err = makeSSHKeyPair(bits, keyPath+\".pub\", keyPath)",
-				"SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
-				"SourceLineNum": 225,
-				"ParentFunction": "serve () (err error)"
-			}
-		],
-		"Predicate_Type": "GEQ"
-	},
-	{
-		"FuncName": "github.com/rclone/rclone/cmd/serve/sftp.makeSSHKeyPair",
-		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/cmd/serve/sftp/server.go\nmakeSSHKeyPair (bits int, pubKeyPath string, privateKeyPath string) (err error)\n\t322:\tprivateKey, err := rsa.GenerateKey(rand.Reader, bits)\n\t321:\tfunc makeSSHKeyPair(bits int, pubKeyPath, privateKeyPath string) (err error) {\nWe Found: 2048",
-		"Slicing_Criteria": {
-			"SourceCode": "err = makeSSHKeyPair(bits, keyPath+\".pub\", keyPath)",
-			"SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
-			"SourceLineNum": 225,
-			"ParentFunction": "serve () (err error)"
-		},
-		"Def_Use_Link": [
 			{
 				"SourceCode": "err = makeSSHKeyPair(bits, keyPath+\".pub\", keyPath)",
 				"SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",

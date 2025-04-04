@@ -1,0 +1,662 @@
+[
+  {
+    "function_name": "NewServer",
+    "file_path": "/analysis/repo/cmd/serve/httplib/httplib.go",
+    "line_number": 288,
+    "full_implementation": "func NewServer(handler http.Handler, opt *Options) *Server {\n\ts := \u0026Server{\n\t\thandler: handler,\n\t}\n\n\t// Make a copy of the options\n\tif opt != nil {\n\t\ts.Opt = *opt\n\t} else {\n\t\ts.Opt = DefaultOpt\n\t}\n\n\t// Use htpasswd if required on everything\n\tif s.Opt.HtPasswd != \"\" || s.Opt.BasicUser != \"\" || s.Opt.Auth != nil {\n\t\tvar authenticator *auth.BasicAuth\n\t\tif s.Opt.Auth == nil {\n\t\t\tvar secretProvider auth.SecretProvider\n\t\t\tif s.Opt.HtPasswd != \"\" {\n\t\t\t\tfs.Infof(nil, \"Using %q as htpasswd storage\", s.Opt.HtPasswd)\n\t\t\t\tsecretProvider = auth.HtpasswdFileProvider(s.Opt.HtPasswd)\n\t\t\t} else {\n\t\t\t\tfs.Infof(nil, \"Using --user %s --pass XXXX as authenticated user\", s.Opt.BasicUser)\n\t\t\t\ts.basicPassHashed = string(auth.MD5Crypt([]byte(s.Opt.BasicPass), []byte(\"dlPL2MqE\"), []byte(\"$1$\")))\n\t\t\t\tsecretProvider = s.singleUserProvider\n\t\t\t}\n\t\t\tauthenticator = auth.NewBasicAuthenticator(s.Opt.Realm, secretProvider)\n\t\t}\n\t\toldHandler := handler\n\t\thandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\t// No auth wanted for OPTIONS method\n\t\t\tif r.Method == \"OPTIONS\" {\n\t\t\t\toldHandler.ServeHTTP(w, r)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tunauthorized := func() {\n\t\t\t\tw.Header().Set(\"Content-Type\", \"text/plain\")\n\t\t\t\tw.Header().Set(\"WWW-Authenticate\", `Basic realm=\"`+s.Opt.Realm+`\"`)\n\t\t\t\thttp.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)\n\t\t\t}\n\t\t\tuser, pass, authValid := parseAuthorization(r)\n\t\t\tif !authValid {\n\t\t\t\tunauthorized()\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif s.Opt.Auth == nil {\n\t\t\t\tif username := authenticator.CheckAuth(r); username == \"\" {\n\t\t\t\t\tfs.Infof(r.URL.Path, \"%s: Unauthorized request from %s\", r.RemoteAddr, user)\n\t\t\t\t\tunauthorized()\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\t// Custom Auth\n\t\t\t\tvalue, err := s.Opt.Auth(user, pass)\n\t\t\t\tif err != nil {\n\t\t\t\t\tfs.Infof(r.URL.Path, \"%s: Auth failed from %s: %v\", r.RemoteAddr, user, err)\n\t\t\t\t\tunauthorized()\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\tif value != nil {\n\t\t\t\t\tr = r.WithContext(context.WithValue(r.Context(), ContextAuthKey, value))\n\t\t\t\t}\n\t\t\t}\n\t\t\tr = r.WithContext(context.WithValue(r.Context(), ContextUserKey, user))\n\t\t\toldHandler.ServeHTTP(w, r)\n\t\t})\n\t\ts.usingAuth = true\n\t}\n\n\ts.useSSL = s.Opt.SslKey != \"\"\n\tif (s.Opt.SslCert != \"\") != s.useSSL {\n\t\tlog.Fatalf(\"Need both -cert and -key to use SSL\")\n\t}\n\n\t// If a Base URL is set then serve from there\n\ts.Opt.BaseURL = strings.Trim(s.Opt.BaseURL, \"/\")\n\tif s.Opt.BaseURL != \"\" {\n\t\ts.Opt.BaseURL = \"/\" + s.Opt.BaseURL\n\t}\n\n\t// FIXME make a transport?\n\ts.httpServer = \u0026http.Server{\n\t\tAddr:              s.Opt.ListenAddr,\n\t\tHandler:           handler,\n\t\tReadTimeout:       s.Opt.ServerReadTimeout,\n\t\tWriteTimeout:      s.Opt.ServerWriteTimeout,\n\t\tMaxHeaderBytes:    s.Opt.MaxHeaderBytes,\n\t\tReadHeaderTimeout: 10 * time.Second, // time to send the headers\n\t\tIdleTimeout:       60 * time.Second, // time to keep idle connections open\n\t\tTLSConfig: \u0026tls.Config{\n\t\t\tMinVersion: tls.VersionTLS10, // disable SSL v3.0 and earlier\n\t\t},\n\t}\n\n\tif s.Opt.ClientCA != \"\" {\n\t\tif !s.useSSL {\n\t\t\tlog.Fatalf(\"Can't use --client-ca without --cert and --key\")\n\t\t}\n\t\tcertpool := x509.NewCertPool()\n\t\tpem, err := ioutil.ReadFile(s.Opt.ClientCA)\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\"Failed to read client certificate authority: %v\", err)\n\t\t}\n\t\tif !certpool.AppendCertsFromPEM(pem) {\n\t\t\tlog.Fatalf(\"Can't parse client certificate authority\")\n\t\t}\n\t\ts.httpServer.TLSConfig.ClientCAs = certpool\n\t\ts.httpServer.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert\n\t}\n\n\thtmlTemplate, templateErr := data.GetTemplate(s.Opt.Template)\n\tif templateErr != nil {\n\t\tlog.Fatalf(templateErr.Error())\n\t}\n\ts.HTMLTemplate = htmlTemplate\n\n\treturn s\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::MinVersion",
+      "Message": "Insecure TLS Version\nWe Found: 769",
+      "Slicing_Criteria": {
+        "SourceCode": "MinVersion: tls.VersionTLS10, // disable SSL v3.0 and earlier",
+        "SourceFilename": "/analysis/repo/cmd/serve/httplib/httplib.go",
+        "SourceLineNum": 288,
+        "ParentFunction": "NewServer (handler net/http.Handler, opt *github.com/rclone/rclone/cmd/serve/httplib.Options) *github.com/rclone/rclone/cmd/serve/httplib.Server"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "MinVersion: tls.VersionTLS10, // disable SSL v3.0 and earlier",
+          "SourceFilename": "/analysis/repo/cmd/serve/httplib/httplib.go",
+          "SourceLineNum": 288,
+          "ParentFunction": "NewServer (handler net/http.Handler, opt *github.com/rclone/rclone/cmd/serve/httplib.Options) *github.com/rclone/rclone/cmd/serve/httplib.Server"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "crypt",
+    "file_path": "/analysis/repo/fs/config/obscure/obscure.go",
+    "line_number": 35,
+    "full_implementation": "func crypt(out, in, iv []byte) error {\n\tif cryptBlock == nil {\n\t\tvar err error\n\t\tcryptBlock, err = aes.NewCipher(cryptKey)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tstream := cipher.NewCTR(cryptBlock, iv)\n\tstream.XORKeyStream(out, in)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/aes.NewCipher",
+      "Message": "AES-key should be random.",
+      "Slicing_Criteria": {
+        "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+        "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+        "SourceLineNum": 35,
+        "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+        },
+        {
+          "SourceCode": "cryptKey = []byte{",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 17,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "0xd3, 0x90, 0x19, 0x8e, 0xb8, 0x12, 0x8a, 0xfb,",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 20,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "crypt",
+    "file_path": "/analysis/repo/fs/config/obscure/obscure.go",
+    "line_number": 35,
+    "full_implementation": "func crypt(out, in, iv []byte) error {\n\tif cryptBlock == nil {\n\t\tvar err error\n\t\tcryptBlock, err = aes.NewCipher(cryptKey)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tstream := cipher.NewCTR(cryptBlock, iv)\n\tstream.XORKeyStream(out, in)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/aes.NewCipher",
+      "Message": "AES-key should be random.",
+      "Slicing_Criteria": {
+        "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+        "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+        "SourceLineNum": 35,
+        "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+        },
+        {
+          "SourceCode": "cryptKey = []byte{",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 17,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "0x6b, 0xfd, 0x7c, 0x63, 0xc8, 0x86, 0xa9, 0x2b,",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 19,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "crypt",
+    "file_path": "/analysis/repo/fs/config/obscure/obscure.go",
+    "line_number": 35,
+    "full_implementation": "func crypt(out, in, iv []byte) error {\n\tif cryptBlock == nil {\n\t\tvar err error\n\t\tcryptBlock, err = aes.NewCipher(cryptKey)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tstream := cipher.NewCTR(cryptBlock, iv)\n\tstream.XORKeyStream(out, in)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/aes.NewCipher",
+      "Message": "AES-key should be random.",
+      "Slicing_Criteria": {
+        "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+        "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+        "SourceLineNum": 35,
+        "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+        },
+        {
+          "SourceCode": "cryptKey = []byte{",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 17,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "0x9c, 0x93, 0x5b, 0x48, 0x73, 0x0a, 0x55, 0x4d,",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 18,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "crypt",
+    "file_path": "/analysis/repo/fs/config/obscure/obscure.go",
+    "line_number": 35,
+    "full_implementation": "func crypt(out, in, iv []byte) error {\n\tif cryptBlock == nil {\n\t\tvar err error\n\t\tcryptBlock, err = aes.NewCipher(cryptKey)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tstream := cipher.NewCTR(cryptBlock, iv)\n\tstream.XORKeyStream(out, in)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/aes.NewCipher",
+      "Message": "AES-key should be random.",
+      "Slicing_Criteria": {
+        "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+        "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+        "SourceLineNum": 35,
+        "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cryptBlock, err = aes.NewCipher(cryptKey)",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "crypt (out []byte, in []byte, iv []byte) error"
+        },
+        {
+          "SourceCode": "cryptKey = []byte{",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 17,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "0xf4, 0xde, 0x16, 0x2b, 0x8b, 0x95, 0xf6, 0x38,",
+          "SourceFilename": "/analysis/repo/fs/config/obscure/obscure.go",
+          "SourceLineNum": 21,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "NewTransportCustom",
+    "file_path": "/analysis/repo/fs/fshttp/http.go",
+    "line_number": 140,
+    "full_implementation": "func NewTransportCustom(ci *fs.ConfigInfo, customize func(*http.Transport)) http.RoundTripper {\n\t// Start with a sensible set of defaults then override.\n\t// This also means we get new stuff when it gets added to go\n\tt := new(http.Transport)\n\tstructs.SetDefaults(t, http.DefaultTransport.(*http.Transport))\n\tt.Proxy = http.ProxyFromEnvironment\n\tt.MaxIdleConnsPerHost = 2 * (ci.Checkers + ci.Transfers + 1)\n\tt.MaxIdleConns = 2 * t.MaxIdleConnsPerHost\n\tt.TLSHandshakeTimeout = ci.ConnectTimeout\n\tt.ResponseHeaderTimeout = ci.Timeout\n\n\t// TLS Config\n\tt.TLSClientConfig = \u0026tls.Config{\n\t\tInsecureSkipVerify: ci.InsecureSkipVerify,\n\t}\n\n\t// Load client certs\n\tif ci.ClientCert != \"\" || ci.ClientKey != \"\" {\n\t\tif ci.ClientCert == \"\" || ci.ClientKey == \"\" {\n\t\t\tlog.Fatalf(\"Both --client-cert and --client-key must be set\")\n\t\t}\n\t\tcert, err := tls.LoadX509KeyPair(ci.ClientCert, ci.ClientKey)\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\"Failed to load --client-cert/--client-key pair: %v\", err)\n\t\t}\n\t\tt.TLSClientConfig.Certificates = []tls.Certificate{cert}\n\t\tt.TLSClientConfig.BuildNameToCertificate()\n\t}\n\n\t// Load CA cert\n\tif ci.CaCert != \"\" {\n\t\tcaCert, err := ioutil.ReadFile(ci.CaCert)\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\"Failed to read --ca-cert: %v\", err)\n\t\t}\n\t\tcaCertPool := x509.NewCertPool()\n\t\tok := caCertPool.AppendCertsFromPEM(caCert)\n\t\tif !ok {\n\t\t\tlog.Fatalf(\"Failed to add certificates from --ca-cert\")\n\t\t}\n\t\tt.TLSClientConfig.RootCAs = caCertPool\n\t}\n\n\tt.DisableCompression = ci.NoGzip\n\tt.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {\n\t\treturn dialContextTimeout(ctx, network, addr, ci)\n\t}\n\tt.IdleConnTimeout = 60 * time.Second\n\tt.ExpectContinueTimeout = ci.ExpectContinueTimeout\n\n\tif ci.Dump\u0026(fs.DumpHeaders|fs.DumpBodies|fs.DumpAuth|fs.DumpRequests|fs.DumpResponses) != 0 {\n\t\tfs.Debugf(nil, \"You have specified to dump information. Please be noted that the \"+\n\t\t\t\"Accept-Encoding as shown may not be correct in the request and the response may not show \"+\n\t\t\t\"Content-Encoding if the go standard libraries auto gzip encoding was in effect. In this case\"+\n\t\t\t\" the body of the request will be gunzipped before showing it.\")\n\t}\n\n\t// customize the transport if required\n\tif customize != nil {\n\t\tcustomize(t)\n\t}\n\n\t// Wrap that http.Transport in our own transport\n\treturn newTransport(ci, t)\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "t.TLSClientConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/fs/fshttp/http.go",
+        "SourceLineNum": 140,
+        "ParentFunction": "NewTransportCustom (ci *github.com/rclone/rclone/fs.ConfigInfo, customize "
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "SetCookie",
+    "file_path": "/analysis/repo/lib/rest/rest.go",
+    "line_number": 119,
+    "full_implementation": "func (api *Client) SetCookie(cks ...*http.Cookie) *Client {\n\treq, _ := http.NewRequest(\"GET\", \"http://example.com\", nil)\n\tfor _, ck := range cks {\n\t\treq.AddCookie(ck)\n\t}\n\tapi.SetHeader(\"Cookie\", req.Header.Get(\"Cookie\"))\n\treturn api\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, _ := http.NewRequest(\"GET\", \"http://example.com\", nil)",
+        "SourceFilename": "/analysis/repo/lib/rest/rest.go",
+        "SourceLineNum": 119,
+        "ParentFunction": "SetCookie (cks ...*net/http.Cookie) *github.com/rclone/rclone/lib/rest.Client"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, _ := http.NewRequest(\"GET\", \"http://example.com\", nil)",
+          "SourceFilename": "/analysis/repo/lib/rest/rest.go",
+          "SourceLineNum": 119,
+          "ParentFunction": "SetCookie (cks ...*net/http.Cookie) *github.com/rclone/rclone/lib/rest.Client"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "SetUserPass",
+    "file_path": "/analysis/repo/lib/rest/rest.go",
+    "line_number": 108,
+    "full_implementation": "func (api *Client) SetUserPass(UserName, Password string) *Client {\n\treq, _ := http.NewRequest(\"GET\", \"http://example.com\", nil)\n\treq.SetBasicAuth(UserName, Password)\n\tapi.SetHeader(\"Authorization\", req.Header.Get(\"Authorization\"))\n\treturn api\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, _ := http.NewRequest(\"GET\", \"http://example.com\", nil)",
+        "SourceFilename": "/analysis/repo/lib/rest/rest.go",
+        "SourceLineNum": 108,
+        "ParentFunction": "SetUserPass (UserName string, Password string) *github.com/rclone/rclone/lib/rest.Client"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, _ := http.NewRequest(\"GET\", \"http://example.com\", nil)",
+          "SourceFilename": "/analysis/repo/lib/rest/rest.go",
+          "SourceLineNum": 108,
+          "ParentFunction": "SetUserPass (UserName string, Password string) *github.com/rclone/rclone/lib/rest.Client"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "Update",
+    "file_path": "/analysis/repo/backend/b2/b2.go",
+    "line_number": 1808,
+    "full_implementation": "func (o *Object) Update(ctx context.Context, in io.Reader, src fs.ObjectInfo, options ...fs.OpenOption) (err error) {\n\tif o.fs.opt.Versions {\n\t\treturn errNotWithVersions\n\t}\n\tsize := src.Size()\n\n\tbucket, bucketPath := o.split()\n\terr = o.fs.makeBucket(ctx, bucket)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif size == -1 {\n\t\t// Check if the file is large enough for a chunked upload (needs to be at least two chunks)\n\t\tbuf := o.fs.getBuf(false)\n\n\t\tn, err := io.ReadFull(in, buf)\n\t\tif err == nil {\n\t\t\tbufReader := bufio.NewReader(in)\n\t\t\tin = bufReader\n\t\t\t_, err = bufReader.Peek(1)\n\t\t}\n\n\t\tif err == nil {\n\t\t\tfs.Debugf(o, \"File is big enough for chunked streaming\")\n\t\t\tup, err := o.fs.newLargeUpload(ctx, o, in, src, o.fs.opt.ChunkSize, false, nil)\n\t\t\tif err != nil {\n\t\t\t\to.fs.putBuf(buf, false)\n\t\t\t\treturn err\n\t\t\t}\n\t\t\t// NB Stream returns the buffer and token\n\t\t\treturn up.Stream(ctx, buf)\n\t\t} else if err == io.EOF || err == io.ErrUnexpectedEOF {\n\t\t\tfs.Debugf(o, \"File has %d bytes, which makes only one chunk. Using direct upload.\", n)\n\t\t\tdefer o.fs.putBuf(buf, false)\n\t\t\tsize = int64(n)\n\t\t\tin = bytes.NewReader(buf[:n])\n\t\t} else {\n\t\t\to.fs.putBuf(buf, false)\n\t\t\treturn err\n\t\t}\n\t} else if size \u003e int64(o.fs.opt.UploadCutoff) {\n\t\tup, err := o.fs.newLargeUpload(ctx, o, in, src, o.fs.opt.ChunkSize, false, nil)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn up.Upload(ctx)\n\t}\n\n\tmodTime := src.ModTime(ctx)\n\n\tcalculatedSha1, _ := src.Hash(ctx, hash.SHA1)\n\tif calculatedSha1 == \"\" {\n\t\tcalculatedSha1 = \"hex_digits_at_end\"\n\t\thar := newHashAppendingReader(in, sha1.New())\n\t\tsize += int64(har.AdditionalLength())\n\t\tin = har\n\t}\n\n\t// Get upload URL\n\tupload, err := o.fs.getUploadURL(ctx, bucket)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer func() {\n\t\t// return it like this because we might nil it out\n\t\to.fs.returnUploadURL(upload)\n\t}()\n\n\t// Headers for upload file\n\t//\n\t// Authorization\n\t// required\n\t// An upload authorization token, from b2_get_upload_url.\n\t//\n\t// X-Bz-File-Name\n\t// required\n\t//\n\t// The name of the file, in percent-encoded UTF-8. See Files for requirements on file names. See String Encoding.\n\t//\n\t// Content-Type\n\t// required\n\t//\n\t// The MIME type of the content of the file, which will be returned in\n\t// the Content-Type header when downloading the file. Use the\n\t// Content-Type b2/x-auto to automatically set the stored Content-Type\n\t// post upload. In the case where a file extension is absent or the\n\t// lookup fails, the Content-Type is set to application/octet-stream. The\n\t// Content-Type mappings can be pursued here.\n\t//\n\t// X-Bz-Content-Sha1\n\t// required\n\t//\n\t// The SHA1 checksum of the content of the file. B2 will check this when\n\t// the file is uploaded, to make sure that the file arrived correctly. It\n\t// will be returned in the X-Bz-Content-Sha1 header when the file is\n\t// downloaded.\n\t//\n\t// X-Bz-Info-src_last_modified_millis\n\t// optional\n\t//\n\t// If the original source of the file being uploaded has a last modified\n\t// time concept, Backblaze recommends using this spelling of one of your\n\t// ten X-Bz-Info-* headers (see below). Using a standard spelling allows\n\t// different B2 clients and the B2 web user interface to interoperate\n\t// correctly. The value should be a base 10 number which represents a UTC\n\t// time when the original source file was last modified. It is a base 10\n\t// number of milliseconds since midnight, January 1, 1970 UTC. This fits\n\t// in a 64 bit integer such as the type \"long\" in the programming\n\t// language Java. It is intended to be compatible with Java's time\n\t// long. For example, it can be passed directly into the Java call\n\t// Date.setTime(long time).\n\t//\n\t// X-Bz-Info-*\n\t// optional\n\t//\n\t// Up to 10 of these headers may be present. The * part of the header\n\t// name is replace with the name of a custom field in the file\n\t// information stored with the file, and the value is an arbitrary UTF-8\n\t// string, percent-encoded. The same info headers sent with the upload\n\t// will be returned with the download.\n\n\topts := rest.Opts{\n\t\tMethod:  \"POST\",\n\t\tRootURL: upload.UploadURL,\n\t\tBody:    in,\n\t\tOptions: options,\n\t\tExtraHeaders: map[string]string{\n\t\t\t\"Authorization\":  upload.AuthorizationToken,\n\t\t\t\"X-Bz-File-Name\": urlEncode(o.fs.opt.Enc.FromStandardPath(bucketPath)),\n\t\t\t\"Content-Type\":   fs.MimeType(ctx, src),\n\t\t\tsha1Header:       calculatedSha1,\n\t\t\ttimeHeader:       timeString(modTime),\n\t\t},\n\t\tContentLength: \u0026size,\n\t}\n\tvar response api.FileInfo\n\t// Don't retry, return a retry error instead\n\terr = o.fs.pacer.CallNoRetry(func() (bool, error) {\n\t\tresp, err := o.fs.srv.CallJSON(ctx, \u0026opts, nil, \u0026response)\n\t\tretry, err := o.fs.shouldRetry(ctx, resp, err)\n\t\t// On retryable error clear UploadURL\n\t\tif retry {\n\t\t\tfs.Debugf(o, \"Clearing upload URL because of error: %v\", err)\n\t\t\tupload = nil\n\t\t}\n\t\treturn retry, err\n\t})\n\tif err != nil {\n\t\treturn err\n\t}\n\treturn o.decodeMetaDataFileInfo(\u0026response)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "har := newHashAppendingReader(in, sha1.New())",
+        "SourceFilename": "/analysis/repo/backend/b2/b2.go",
+        "SourceLineNum": 1808,
+        "ParentFunction": "Update (ctx context.Context, in io.Reader, src github.com/rclone/rclone/fs.ObjectInfo, options ...github.com/rclone/rclone/fs.OpenOption) (err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newOpenFile",
+    "file_path": "/analysis/repo/backend/b2/b2.go",
+    "line_number": 1615,
+    "full_implementation": "func newOpenFile(o *Object, resp *http.Response) *openFile {\n\tfile := \u0026openFile{\n\t\to:    o,\n\t\tresp: resp,\n\t\thash: sha1.New(),\n\t}\n\tfile.body = io.TeeReader(resp.Body, file.hash)\n\treturn file\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash: sha1.New(),",
+        "SourceFilename": "/analysis/repo/backend/b2/b2.go",
+        "SourceLineNum": 1615,
+        "ParentFunction": "newOpenFile (o *github.com/rclone/rclone/backend/b2.Object, resp *net/http.Response) *github.com/rclone/rclone/backend/b2.openFile"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "uploadMultipart",
+    "file_path": "/analysis/repo/backend/box/upload.go",
+    "line_number": 202,
+    "full_implementation": "func (o *Object) uploadMultipart(ctx context.Context, in io.Reader, leaf, directoryID string, size int64, modTime time.Time, options ...fs.OpenOption) (err error) {\n\t// Create upload session\n\tsession, err := o.createUploadSession(ctx, leaf, directoryID, size)\n\tif err != nil {\n\t\treturn errors.Wrap(err, \"multipart upload create session failed\")\n\t}\n\tchunkSize := session.PartSize\n\tfs.Debugf(o, \"Multipart upload session started for %d parts of size %v\", session.TotalParts, fs.SizeSuffix(chunkSize))\n\n\t// Cancel the session if something went wrong\n\tdefer atexit.OnError(\u0026err, func() {\n\t\tfs.Debugf(o, \"Cancelling multipart upload: %v\", err)\n\t\tcancelErr := o.abortUpload(ctx, session.ID)\n\t\tif cancelErr != nil {\n\t\t\tfs.Logf(o, \"Failed to cancel multipart upload: %v\", cancelErr)\n\t\t}\n\t})()\n\n\t// unwrap the accounting from the input, we use wrap to put it\n\t// back on after the buffering\n\tin, wrap := accounting.UnWrap(in)\n\n\t// Upload the chunks\n\tremaining := size\n\tposition := int64(0)\n\tparts := make([]api.Part, session.TotalParts)\n\thash := sha1.New()\n\terrs := make(chan error, 1)\n\tvar wg sync.WaitGroup\nouter:\n\tfor part := 0; part \u003c session.TotalParts; part++ {\n\t\t// Check any errors\n\t\tselect {\n\t\tcase err = \u003c-errs:\n\t\t\tbreak outer\n\t\tdefault:\n\t\t}\n\n\t\treqSize := remaining\n\t\tif reqSize \u003e= chunkSize {\n\t\t\treqSize = chunkSize\n\t\t}\n\n\t\t// Make a block of memory\n\t\tbuf := make([]byte, reqSize)\n\n\t\t// Read the chunk\n\t\t_, err = io.ReadFull(in, buf)\n\t\tif err != nil {\n\t\t\terr = errors.Wrap(err, \"multipart upload failed to read source\")\n\t\t\tbreak outer\n\t\t}\n\n\t\t// Make the global hash (must be done sequentially)\n\t\t_, _ = hash.Write(buf)\n\n\t\t// Transfer the chunk\n\t\twg.Add(1)\n\t\to.fs.uploadToken.Get()\n\t\tgo func(part int, position int64) {\n\t\t\tdefer wg.Done()\n\t\t\tdefer o.fs.uploadToken.Put()\n\t\t\tfs.Debugf(o, \"Uploading part %d/%d offset %v/%v part size %v\", part+1, session.TotalParts, fs.SizeSuffix(position), fs.SizeSuffix(size), fs.SizeSuffix(chunkSize))\n\t\t\tpartResponse, err := o.uploadPart(ctx, session.ID, position, size, buf, wrap, options...)\n\t\t\tif err != nil {\n\t\t\t\terr = errors.Wrap(err, \"multipart upload failed to upload part\")\n\t\t\t\tselect {\n\t\t\t\tcase errs \u003c- err:\n\t\t\t\tdefault:\n\t\t\t\t}\n\t\t\t\treturn\n\t\t\t}\n\t\t\tparts[part] = partResponse.Part\n\t\t}(part, position)\n\n\t\t// ready for next block\n\t\tremaining -= chunkSize\n\t\tposition += chunkSize\n\t}\n\twg.Wait()\n\tif err == nil {\n\t\tselect {\n\t\tcase err = \u003c-errs:\n\t\tdefault:\n\t\t}\n\t}\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Finalise the upload session\n\tresult, err := o.commitUpload(ctx, session.ID, parts, modTime, hash.Sum(nil))\n\tif err != nil {\n\t\treturn errors.Wrap(err, \"multipart upload failed to finalize\")\n\t}\n\n\tif result.TotalCount != 1 || len(result.Entries) != 1 {\n\t\treturn errors.Errorf(\"multipart upload failed %v - not sure why\", o)\n\t}\n\treturn o.setMetaData(\u0026result.Entries[0])\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.New()",
+        "SourceFilename": "/analysis/repo/backend/box/upload.go",
+        "SourceLineNum": 202,
+        "ParentFunction": "uploadMultipart (ctx context.Context, in io.Reader, leaf string, directoryID string, size int64, modTime time.Time, options ...github.com/rclone/rclone/fs.OpenOption) (err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "uploadPart",
+    "file_path": "/analysis/repo/backend/box/upload.go",
+    "line_number": 60,
+    "full_implementation": "func (o *Object) uploadPart(ctx context.Context, SessionID string, offset, totalSize int64, chunk []byte, wrap accounting.WrapFn, options ...fs.OpenOption) (response *api.UploadPartResponse, err error) {\n\tchunkSize := int64(len(chunk))\n\tsha1sum := sha1.Sum(chunk)\n\topts := rest.Opts{\n\t\tMethod:        \"PUT\",\n\t\tPath:          \"/files/upload_sessions/\" + SessionID,\n\t\tRootURL:       uploadURL,\n\t\tContentType:   \"application/octet-stream\",\n\t\tContentLength: \u0026chunkSize,\n\t\tContentRange:  fmt.Sprintf(\"bytes %d-%d/%d\", offset, offset+chunkSize-1, totalSize),\n\t\tOptions:       options,\n\t\tExtraHeaders: map[string]string{\n\t\t\t\"Digest\": sha1Digest(sha1sum[:]),\n\t\t},\n\t}\n\tvar resp *http.Response\n\terr = o.fs.pacer.Call(func() (bool, error) {\n\t\topts.Body = wrap(bytes.NewReader(chunk))\n\t\tresp, err = o.fs.srv.CallJSON(ctx, \u0026opts, nil, \u0026response)\n\t\treturn shouldRetry(resp, err)\n\t})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn response, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha1sum := sha1.Sum(chunk)",
+        "SourceFilename": "/analysis/repo/backend/box/upload.go",
+        "SourceLineNum": 60,
+        "ParentFunction": "uploadPart (ctx context.Context, SessionID string, offset int64, totalSize int64, chunk []byte, wrap github.com/rclone/rclone/fs/accounting.WrapFn, options ...github.com/rclone/rclone/fs.OpenOption) (response *github.com/rclone/rclone/backend/box/api.UploadPartResponse, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Key",
+    "file_path": "/analysis/repo/backend/crypt/cipher.go",
+    "line_number": 162,
+    "full_implementation": "func (c *Cipher) Key(password, salt string) (err error) {\n\tconst keySize = len(c.dataKey) + len(c.nameKey) + len(c.nameTweak)\n\tvar saltBytes = defaultSalt\n\tif salt != \"\" {\n\t\tsaltBytes = []byte(salt)\n\t}\n\tvar key []byte\n\tif password == \"\" {\n\t\tkey = make([]byte, keySize)\n\t} else {\n\t\tkey, err = scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tcopy(c.dataKey[:], key)\n\tcopy(c.nameKey[:], key[len(c.dataKey):])\n\tcopy(c.nameTweak[:], key[len(c.dataKey)+len(c.nameKey):])\n\t// Key the name cipher\n\tc.block, err = aes.NewCipher(c.nameKey[:])\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/scrypt.Key",
+      "Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\nWe Found: 16384",
+      "Slicing_Criteria": {
+        "SourceCode": "key, err = scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)",
+        "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+        "SourceLineNum": 162,
+        "ParentFunction": "Key (password string, salt string) (err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "key, err = scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)",
+          "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+          "SourceLineNum": 162,
+          "ParentFunction": "Key (password string, salt string) (err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Key",
+    "file_path": "/analysis/repo/backend/crypt/cipher.go",
+    "line_number": 162,
+    "full_implementation": "func (c *Cipher) Key(password, salt string) (err error) {\n\tconst keySize = len(c.dataKey) + len(c.nameKey) + len(c.nameTweak)\n\tvar saltBytes = defaultSalt\n\tif salt != \"\" {\n\t\tsaltBytes = []byte(salt)\n\t}\n\tvar key []byte\n\tif password == \"\" {\n\t\tkey = make([]byte, keySize)\n\t} else {\n\t\tkey, err = scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\tcopy(c.dataKey[:], key)\n\tcopy(c.nameKey[:], key[len(c.dataKey):])\n\tcopy(c.nameTweak[:], key[len(c.dataKey)+len(c.nameKey):])\n\t// Key the name cipher\n\tc.block, err = aes.NewCipher(c.nameKey[:])\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/scrypt.Key",
+      "Message": "Salt should be random",
+      "Slicing_Criteria": {
+        "SourceCode": "key, err = scrypt.Key([]byte(password), saltBytes, 16384, 8, 1, keySize)",
+        "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+        "SourceLineNum": 162,
+        "ParentFunction": "Key (password string, salt string) (err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "var saltBytes = defaultSalt",
+          "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+          "SourceLineNum": 154,
+          "ParentFunction": "Key (password string, salt string) (err error)"
+        },
+        {
+          "SourceCode": "var saltBytes = defaultSalt",
+          "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+          "SourceLineNum": 154,
+          "ParentFunction": "Key (password string, salt string) (err error)"
+        },
+        {
+          "SourceCode": "defaultSalt                  = []byte{0xA8, 0x0D, 0xF4, 0x3A, 0x8F, 0xBD, 0x03, 0x08, 0xA7, 0xCA, 0xB8, 0x3E, 0x58, 0x1F, 0x86, 0xB1}",
+          "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+          "SourceLineNum": 54,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "defaultSalt                  = []byte{0xA8, 0x0D, 0xF4, 0x3A, 0x8F, 0xBD, 0x03, 0x08, 0xA7, 0xCA, 0xB8, 0x3E, 0x58, 0x1F, 0x86, 0xB1}",
+          "SourceFilename": "/analysis/repo/backend/crypt/cipher.go",
+          "SourceLineNum": 54,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "websocketDial",
+    "file_path": "/analysis/repo/backend/cache/plex.go",
+    "line_number": 122,
+    "full_implementation": "func (p *plexConnector) websocketDial() (*websocket.Conn, error) {\n\tu := strings.TrimRight(strings.Replace(strings.Replace(\n\t\tp.url.String(), \"http://\", \"ws://\", 1), \"https://\", \"wss://\", 1), \"/\")\n\turl := fmt.Sprintf(defPlexNotificationURL, u, p.token)\n\n\tconfig, err := websocket.NewConfig(url, \"http://localhost\")\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif p.insecure {\n\t\tconfig.TlsConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\treturn websocket.DialConfig(config)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config.TlsConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/backend/cache/plex.go",
+        "SourceLineNum": 122,
+        "ParentFunction": "websocketDial () (*golang.org/x/net/websocket.Conn, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config.TlsConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/backend/cache/plex.go",
+          "SourceLineNum": 122,
+          "ParentFunction": "websocketDial () (*golang.org/x/net/websocket.Conn, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "wrapStream",
+    "file_path": "/analysis/repo/backend/chunker/chunker.go",
+    "line_number": 1137,
+    "full_implementation": "func (c *chunkingReader) wrapStream(ctx context.Context, in io.Reader, src fs.ObjectInfo) io.Reader {\n\tbaseIn, wrapBack := accounting.UnWrap(in)\n\n\tswitch {\n\tcase c.fs.useMD5:\n\t\tif c.md5, _ = src.Hash(ctx, hash.MD5); c.md5 == \"\" {\n\t\t\tif c.fs.hashFallback {\n\t\t\t\tc.sha1, _ = src.Hash(ctx, hash.SHA1)\n\t\t\t} else {\n\t\t\t\tc.hasher = md5.New()\n\t\t\t}\n\t\t}\n\tcase c.fs.useSHA1:\n\t\tif c.sha1, _ = src.Hash(ctx, hash.SHA1); c.sha1 == \"\" {\n\t\t\tif c.fs.hashFallback {\n\t\t\t\tc.md5, _ = src.Hash(ctx, hash.MD5)\n\t\t\t} else {\n\t\t\t\tc.hasher = sha1.New()\n\t\t\t}\n\t\t}\n\t}\n\n\tif c.hasher != nil {\n\t\tbaseIn = io.TeeReader(baseIn, c.hasher)\n\t}\n\tc.baseReader = baseIn\n\treturn wrapBack(c)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "c.hasher = md5.New()",
+        "SourceFilename": "/analysis/repo/backend/chunker/chunker.go",
+        "SourceLineNum": 1137,
+        "ParentFunction": "wrapStream (ctx context.Context, in io.Reader, src github.com/rclone/rclone/fs.ObjectInfo) io.Reader"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "wrapStream",
+    "file_path": "/analysis/repo/backend/chunker/chunker.go",
+    "line_number": 1145,
+    "full_implementation": "func (c *chunkingReader) wrapStream(ctx context.Context, in io.Reader, src fs.ObjectInfo) io.Reader {\n\tbaseIn, wrapBack := accounting.UnWrap(in)\n\n\tswitch {\n\tcase c.fs.useMD5:\n\t\tif c.md5, _ = src.Hash(ctx, hash.MD5); c.md5 == \"\" {\n\t\t\tif c.fs.hashFallback {\n\t\t\t\tc.sha1, _ = src.Hash(ctx, hash.SHA1)\n\t\t\t} else {\n\t\t\t\tc.hasher = md5.New()\n\t\t\t}\n\t\t}\n\tcase c.fs.useSHA1:\n\t\tif c.sha1, _ = src.Hash(ctx, hash.SHA1); c.sha1 == \"\" {\n\t\t\tif c.fs.hashFallback {\n\t\t\t\tc.md5, _ = src.Hash(ctx, hash.MD5)\n\t\t\t} else {\n\t\t\t\tc.hasher = sha1.New()\n\t\t\t}\n\t\t}\n\t}\n\n\tif c.hasher != nil {\n\t\tbaseIn = io.TeeReader(baseIn, c.hasher)\n\t}\n\tc.baseReader = baseIn\n\treturn wrapBack(c)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "c.hasher = sha1.New()",
+        "SourceFilename": "/analysis/repo/backend/chunker/chunker.go",
+        "SourceLineNum": 1145,
+        "ParentFunction": "wrapStream (ctx context.Context, in io.Reader, src github.com/rclone/rclone/fs.ObjectInfo) io.Reader"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "readMD5",
+    "file_path": "/analysis/repo/backend/jottacloud/jottacloud.go",
+    "line_number": 1412,
+    "full_implementation": "func readMD5(in io.Reader, size, threshold int64) (md5sum string, out io.Reader, cleanup func(), err error) {\n\t// we need an MD5\n\tmd5Hasher := md5.New()\n\t// use the teeReader to write to the local file AND calculate the MD5 while doing so\n\tteeReader := io.TeeReader(in, md5Hasher)\n\n\t// nothing to clean up by default\n\tcleanup = func() {}\n\n\t// don't cache small files on disk to reduce wear of the disk\n\tif size \u003e threshold {\n\t\tvar tempFile *os.File\n\n\t\t// create the cache file\n\t\ttempFile, err = ioutil.TempFile(\"\", cachePrefix)\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\n\t\t_ = os.Remove(tempFile.Name()) // Delete the file - may not work on Windows\n\n\t\t// clean up the file after we are done downloading\n\t\tcleanup = func() {\n\t\t\t// the file should normally already be close, but just to make sure\n\t\t\t_ = tempFile.Close()\n\t\t\t_ = os.Remove(tempFile.Name()) // delete the cache file after we are done - may be deleted already\n\t\t}\n\n\t\t// copy the ENTIRE file to disc and calculate the MD5 in the process\n\t\tif _, err = io.Copy(tempFile, teeReader); err != nil {\n\t\t\treturn\n\t\t}\n\t\t// jump to the start of the local file so we can pass it along\n\t\tif _, err = tempFile.Seek(0, 0); err != nil {\n\t\t\treturn\n\t\t}\n\n\t\t// replace the already read source with a reader of our cached file\n\t\tout = tempFile\n\t} else {\n\t\t// that's a small file, just read it into memory\n\t\tvar inData []byte\n\t\tinData, err = ioutil.ReadAll(teeReader)\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\n\t\t// set the reader to our read memory block\n\t\tout = bytes.NewReader(inData)\n\t}\n\treturn hex.EncodeToString(md5Hasher.Sum(nil)), out, cleanup, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "md5Hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/backend/jottacloud/jottacloud.go",
+        "SourceLineNum": 1412,
+        "ParentFunction": "readMD5 (in io.Reader, size int64, threshold int64) (md5sum string, out io.Reader, cleanup "
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Reset",
+    "file_path": "/analysis/repo/backend/mailru/mrhash/mrhash.go",
+    "line_number": 96,
+    "full_implementation": "func (d *digest) Reset() {\n\td.sha = sha1.New()\n\t_, _ = d.sha.Write([]byte(startString))\n\td.total = 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "d.sha = sha1.New()",
+        "SourceFilename": "/analysis/repo/backend/mailru/mrhash/mrhash.go",
+        "SourceLineNum": 96,
+        "ParentFunction": "Reset ()"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "cloneSHA1",
+    "file_path": "/analysis/repo/backend/mailru/mrhash/mrhash.go",
+    "line_number": 89,
+    "full_implementation": "func cloneSHA1(orig hash.Hash) (clone hash.Hash, err error) {\n\tstate, err := orig.(encoding.BinaryMarshaler).MarshalBinary()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tclone = sha1.New()\n\terr = clone.(encoding.BinaryUnmarshaler).UnmarshalBinary(state)\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "clone = sha1.New()",
+        "SourceFilename": "/analysis/repo/backend/mailru/mrhash/mrhash.go",
+        "SourceLineNum": 89,
+        "ParentFunction": "cloneSHA1 (orig hash.Hash) (clone hash.Hash, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewFs",
+    "file_path": "/analysis/repo/backend/mailru/mailru.go",
+    "line_number": 355,
+    "full_implementation": "func NewFs(name, root string, m configmap.Mapper) (fs.Fs, error) {\n\t// fs.Debugf(nil, \"\u003e\u003e\u003e NewFs %q %q\", name, root)\n\tctx := context.Background() // Note: NewFs does not pass context!\n\n\t// Parse config into Options struct\n\topt := new(Options)\n\terr := configstruct.Set(m, opt)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif opt.Password != \"\" {\n\t\topt.Password = obscure.MustReveal(opt.Password)\n\t}\n\n\t// Trailing slash signals us to optimize out one file check\n\trootIsDir := strings.HasSuffix(root, \"/\")\n\t// However the f.root string should not have leading or trailing slashes\n\troot = strings.Trim(root, \"/\")\n\n\tf := \u0026Fs{\n\t\tname: name,\n\t\troot: root,\n\t\topt:  *opt,\n\t\tm:    m,\n\t}\n\n\tif err := f.parseSpeedupPatterns(opt.SpeedupPatterns); err != nil {\n\t\treturn nil, err\n\t}\n\tf.quirks.parseQuirks(opt.Quirks)\n\n\tf.pacer = fs.NewPacer(pacer.NewDefault(pacer.MinSleep(minSleepPacer), pacer.MaxSleep(maxSleepPacer), pacer.DecayConstant(decayConstPacer)))\n\n\tf.features = (\u0026fs.Features{\n\t\tCaseInsensitive:         true,\n\t\tCanHaveEmptyDirectories: true,\n\t\t// Can copy/move across mailru configs (almost, thus true here), but\n\t\t// only when they share common account (this is checked in Copy/Move).\n\t\tServerSideAcrossConfigs: true,\n\t}).Fill(f)\n\n\t// Override few config settings and create a client\n\tclientConfig := *fs.Config\n\tif opt.UserAgent != \"\" {\n\t\tclientConfig.UserAgent = opt.UserAgent\n\t}\n\tclientConfig.NoGzip = !f.quirks.gzip // Send not \"Accept-Encoding: gzip\" like official client\n\tf.cli = fshttp.NewClient(\u0026clientConfig)\n\n\tf.srv = rest.NewClient(f.cli)\n\tf.srv.SetRoot(api.APIServerURL)\n\tf.srv.SetHeader(\"Accept\", \"*/*\") // Send \"Accept: */*\" with every request like official client\n\tf.srv.SetErrorHandler(errorHandler)\n\n\tif f.quirks.insecure {\n\t\ttransport := f.cli.Transport.(*fshttp.Transport).Transport\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t\ttransport.ProxyConnectHeader = http.Header{\"User-Agent\": {clientConfig.UserAgent}}\n\t}\n\n\tif err = f.authorize(ctx, false); err != nil {\n\t\treturn nil, err\n\t}\n\n\tf.fileServers = serverPool{\n\t\tpool:      make(pendingServerMap),\n\t\tfs:        f,\n\t\tpath:      \"/d\",\n\t\texpirySec: serverExpirySec,\n\t}\n\n\tif !rootIsDir {\n\t\t_, dirSize, err := f.readItemMetaData(ctx, f.root)\n\t\trootIsDir = (dirSize \u003e= 0)\n\t\t// Ignore non-existing item and other errors\n\t\tif err == nil \u0026\u0026 !rootIsDir {\n\t\t\troot = path.Dir(f.root)\n\t\t\tif root == \".\" {\n\t\t\t\troot = \"\"\n\t\t\t}\n\t\t\tf.root = root\n\t\t\t// Return fs that points to the parent and signal rclone to do filtering\n\t\t\treturn f, fs.ErrorIsFile\n\t\t}\n\t}\n\n\treturn f, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/backend/mailru/mailru.go",
+        "SourceLineNum": 355,
+        "ParentFunction": "NewFs (name string, root string, m github.com/rclone/rclone/fs/config/configmap.Mapper) (github.com/rclone/rclone/fs.Fs, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/backend/mailru/mailru.go",
+          "SourceLineNum": 355,
+          "ParentFunction": "NewFs (name string, root string, m github.com/rclone/rclone/fs/config/configmap.Mapper) (github.com/rclone/rclone/fs.Fs, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Hash",
+    "file_path": "/analysis/repo/backend/memory/memory.go",
+    "line_number": 522,
+    "full_implementation": "func (o *Object) Hash(ctx context.Context, t hash.Type) (string, error) {\n\tif t != hashType {\n\t\treturn \"\", hash.ErrUnsupported\n\t}\n\tif o.od.hash == \"\" {\n\t\tsum := md5.Sum(o.od.data)\n\t\to.od.hash = hex.EncodeToString(sum[:])\n\t}\n\treturn o.od.hash, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := md5.Sum(o.od.data)",
+        "SourceFilename": "/analysis/repo/backend/memory/memory.go",
+        "SourceLineNum": 522,
+        "ParentFunction": "Hash (ctx context.Context, t github.com/rclone/rclone/fs/hash.Type) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "initiate",
+    "file_path": "/analysis/repo/backend/qingstor/upload.go",
+    "line_number": 269,
+    "full_implementation": "func (mu *multiUploader) initiate() error {\n\tbucketInit, _ := mu.bucketInit()\n\treq := qs.InitiateMultipartUploadInput{\n\t\tContentType: \u0026mu.cfg.mimeType,\n\t}\n\tfs.Debugf(mu, \"Initiating a multi-part upload\")\n\trsp, err := bucketInit.InitiateMultipartUpload(mu.cfg.key, \u0026req)\n\tif err == nil {\n\t\tmu.uploadID = rsp.UploadID\n\t\tmu.hashMd5 = md5.New()\n\t}\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "mu.hashMd5 = md5.New()",
+        "SourceFilename": "/analysis/repo/backend/qingstor/upload.go",
+        "SourceLineNum": 269,
+        "ParentFunction": "initiate () error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewFs",
+    "file_path": "/analysis/repo/backend/sftp/sftp.go",
+    "line_number": 429,
+    "full_implementation": "func NewFs(name, root string, m configmap.Mapper) (fs.Fs, error) {\n\tctx := context.Background()\n\t// Parse config into Options struct\n\topt := new(Options)\n\terr := configstruct.Set(m, opt)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif opt.User == \"\" {\n\t\topt.User = currentUser\n\t}\n\tif opt.Port == \"\" {\n\t\topt.Port = \"22\"\n\t}\n\tsshConfig := \u0026ssh.ClientConfig{\n\t\tUser:            opt.User,\n\t\tAuth:            []ssh.AuthMethod{},\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t\tTimeout:         fs.Config.ConnectTimeout,\n\t\tClientVersion:   \"SSH-2.0-\" + fs.Config.UserAgent,\n\t}\n\n\tif opt.UseInsecureCipher {\n\t\tsshConfig.Config.SetDefaults()\n\t\tsshConfig.Config.Ciphers = append(sshConfig.Config.Ciphers, \"aes128-cbc\", \"aes192-cbc\", \"aes256-cbc\", \"3des-cbc\")\n\t\tsshConfig.Config.KeyExchanges = append(sshConfig.Config.KeyExchanges, \"diffie-hellman-group-exchange-sha1\", \"diffie-hellman-group-exchange-sha256\")\n\t}\n\n\tkeyFile := env.ShellExpand(opt.KeyFile)\n\t//keyPem := env.ShellExpand(opt.KeyPem)\n\t// Add ssh agent-auth if no password or file or key PEM specified\n\tif (opt.Pass == \"\" \u0026\u0026 keyFile == \"\" \u0026\u0026 !opt.AskPassword \u0026\u0026 opt.KeyPem == \"\") || opt.KeyUseAgent {\n\t\tsshAgentClient, _, err := sshagent.New()\n\t\tif err != nil {\n\t\t\treturn nil, errors.Wrap(err, \"couldn't connect to ssh-agent\")\n\t\t}\n\t\tsigners, err := sshAgentClient.Signers()\n\t\tif err != nil {\n\t\t\treturn nil, errors.Wrap(err, \"couldn't read ssh agent signers\")\n\t\t}\n\t\tif keyFile != \"\" {\n\t\t\tpubBytes, err := ioutil.ReadFile(keyFile + \".pub\")\n\t\t\tif err != nil {\n\t\t\t\treturn nil, errors.Wrap(err, \"failed to read public key file\")\n\t\t\t}\n\t\t\tpub, _, _, _, err := ssh.ParseAuthorizedKey(pubBytes)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, errors.Wrap(err, \"failed to parse public key file\")\n\t\t\t}\n\t\t\tpubM := pub.Marshal()\n\t\t\tfound := false\n\t\t\tfor _, s := range signers {\n\t\t\t\tif bytes.Equal(pubM, s.PublicKey().Marshal()) {\n\t\t\t\t\tsshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeys(s))\n\t\t\t\t\tfound = true\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tif !found {\n\t\t\t\treturn nil, errors.New(\"private key not found in the ssh-agent\")\n\t\t\t}\n\t\t} else {\n\t\t\tsshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeys(signers...))\n\t\t}\n\t}\n\n\t// Load key file if specified\n\tif keyFile != \"\" || opt.KeyPem != \"\" {\n\t\tvar key []byte\n\t\tif opt.KeyPem == \"\" {\n\t\t\tkey, err = ioutil.ReadFile(keyFile)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, errors.Wrap(err, \"failed to read private key file\")\n\t\t\t}\n\t\t} else {\n\t\t\t// wrap in quotes because the config is a coming as a literal without them.\n\t\t\topt.KeyPem, err = strconv.Unquote(\"\\\"\" + opt.KeyPem + \"\\\"\")\n\t\t\tif err != nil {\n\t\t\t\treturn nil, errors.Wrap(err, \"pem key not formatted properly\")\n\t\t\t}\n\t\t\tkey = []byte(opt.KeyPem)\n\t\t}\n\t\tclearpass := \"\"\n\t\tif opt.KeyFilePass != \"\" {\n\t\t\tclearpass, err = obscure.Reveal(opt.KeyFilePass)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\t\tvar signer ssh.Signer\n\t\tif clearpass == \"\" {\n\t\t\tsigner, err = ssh.ParsePrivateKey(key)\n\t\t} else {\n\t\t\tsigner, err = ssh.ParsePrivateKeyWithPassphrase(key, []byte(clearpass))\n\t\t}\n\t\tif err != nil {\n\t\t\treturn nil, errors.Wrap(err, \"failed to parse private key file\")\n\t\t}\n\t\tsshConfig.Auth = append(sshConfig.Auth, ssh.PublicKeys(signer))\n\t}\n\n\t// Auth from password if specified\n\tif opt.Pass != \"\" {\n\t\tclearpass, err := obscure.Reveal(opt.Pass)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tsshConfig.Auth = append(sshConfig.Auth, ssh.Password(clearpass))\n\t}\n\n\t// Ask for password if none was defined and we're allowed to\n\tif opt.Pass == \"\" \u0026\u0026 opt.AskPassword {\n\t\t_, _ = fmt.Fprint(os.Stderr, \"Enter SFTP password: \")\n\t\tclearpass := config.ReadPassword()\n\t\tsshConfig.Auth = append(sshConfig.Auth, ssh.Password(clearpass))\n\t}\n\n\treturn NewFsWithConnection(ctx, name, root, m, opt, sshConfig)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/backend/sftp/sftp.go",
+        "SourceLineNum": 429,
+        "ParentFunction": "NewFs (name string, root string, m github.com/rclone/rclone/fs/config/configmap.Mapper) (github.com/rclone/rclone/fs.Fs, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Upload",
+    "file_path": "/analysis/repo/backend/sharefile/upload.go",
+    "line_number": 182,
+    "full_implementation": "func (up *largeUpload) Upload(ctx context.Context) error {\n\tif up.parts \u003e= 0 {\n\t\tfs.Debugf(up.o, \"Starting upload of large file in %d chunks\", up.parts)\n\t} else {\n\t\tfs.Debugf(up.o, \"Starting streaming upload of large file\")\n\t}\n\tvar (\n\t\toffset        int64\n\t\terrs          = make(chan error, 1)\n\t\twg            sync.WaitGroup\n\t\terr           error\n\t\twholeFileHash = md5.New()\n\t\teof           = false\n\t)\nouter:\n\tfor part := int64(0); !eof; part++ {\n\t\t// Check any errors\n\t\tselect {\n\t\tcase err = \u003c-errs:\n\t\t\tbreak outer\n\t\tdefault:\n\t\t}\n\n\t\t// Get a block of memory\n\t\tbuf := up.f.getUploadBlock()\n\n\t\t// Read the chunk\n\t\tvar n int\n\t\tn, err = readers.ReadFill(up.in, buf)\n\t\tif err == io.EOF {\n\t\t\teof = true\n\t\t\tbuf = buf[:n]\n\t\t\terr = nil\n\t\t} else if err != nil {\n\t\t\tup.f.putUploadBlock(buf)\n\t\t\tbreak outer\n\t\t}\n\n\t\t// Hash it\n\t\t_, _ = io.Copy(wholeFileHash, bytes.NewBuffer(buf))\n\n\t\t// Get file hash if was last chunk\n\t\tfileHash := \"\"\n\t\tif eof {\n\t\t\tfileHash = hex.EncodeToString(wholeFileHash.Sum(nil))\n\t\t}\n\n\t\t// Transfer the chunk\n\t\twg.Add(1)\n\t\ttransferChunk := func(part, offset int64, buf []byte, fileHash string) {\n\t\t\tdefer wg.Done()\n\t\t\tdefer up.f.putUploadBlock(buf)\n\t\t\terr := up.transferChunk(ctx, part, offset, buf, fileHash)\n\t\t\tif err != nil {\n\t\t\t\tselect {\n\t\t\t\tcase errs \u003c- err:\n\t\t\t\tdefault:\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif up.streamed {\n\t\t\ttransferChunk(part, offset, buf, fileHash) // streamed\n\t\t} else {\n\t\t\tgo transferChunk(part, offset, buf, fileHash) // multithreaded\n\t\t}\n\n\t\toffset += int64(n)\n\t}\n\twg.Wait()\n\n\t// check size read is correct\n\tif eof \u0026\u0026 err == nil \u0026\u0026 up.size \u003e= 0 \u0026\u0026 up.size != offset {\n\t\terr = errors.Errorf(\"upload: short read: read %d bytes expected %d\", up.size, offset)\n\t}\n\n\t// read any errors\n\tif err == nil {\n\t\tselect {\n\t\tcase err = \u003c-errs:\n\t\tdefault:\n\t\t}\n\t}\n\n\t// finish regardless of errors\n\tfinishErr := up.finish(ctx)\n\tif err == nil {\n\t\terr = finishErr\n\t}\n\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "wholeFileHash = md5.New()",
+        "SourceFilename": "/analysis/repo/backend/sharefile/upload.go",
+        "SourceLineNum": 182,
+        "ParentFunction": "Upload (ctx context.Context) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "transferChunk",
+    "file_path": "/analysis/repo/backend/sharefile/upload.go",
+    "line_number": 97,
+    "full_implementation": "func (up *largeUpload) transferChunk(ctx context.Context, part int64, offset int64, body []byte, fileHash string) error {\n\tmd5sumRaw := md5.Sum(body)\n\tmd5sum := hex.EncodeToString(md5sumRaw[:])\n\tsize := int64(len(body))\n\n\t// Add some more parameters to the ChunkURI\n\tu := up.info.ChunkURI\n\tu += fmt.Sprintf(\"\u0026index=%d\u0026byteOffset=%d\u0026hash=%s\u0026fmt=json\",\n\t\tpart, offset, md5sum,\n\t)\n\tif fileHash != \"\" {\n\t\tu += fmt.Sprintf(\"\u0026finish=true\u0026fileSize=%d\u0026fileHash=%s\",\n\t\t\toffset+int64(len(body)),\n\t\t\tfileHash,\n\t\t)\n\t}\n\topts := rest.Opts{\n\t\tMethod:        \"POST\",\n\t\tRootURL:       u,\n\t\tContentLength: \u0026size,\n\t}\n\tvar respBody []byte\n\terr := up.f.pacer.Call(func() (bool, error) {\n\t\tfs.Debugf(up.o, \"Sending chunk %d length %d\", part, len(body))\n\t\topts.Body = up.wrap(bytes.NewReader(body))\n\t\tresp, err := up.f.srv.Call(ctx, \u0026opts)\n\t\tif err != nil {\n\t\t\tfs.Debugf(up.o, \"Error sending chunk %d: %v\", part, err)\n\t\t} else {\n\t\t\trespBody, err = rest.ReadBody(resp)\n\t\t}\n\t\t// retry all errors now that the multipart upload has started\n\t\treturn err != nil, err\n\t})\n\tif err != nil {\n\t\tfs.Debugf(up.o, \"Error sending chunk %d: %v\", part, err)\n\t\treturn err\n\t}\n\t// If last chunk and using \"streamed\" transfer, get the response back now\n\tif up.streamed \u0026\u0026 fileHash != \"\" {\n\t\treturn up.parseUploadFinishResponse(respBody)\n\t}\n\tfs.Debugf(up.o, \"Done sending chunk %d\", part)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "md5sumRaw := md5.Sum(body)",
+        "SourceFilename": "/analysis/repo/backend/sharefile/upload.go",
+        "SourceLineNum": 97,
+        "ParentFunction": "transferChunk (ctx context.Context, part int64, offset int64, body []byte, fileHash string) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "makeDeviceUUID",
+    "file_path": "/analysis/repo/cmd/serve/dlna/dlna_util.go",
+    "line_number": 36,
+    "full_implementation": "func makeDeviceUUID(unique string) string {\n\th := md5.New()\n\tif _, err := io.WriteString(h, unique); err != nil {\n\t\tlog.Panicf(\"makeDeviceUUID write failed: %s\", err)\n\t}\n\tbuf := h.Sum(nil)\n\treturn upnp.FormatUUID(buf)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/cmd/serve/dlna/dlna_util.go",
+        "SourceLineNum": 36,
+        "ParentFunction": "makeDeviceUUID (unique string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "makeSSHKeyPair",
+    "file_path": "/analysis/repo/cmd/serve/sftp/server.go",
+    "line_number": 322,
+    "full_implementation": "func makeSSHKeyPair(bits int, pubKeyPath, privateKeyPath string) (err error) {\n\tprivateKey, err := rsa.GenerateKey(rand.Reader, bits)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// generate and write private key as PEM\n\tprivateKeyFile, err := os.OpenFile(privateKeyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer fs.CheckClose(privateKeyFile, \u0026err)\n\tprivateKeyPEM := \u0026pem.Block{Type: \"RSA PRIVATE KEY\", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}\n\tif err := pem.Encode(privateKeyFile, privateKeyPEM); err != nil {\n\t\treturn err\n\t}\n\n\t// generate and write public key\n\tpub, err := ssh.NewPublicKey(\u0026privateKey.PublicKey)\n\tif err != nil {\n\t\treturn err\n\t}\n\treturn ioutil.WriteFile(pubKeyPath, ssh.MarshalAuthorizedKey(pub), 0644)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, bits)",
+        "SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
+        "SourceLineNum": 322,
+        "ParentFunction": "makeSSHKeyPair (bits int, pubKeyPath string, privateKeyPath string) (err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func makeSSHKeyPair(bits int, pubKeyPath, privateKeyPath string) (err error) {",
+          "SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
+          "SourceLineNum": 321,
+          "ParentFunction": "makeSSHKeyPair (bits int, pubKeyPath string, privateKeyPath string) (err error)"
+        },
+        {
+          "SourceCode": "err = makeSSHKeyPair(bits, keyPath+\".pub\", keyPath)",
+          "SourceFilename": "/analysis/repo/cmd/serve/sftp/server.go",
+          "SourceLineNum": 225,
+          "ParentFunction": "serve () (err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

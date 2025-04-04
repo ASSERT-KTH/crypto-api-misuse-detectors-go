@@ -1,0 +1,149 @@
+[
+  {
+    "function_name": "generateAndWrite",
+    "file_path": "/analysis/repo/internal/modify/dkim/keys.go",
+    "line_number": 113,
+    "full_implementation": "func (m *Modifier) generateAndWrite(keyPath, newKeyAlgo string) (crypto.Signer, error) {\n\twrapErr := func(err error) error {\n\t\treturn fmt.Errorf(\"modify.dkim: generate %s: %w\", keyPath, err)\n\t}\n\n\tm.log.Printf(\"generating a new %s keypair...\", newKeyAlgo)\n\n\tvar (\n\t\tpkey     crypto.Signer\n\t\tdkimName = newKeyAlgo\n\t\terr      error\n\t)\n\tswitch newKeyAlgo {\n\tcase \"rsa4096\":\n\t\tdkimName = \"rsa\"\n\t\tpkey, err = rsa.GenerateKey(rand.Reader, 4096)\n\tcase \"rsa2048\":\n\t\tdkimName = \"rsa\"\n\t\tpkey, err = rsa.GenerateKey(rand.Reader, 2048)\n\tcase \"ed25519\":\n\t\t_, pkey, err = ed25519.GenerateKey(rand.Reader)\n\tdefault:\n\t\terr = fmt.Errorf(\"unknown key algorithm: %s\", newKeyAlgo)\n\t}\n\tif err != nil {\n\t\treturn nil, wrapErr(err)\n\t}\n\n\tkeyBlob, err := x509.MarshalPKCS8PrivateKey(pkey)\n\tif err != nil {\n\t\treturn nil, wrapErr(err)\n\t}\n\n\t// 0777 because we have public keys in here too and they don't\n\t// need protection. Individual private key files have 0600 perms.\n\tif err := os.MkdirAll(filepath.Dir(keyPath), 0o777); err != nil {\n\t\treturn nil, wrapErr(err)\n\t}\n\n\t_, err = writeDNSRecord(keyPath, dkimName, pkey)\n\tif err != nil {\n\t\treturn nil, wrapErr(err)\n\t}\n\n\tf, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)\n\tif err != nil {\n\t\treturn nil, wrapErr(err)\n\t}\n\n\tif err := pem.Encode(f, \u0026pem.Block{\n\t\tType:  \"PRIVATE KEY\",\n\t\tBytes: keyBlob,\n\t}); err != nil {\n\t\treturn nil, wrapErr(err)\n\t}\n\n\treturn pkey, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "pkey, err = rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/internal/modify/dkim/keys.go",
+        "SourceLineNum": 113,
+        "ParentFunction": "generateAndWrite (keyPath string, newKeyAlgo string) (crypto.Signer, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pkey, err = rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/internal/modify/dkim/keys.go",
+          "SourceLineNum": 113,
+          "ParentFunction": "generateAndWrite (keyPath string, newKeyAlgo string) (crypto.Signer, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "EnableUpdatePipe",
+    "file_path": "/analysis/repo/internal/storage/imapsql/imapsql.go",
+    "line_number": 282,
+    "full_implementation": "func (store *Storage) EnableUpdatePipe(mode updatepipe.BackendMode) error {\n\tif store.updPipe != nil {\n\t\treturn nil\n\t}\n\tif store.updates != nil {\n\t\tpanic(\"imapsql: EnableUpdatePipe called after Updates\")\n\t}\n\n\tupds := store.Back.Updates()\n\n\tswitch store.driver {\n\tcase \"sqlite3\":\n\t\tdbId := sha1.Sum([]byte(strings.Join(store.dsn, \" \")))\n\t\tstore.updPipe = \u0026updatepipe.UnixSockPipe{\n\t\t\tSockPath: filepath.Join(\n\t\t\t\tconfig.RuntimeDirectory,\n\t\t\t\tfmt.Sprintf(\"sql-%s.sock\", hex.EncodeToString(dbId[:]))),\n\t\t\tLog: log.Logger{Name: \"sql/updpipe\", Debug: store.Log.Debug},\n\t\t}\n\tdefault:\n\t\treturn errors.New(\"imapsql: driver does not have an update pipe implementation\")\n\t}\n\n\twrapped := make(chan backend.Update, cap(upds)*2)\n\n\tif mode == updatepipe.ModeReplicate {\n\t\tif err := store.updPipe.Listen(wrapped); err != nil {\n\t\t\tstore.updPipe = nil\n\t\t\treturn err\n\t\t}\n\t}\n\n\tif err := store.updPipe.InitPush(); err != nil {\n\t\tstore.updPipe = nil\n\t\treturn err\n\t}\n\n\tstore.updPushStop = make(chan struct{})\n\tgo func() {\n\t\tdefer func() {\n\t\t\tstore.updPushStop \u003c- struct{}{}\n\t\t\tclose(wrapped)\n\n\t\t\tif err := recover(); err != nil {\n\t\t\t\tstack := debug.Stack()\n\t\t\t\tlog.Printf(\"panic during imapsql update push: %v\\n%s\", err, stack)\n\t\t\t}\n\t\t}()\n\n\t\tfor {\n\t\t\tselect {\n\t\t\tcase \u003c-store.updPushStop:\n\t\t\t\treturn\n\t\t\tcase u := \u003c-upds:\n\t\t\t\tif u == nil {\n\t\t\t\t\t// The channel is closed. We must be stopping now.\n\t\t\t\t\t\u003c-store.updPushStop\n\t\t\t\t\treturn\n\t\t\t\t}\n\n\t\t\t\tif err := store.updPipe.Push(u); err != nil {\n\t\t\t\t\tstore.Log.Error(\"IMAP update pipe push failed\", err)\n\t\t\t\t}\n\n\t\t\t\tif mode != updatepipe.ModePush {\n\t\t\t\t\twrapped \u003c- u\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}()\n\n\tstore.updates = wrapped\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "dbId := sha1.Sum([]byte(strings.Join(store.dsn, \" \")))",
+        "SourceFilename": "/analysis/repo/internal/storage/imapsql/imapsql.go",
+        "SourceLineNum": 282,
+        "ParentFunction": "EnableUpdatePipe (mode github.com/foxcpp/maddy/internal/updatepipe.BackendMode) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "connect",
+    "file_path": "/analysis/repo/internal/target/remote/connect.go",
+    "line_number": 125,
+    "full_implementation": "func (rd *remoteDelivery) connect(ctx context.Context, conn mxConn, host string, tlsCfg *tls.Config) (tlsLevel module.TLSLevel, tlsErr, err error) {\n\ttlsLevel = module.TLSAuthenticated\n\tif rd.rt.tlsConfig != nil {\n\t\ttlsCfg = rd.rt.tlsConfig.Clone()\n\t\ttlsCfg.ServerName = host\n\t}\n\n\trd.Log.DebugMsg(\"trying\", \"remote_server\", host, \"domain\", conn.domain)\n\nretry:\n\t// smtpconn.C default TLS behavior is not useful for us, we want to handle\n\t// TLS errors separately hence starttls=false.\n\t_, err = conn.Connect(ctx, config.Endpoint{\n\t\tHost: host,\n\t\tPort: smtpPort,\n\t}, false, nil)\n\tif err != nil {\n\t\treturn module.TLSNone, nil, err\n\t}\n\n\tstarttlsOk, _ := conn.Client().Extension(\"STARTTLS\")\n\tif starttlsOk \u0026\u0026 tlsCfg != nil {\n\t\tif err := conn.Client().StartTLS(tlsCfg); err != nil {\n\t\t\ttlsErr = err\n\n\t\t\t// Attempt TLS without authentication. It is still better than\n\t\t\t// plaintext and we might be able to actually authenticate the\n\t\t\t// server using DANE-EE/DANE-TA later.\n\t\t\t//\n\t\t\t// Check tlsLevel is to avoid looping forever if the same verify\n\t\t\t// error happens with InsecureSkipVerify too (e.g. certificate is\n\t\t\t// *too* broken).\n\t\t\tif isVerifyError(err) \u0026\u0026 tlsLevel == module.TLSAuthenticated {\n\t\t\t\trd.Log.Error(\"TLS verify error, trying without authentication\", err, \"remote_server\", host, \"domain\", conn.domain)\n\t\t\t\ttlsCfg.InsecureSkipVerify = true\n\t\t\t\ttlsLevel = module.TLSEncrypted\n\n\t\t\t\t// TODO: Check go-smtp code to make TLS verification errors\n\t\t\t\t// non-sticky so we can properly send QUIT in this case.\n\t\t\t\tconn.DirectClose()\n\n\t\t\t\tgoto retry\n\t\t\t}\n\n\t\t\trd.Log.Error(\"TLS error, trying plaintext\", err, \"remote_server\", host, \"domain\", conn.domain)\n\t\t\ttlsCfg = nil\n\t\t\ttlsLevel = module.TLSNone\n\t\t\tconn.DirectClose()\n\n\t\t\tgoto retry\n\t\t}\n\t} else {\n\t\ttlsLevel = module.TLSNone\n\t}\n\n\treturn tlsLevel, tlsErr, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsCfg.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/internal/target/remote/connect.go",
+        "SourceLineNum": 125,
+        "ParentFunction": "connect (ctx context.Context, conn github.com/foxcpp/maddy/internal/target/remote.mxConn, host string, tlsCfg *crypto/tls.Config) (tlsLevel github.com/foxcpp/maddy/framework/module.TLSLevel, tlsErr error, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsCfg.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/internal/target/remote/connect.go",
+          "SourceLineNum": 125,
+          "ParentFunction": "connect (ctx context.Context, conn github.com/foxcpp/maddy/internal/target/remote.mxConn, host string, tlsCfg *crypto/tls.Config) (tlsLevel github.com/foxcpp/maddy/framework/module.TLSLevel, tlsErr error, err error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "TLS",
+    "file_path": "/analysis/repo/tests/conn.go",
+    "line_number": 194,
+    "full_implementation": "func (c *Conn) TLS() {\n\tc.T.Helper()\n\n\ttlsC := tls.Client(c.Conn, \u0026tls.Config{\n\t\tServerName:         \"maddy.test\",\n\t\tInsecureSkipVerify: true,\n\t})\n\tif err := tlsC.Handshake(); err != nil {\n\t\tc.fatal(\"TLS handshake fail: %v\", err)\n\t}\n\n\tc.Conn = tlsC\n\tc.Scanner = bufio.NewScanner(c.Conn)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/tests/conn.go",
+        "SourceLineNum": 194,
+        "ParentFunction": "TLS ()"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/tests/conn.go",
+          "SourceLineNum": 194,
+          "ParentFunction": "TLS ()"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "RandomMsg",
+    "file_path": "/analysis/repo/internal/testutils/bench_delivery.go",
+    "line_number": 95,
+    "full_implementation": "func RandomMsg(b *testing.B) (module.MsgMetadata, textproto.Header, buffer.Buffer) {\n\tIDRaw := sha1.Sum([]byte(b.Name()))\n\tencodedID := hex.EncodeToString(IDRaw[:])\n\n\tbody := bufio.NewReader(strings.NewReader(testMailString))\n\thdr, _ := textproto.ReadHeader(body)\n\tfor i := 0; i \u003c ExtraMessageHeaderFields; i++ {\n\t\thdr.Add(\"AAAAAAAAAAAA-\"+strconv.Itoa(i), strings.Repeat(\"A\", ExtraMessageHeaderFieldSize))\n\t}\n\tbodyBlob, _ := ioutil.ReadAll(body)\n\n\treturn module.MsgMetadata{\n\t\tDontTraceSender: true,\n\t\tID:              encodedID,\n\t}, hdr, buffer.MemoryBuffer{Slice: bodyBlob}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "IDRaw := sha1.Sum([]byte(b.Name()))",
+        "SourceFilename": "/analysis/repo/internal/testutils/bench_delivery.go",
+        "SourceLineNum": 95,
+        "ParentFunction": "RandomMsg (b *testing.B) (github.com/foxcpp/maddy/framework/module.MsgMetadata, github.com/emersion/go-message/textproto.Header, github.com/foxcpp/maddy/framework/buffer.Buffer)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "DoTestDeliveryNonAtomic",
+    "file_path": "/analysis/repo/internal/testutils/target.go",
+    "line_number": 203,
+    "full_implementation": "func DoTestDeliveryNonAtomic(t *testing.T, c module.StatusCollector, tgt module.DeliveryTarget, from string, to []string) string {\n\tt.Helper()\n\n\tIDRaw := sha1.Sum([]byte(t.Name()))\n\tencodedID := hex.EncodeToString(IDRaw[:])\n\n\ttestCtx := context.Background()\n\n\tbody := buffer.MemoryBuffer{Slice: []byte(\"foobar\\r\\n\")}\n\tmsgMeta := module.MsgMetadata{\n\t\tDontTraceSender: true,\n\t\tID:              encodedID,\n\t\tOriginalFrom:    from,\n\t}\n\tt.Log(\"-- tgt.Start\", from)\n\tdelivery, err := tgt.Start(testCtx, \u0026msgMeta, from)\n\tif err != nil {\n\t\tt.Log(\"-- ... tgt.Start\", from, err, exterrors.Fields(err))\n\t\tt.Fatalf(\"Unexpected err: %v %+v\", err, exterrors.Fields(err))\n\t\treturn encodedID\n\t}\n\tfor _, rcpt := range to {\n\t\tt.Log(\"-- delivery.AddRcpt\", rcpt)\n\t\tif err := delivery.AddRcpt(testCtx, rcpt); err != nil {\n\t\t\tt.Log(\"-- ... delivery.AddRcpt\", rcpt, err, exterrors.Fields(err))\n\t\t\tt.Log(\"-- delivery.Abort\")\n\t\t\tif err := delivery.Abort(testCtx); err != nil {\n\t\t\t\tt.Log(\"-- delivery.Abort:\", err, exterrors.Fields(err))\n\t\t\t}\n\t\t\tt.Fatalf(\"Unexpected err: %v %+v\", err, exterrors.Fields(err))\n\t\t\treturn encodedID\n\t\t}\n\t}\n\tt.Log(\"-- delivery.BodyNonAtomic\")\n\thdr := textproto.Header{}\n\thdr.Add(\"B\", \"2\")\n\thdr.Add(\"A\", \"1\")\n\tdelivery.(module.PartialDelivery).BodyNonAtomic(testCtx, c, hdr, body)\n\tt.Log(\"-- delivery.Commit\")\n\tif err := delivery.Commit(testCtx); err != nil {\n\t\tt.Fatalf(\"Unexpected err: %v %+v\", err, exterrors.Fields(err))\n\t}\n\n\treturn encodedID\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "IDRaw := sha1.Sum([]byte(t.Name()))",
+        "SourceFilename": "/analysis/repo/internal/testutils/target.go",
+        "SourceLineNum": 203,
+        "ParentFunction": "DoTestDeliveryNonAtomic (t *testing.T, c github.com/foxcpp/maddy/framework/module.StatusCollector, tgt github.com/foxcpp/maddy/framework/module.DeliveryTarget, from string, to []string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "CheckMsg",
+    "file_path": "/analysis/repo/internal/testutils/target.go",
+    "line_number": 318,
+    "full_implementation": "func CheckMsg(t *testing.T, msg *Msg, sender string, rcpt []string) {\n\tt.Helper()\n\n\tidRaw := sha1.Sum([]byte(t.Name()))\n\tencodedId := hex.EncodeToString(idRaw[:])\n\n\tCheckMsgID(t, msg, sender, rcpt, encodedId)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "idRaw := sha1.Sum([]byte(t.Name()))",
+        "SourceFilename": "/analysis/repo/internal/testutils/target.go",
+        "SourceLineNum": 318,
+        "ParentFunction": "CheckMsg (t *testing.T, msg *github.com/foxcpp/maddy/internal/testutils.Msg, sender string, rcpt []string)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

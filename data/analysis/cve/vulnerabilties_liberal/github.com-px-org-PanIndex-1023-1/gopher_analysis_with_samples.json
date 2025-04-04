@@ -1,0 +1,117 @@
+[
+  {
+    "function_name": "Md5Params",
+    "file_path": "/analysis/repo/util/common.go",
+    "line_number": 722,
+    "full_implementation": "func Md5Params(params map[string]string) string {\n\tkeys := []string{}\n\tfor k, v := range params {\n\t\tkeys = append(keys, k+\"=\"+v)\n\t}\n\tsort.Strings(keys)\n\tsignStr := strings.Join(keys, \"\u0026\")\n\th := md5.New()\n\th.Write([]byte(signStr))\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/util/common.go",
+        "SourceLineNum": 722,
+        "ParentFunction": "Md5Params (params map[string]string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Md5",
+    "file_path": "/analysis/repo/util/common.go",
+    "line_number": 237,
+    "full_implementation": "func Md5(data string) string {\n\treturn fmt.Sprintf(\"%x\", md5.Sum([]byte(data)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "return fmt.Sprintf(\"%x\", md5.Sum([]byte(data)))",
+        "SourceFilename": "/analysis/repo/util/common.go",
+        "SourceLineNum": 237,
+        "ParentFunction": "Md5 (data string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "RsaEncode",
+    "file_path": "/analysis/repo/util/common.go",
+    "line_number": 584,
+    "full_implementation": "func RsaEncode(origData []byte, j_rsakey string) string {\n\tpublicKey := []byte(\"-----BEGIN PUBLIC KEY-----\\n\" + j_rsakey + \"\\n-----END PUBLIC KEY-----\")\n\tblock, _ := pem.Decode(publicKey)\n\tpubInterface, _ := x509.ParsePKIXPublicKey(block.Bytes)\n\tpub := pubInterface.(*rsa.PublicKey)\n\tb, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)\n\tif err != nil {\n\t\tlog.Errorf(\"err: %s\", err.Error())\n\t}\n\treturn b64tohex(base64.StdEncoding.EncodeToString(b))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.EncryptPKCS1v15",
+      "Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
+      "Slicing_Criteria": {
+        "SourceCode": "b, err := rsa.EncryptPKCS1v15(rand.Reader, pub, origData)",
+        "SourceFilename": "/analysis/repo/util/common.go",
+        "SourceLineNum": 584,
+        "ParentFunction": "RsaEncode (origData []byte, j_rsakey string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GetClient",
+    "file_path": "/analysis/repo/util/common.go",
+    "line_number": 677,
+    "full_implementation": "func GetClient(timeout int) *http.Client {\n\tif module.GloablConfig.Proxy != \"\" {\n\t\tproxy, _ := url.Parse(module.GloablConfig.Proxy)\n\t\ttr := \u0026http.Transport{\n\t\t\tProxy:           http.ProxyURL(proxy),\n\t\t\tTLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},\n\t\t}\n\t\tclient := \u0026http.Client{\n\t\t\tTransport: tr,\n\t\t\tTimeout:   time.Second * time.Duration(timeout),\n\t\t}\n\t\treturn client\n\t} else {\n\t\treturn \u0026http.Client{\n\t\t\tTimeout: time.Second * time.Duration(timeout),\n\t\t}\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/util/common.go",
+        "SourceLineNum": 677,
+        "ParentFunction": "GetClient (timeout int) *net/http.Client"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/util/common.go",
+          "SourceLineNum": 677,
+          "ParentFunction": "GetClient (timeout int) *net/http.Client"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "UploadFiles",
+    "file_path": "/analysis/repo/pan/Yun139.go",
+    "line_number": 205,
+    "full_implementation": "func (y Yun139) UploadFiles(account module.Account, parentFileId string, files []*module.UploadInfo, overwrite bool) (bool, interface{}, error) {\n\tfor _, file := range files {\n\t\tt1 := time.Now()\n\t\tlog.Debugf(\"Upload started：%s，Size：%d\", file.FileName, file.FileSize)\n\t\ttextQuoted := strconv.QuoteToASCII(file.FileName)\n\t\ttextUnquoted := textQuoted[1 : len(textQuoted)-1]\n\t\tdigest := fmt.Sprintf(\"%x\", md5.Sum(file.Content))\n\t\tbody := KV{\n\t\t\t\"fileCount\":         1,\n\t\t\t\"parentCatalogID\":   parentFileId,\n\t\t\t\"manualRename\":      2,\n\t\t\t\"newCatalogName\":    \"\",\n\t\t\t\"operation\":         0,\n\t\t\t\"totalSize\":         file.FileSize,\n\t\t\t\"commonAccountInfo\": KV{\"account\": account.User, \"accountType\": 1},\n\t\t\t\"uploadContentList\": []KV{{\n\t\t\t\t\"contentName\": file.FileName,\n\t\t\t\t\"contentSize\": file.FileSize,\n\t\t\t\t\"digest\":      digest,\n\t\t\t}},\n\t\t}\n\t\tresp, err := resty.New().R().\n\t\t\tSetHeaders(y.CreateHeaders(body, account.Password)).\n\t\t\tSetBody(body).\n\t\t\tPost(\"https://yun.139.com/orchestration/personalCloud/uploadAndDownload/v1.0/pcUploadFileRequest\")\n\t\tif err != nil {\n\t\t\treturn false, \"File upload failed\", err\n\t\t}\n\t\tstatus := jsoniter.Get(resp.Body(), \"success\").ToBool()\n\t\tif status {\n\t\t\tisNeedUpload := jsoniter.Get(resp.Body(), \"data\").\n\t\t\t\tGet(\"uploadResult\").\n\t\t\t\tGet(\"newContentIDList\").\n\t\t\t\tGet(0).\n\t\t\t\tGet(\"isNeedUpload\").ToInt()\n\t\t\tif isNeedUpload == 1 {\n\t\t\t\t//need upload\n\t\t\t\tuploadUrl := jsoniter.Get(resp.Body(), \"data\").\n\t\t\t\t\tGet(\"uploadResult\").\n\t\t\t\t\tGet(\"redirectionUrl\").ToString()\n\t\t\t\tuploadTaskID := jsoniter.Get(resp.Body(), \"data\").\n\t\t\t\t\tGet(\"uploadResult\").\n\t\t\t\t\tGet(\"uploadTaskID\").ToString()\n\t\t\t\tbfs := ReadBlock(16384000, file)\n\t\t\t\tfor _, bf := range bfs {\n\t\t\t\t\tr, _ := http.NewRequest(\"POST\", uploadUrl, bytes.NewReader(bf.Content))\n\t\t\t\t\tr.Header.Add(\"uploadtaskID\", uploadTaskID)\n\t\t\t\t\tr.Header.Add(\"rangeType\", \"0\")\n\t\t\t\t\tr.Header.Add(\"Range\", bf.Range2)\n\t\t\t\t\tr.Header.Add(\"Content-Type\", \"text/plain;name=\"+textUnquoted)\n\t\t\t\t\tr.Header.Add(\"contentSize\", fmt.Sprintf(\"%d\", len(bf.Content)))\n\t\t\t\t\tr.Header.Add(\"Content-Length\", fmt.Sprintf(\"%d\", len(bf.Content)))\n\t\t\t\t\tr.Header.Add(\"Referer\", \"https://yun.139.com/\")\n\t\t\t\t\tr.Header.Add(\"x-SvcType\", \"1\")\n\t\t\t\t\tr.Header.Add(\"User-Agent\", \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36\")\n\t\t\t\t\tres, _ := http.DefaultClient.Do(r)\n\t\t\t\t\tdefer res.Body.Close()\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tlog.Debug(\"[yun139] fast upload success\")\n\t\t\t}\n\t\t}\n\t\tlog.Debugf(\"file：%s，upload success，timespan：%s\", file.FileName, util.ShortDur(time.Now().Sub(t1)))\n\t}\n\treturn true, \"all files uploaded\", nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "digest := fmt.Sprintf(\"%x\", md5.Sum(file.Content))",
+        "SourceFilename": "/analysis/repo/pan/Yun139.go",
+        "SourceLineNum": 205,
+        "ParentFunction": "UploadFiles (account github.com/libsgh/PanIndex/module.Account, parentFileId string, files []*github.com/libsgh/PanIndex/module.UploadInfo, overwrite bool) (bool, interface{}, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "UploadFiles",
+    "file_path": "/analysis/repo/pan/Pikpak.go",
+    "line_number": 208,
+    "full_implementation": "func (p Pikpak) UploadFiles(account module.Account, parentFileId string, files []*module.UploadInfo, overwrite bool) (bool, interface{}, error) {\n\tpikPakToken := Pikpaks[account.Id]\n\tfor _, file := range files {\n\t\tt1 := time.Now()\n\t\tsha1 := sha1.Sum(file.Content)\n\t\tresp, err := client.R().\n\t\t\tSetAuthToken(pikPakToken.AccessToken).\n\t\t\tSetResult(\u0026file).\n\t\t\tSetBody(KV{\n\t\t\t\t\"kind\":        \"drive#file\",\n\t\t\t\t\"name\":        file.FileName,\n\t\t\t\t\"size\":        file.FileSize,\n\t\t\t\t\"hash\":        strings.ToUpper(fmt.Sprintf(\"%x\", sha1)),\n\t\t\t\t\"upload_type\": \"UPLOAD_TYPE_RESUMABLE\",\n\t\t\t\t\"objProvider\": KV{\"provider\": \"UPLOAD_TYPE_UNKNOWN\"},\n\t\t\t\t\"parent_id\":   parentFileId}).\n\t\t\tPost(\"https://api-drive.mypikpak.com/drive/v1/files\")\n\t\tparams := jsoniter.Get(resp.Body(), \"resumable\").Get(\"params\")\n\t\tendpoint := params.Get(\"endpoint\").ToString()\n\t\tendpointS := strings.Split(endpoint, \".\")\n\t\tendpoint = strings.Join(endpointS[1:], \".\")\n\t\taccessKeyId := params.Get(\"access_key_id\").ToString()\n\t\taccessKeySecret := params.Get(\"access_key_secret\").ToString()\n\t\tsecurityToken := params.Get(\"security_token\").ToString()\n\t\tkey := params.Get(\"key\").ToString()\n\t\tbucket := params.Get(\"bucket\").ToString()\n\t\tcfg := \u0026aws.Config{\n\t\t\tCredentials: credentials.NewStaticCredentials(accessKeyId, accessKeySecret, securityToken),\n\t\t\tRegion:      aws.String(\"pikpak\"),\n\t\t\tEndpoint:    \u0026endpoint,\n\t\t}\n\t\ts, err := session.NewSession(cfg)\n\t\tif err != nil {\n\t\t\tlog.Errorf(\"Unable to create session:%s, err:%v\", file.FileName, err)\n\t\t}\n\t\tuploader := s3manager.NewUploader(s)\n\t\tinput := \u0026s3manager.UploadInput{\n\t\t\tBucket: aws.String(bucket),\n\t\t\tKey:    aws.String(key),\n\t\t\tBody:   bytes.NewReader(file.Content),\n\t\t}\n\t\t_, err = uploader.Upload(input)\n\t\tif err != nil {\n\t\t\tlog.Errorf(\"Unable to upload file:%s, err:%v\", file.FileName, err)\n\t\t}\n\t\tlog.Debugf(\"file:%s，upload success,timespan:%s\", file.FileName, util.ShortDur(time.Now().Sub(t1)))\n\t}\n\treturn true, \"all files uploaded\", nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha1 := sha1.Sum(file.Content)",
+        "SourceFilename": "/analysis/repo/pan/Pikpak.go",
+        "SourceLineNum": 208,
+        "ParentFunction": "UploadFiles (account github.com/libsgh/PanIndex/module.Account, parentFileId string, files []*github.com/libsgh/PanIndex/module.UploadInfo, overwrite bool) (bool, interface{}, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]
