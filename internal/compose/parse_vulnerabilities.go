@@ -19,30 +19,33 @@ type VulPackage struct {
 	GoVersion   string   `json:"go_version"`
 }
 
-type Repo struct {
+type Repository struct {
 	RepoSlug string   `json:"repo_slug"`
 	GitTags  []string `json:"git_tags"`
 }
 
 type Vulnerability struct {
 	ID          int          `json:"id"`
-	Repo        Repo         `json:"repo"`
+	Repo        Repository   `json:"repo"`
 	References  []string     `json:"references"`
 	CVE         string       `json:"cve"`
 	CWE         string       `json:"cwe"`
 	VulPackages []VulPackage `json:"vul_packages"`
 }
 
-// readVulnerabilities reads and parses the vulnerabilities from JSON file
-func readVulnerabilities(filepath string) ([]Vulnerability, error) {
-	data, err := os.ReadFile(filepath)
+// readVulnerabilities reads and parses the vulnerabilities from a JSON file
+func readVulnerabilities(filePath string) ([]Vulnerability, error) {
+	// Read the file
+	fileData, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("reading file: %w", err)
+		return nil, fmt.Errorf("failed to read vulnerability file: %w", err)
 	}
 
+	// Parse JSON data
 	var vulnerabilities []Vulnerability
-	if err := json.Unmarshal(data, &vulnerabilities); err != nil {
-		return nil, fmt.Errorf("parsing JSON: %w", err)
+	if err := json.Unmarshal(fileData, &vulnerabilities); err != nil {
+		return nil, fmt.Errorf("failed to parse vulnerability JSON: %w", err)
 	}
+
 	return vulnerabilities, nil
 }

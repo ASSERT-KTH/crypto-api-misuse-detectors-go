@@ -77,47 +77,10 @@ func TestGetMetadataPath(t *testing.T) {
 	}
 }
 
-func TestCreateMetadata(t *testing.T) {
-	vuln := Vulnerability{
-		ID: 1,
-		Repo: Repo{
-			RepoSlug: "github.com/test/repo",
-		},
-		CVE: "CVE-2023-1234",
-		CWE: "CWE-123",
-	}
-
-	vp := VulPackage{
-		Name:        "test-package",
-		GoVersion:   "1.16",
-		VulName:     "Test Vulnerability",
-		Publish:     "2023-01-01",
-		Summary:     "Test summary",
-		Level:       "high",
-		Score:       "8.5",
-		Remediation: "Update to latest version",
-		VulRange:    "<1.0.0",
-		VulGitTags:  []string{"v0.9.0", "v1.0.0"},
-	}
-
-	metadata := createMetadata(vuln, vuln.Repo, vp)
-
-	// Test specific fields
-	if metadata.ID != vuln.ID {
-		t.Errorf("metadata.ID = %v, want %v", metadata.ID, vuln.ID)
-	}
-	if metadata.Package != vp.Name {
-		t.Errorf("metadata.Package = %v, want %v", metadata.Package, vp.Name)
-	}
-	if metadata.CVE != vuln.CVE {
-		t.Errorf("metadata.CVE = %v, want %v", metadata.CVE, vuln.CVE)
-	}
-}
-
 func TestGenerateServiceConfig(t *testing.T) {
 	vuln := Vulnerability{
 		ID: 1,
-		Repo: Repo{
+		Repo: Repository{
 			RepoSlug: "github.com/test/repo",
 		},
 	}

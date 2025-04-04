@@ -52,7 +52,7 @@ func addVulnerabilityServices(builder *strings.Builder, vulnerability Vulnerabil
 		// Write metadata for this vulnerability package
 		packageNum := packageIndex + 1
 		// Write metadata for this vulnerability
-		if err := logVulnerabilityMeta(vulnerability, vulnPackage, packageNum, baseFileName); err != nil {
+		if err := writeMetadata(vulnerability, vulnPackage, packageNum, baseFileName); err != nil {
 			// Log error but continue with other packages
 			fmt.Fprintf(os.Stderr, "Warning: failed to write metadata for %s-%d-%d: %v\n",
 				vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum, err)
