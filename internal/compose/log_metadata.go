@@ -1,4 +1,4 @@
-package main
+package compose
 
 import (
 	"encoding/json"
@@ -46,8 +46,8 @@ func createMetadata(vuln Vulnerability, repo Repo, vp VulPackage) VulnerabilityM
 	}
 }
 
-// generateMetadataFilePath generates the repository relative directory path for storing a package's analysis results
-func generateMetadataFilePath(baseName string, repoSlug string, id int, pkgNum int) string {
+// generatePackageAnalysisPath generates the repository relative directory path for storing a package's analysis results
+func generatePackageAnalysisPath(baseName string, repoSlug string, id int, pkgNum int) string {
 	return fmt.Sprintf("data/analysis/cve/%s/%s-%d-%d",
 		baseName,
 		strings.ReplaceAll(repoSlug, "/", "-"),
@@ -55,10 +55,10 @@ func generateMetadataFilePath(baseName string, repoSlug string, id int, pkgNum i
 		pkgNum)
 }
 
-func writeMetadata(vuln Vulnerability, vp VulPackage, pkgNum int, baseName string) error {
+func logVulnerabilityMeta(vuln Vulnerability, vp VulPackage, pkgNum int, baseName string) error {
 	metadata := createMetadata(vuln, vuln.Repo, vp)
 
-	dirPath := generateMetadataFilePath(baseName, vuln.Repo.RepoSlug, vuln.ID, pkgNum)
+	dirPath := generatePackageAnalysisPath(baseName, vuln.Repo.RepoSlug, vuln.ID, pkgNum)
 	dirPath = fmt.Sprintf("./%s", dirPath)
 	metadataPath := filepath.Join(dirPath, "vulnerability_info.json")
 

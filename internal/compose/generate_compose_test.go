@@ -1,4 +1,4 @@
-package main
+package compose
 
 import (
 	"os"
@@ -69,7 +69,7 @@ func TestGetMetadataPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := generateMetadataFilePath(tt.baseName, tt.repoSlug, tt.id, tt.pkgNum)
+			got := generatePackageAnalysisPath(tt.baseName, tt.repoSlug, tt.id, tt.pkgNum)
 			if got != tt.want {
 				t.Errorf("getMetadataPath() = %v, want %v", got, tt.want)
 			}
