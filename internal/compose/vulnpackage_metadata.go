@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/parse"
 )
 
 // VulnerabilityMetadata represents the metadata for a vulnerability
@@ -26,8 +28,20 @@ type VulnerabilityMetadata struct {
 	VulGitTags  []string `json:"vul_git_tags"`
 }
 
+// MetadataWriter handles writing vulnerability metadata to files
+type MetadataWriter struct {
+	outputBasePath string
+}
 
-func writeMetadata(vulnerability Vulnerability, vulnPackage VulPackage, packageNum int, baseFileName string) error {
+// NewMetadataWriter creates a new MetadataWriter with the given output base path
+func NewMetadataWriter(outputBasePath string) *MetadataWriter {
+	return &MetadataWriter{
+		outputBasePath: outputBasePath,
+	}
+}
+
+// WriteMetadata writes metadata for a vulnerability package to a file
+func (w *MetadataWriter) WriteMetadata(vulnerability parse.Vulnerability, vulnPackage parse.VulPackage, packageNum int) error {
 	// Create metadata struct
 	metadata := VulnerabilityMetadata{
 		ID:          vulnerability.ID,
@@ -47,18 +61,18 @@ func writeMetadata(vulnerability Vulnerability, vulnPackage VulPackage, packageN
 	}
 
 	// Generate file path for metadata
-	metadataDir := generateMetadataDirectory(baseFileName, vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
+	metadataDir := w.generateMetadataDirectory(vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
 	metadataFilePath := filepath.Join(metadataDir, "vulnerability_info.json")
 
 	// Ensure the directory exists
 	if err := os.MkdirAll(metadataDir, 0755); err != nil {
 		return fmt.Errorf("failed to create metadata directory: %w", err)
 	}
-	
+
 	// Write metadata to file
 	metadataJSON, err := json.MarshalIndent(metadata, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal metadata to JSON:: %w", err)
+		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
 	}
 
 	if err := os.WriteFile(metadataFilePath, metadataJSON, 0644); err != nil {
@@ -69,17 +83,23 @@ func writeMetadata(vulnerability Vulnerability, vulnPackage VulPackage, packageN
 }
 
 // generateMetadataDirectory returns the full path to the directory where metadata should be stored
-func generateMetadataDirectory(baseFileName string, repoSlug string, vulnID int, packageNum int) string {
+func (w *MetadataWriter) generateMetadataDirectory(repoSlug string, vulnID int, packageNum int) string {
 	// Convert repo slug to file-safe format
 	repoSafeName := strings.ReplaceAll(repoSlug, "/", "-")
-	
+
 	// Build the directory path
 	relativePath := fmt.Sprintf("data/analysis/cve/%s/%s-%d-%d",
-		baseFileName,
+		w.outputBasePath,
 		repoSafeName,
 		vulnID,
 		packageNum)
-	
+
 	// Return as relative path
 	return "./" + relativePath
+}
+
+// Legacy function to maintain backward compatibility
+func writeMetadata(vulnerability parse.Vulnerability, vulnPackage parse.VulPackage, packageNum int, baseFileName string) error {
+	writer := NewMetadataWriter(baseFileName)
+	return writer.WriteMetadata(vulnerability, vulnPackage, packageNum)
 }

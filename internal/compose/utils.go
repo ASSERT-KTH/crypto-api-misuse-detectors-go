@@ -16,6 +16,7 @@ func generatePackageAnalysisPath(baseName string, repoSlug string, id int, pkgNu
 }
 
 // Takes a filepath as input and returns the base name of the file without its extension.
-func getFileName(path string) string {
+func GetFileName(path string) string {
 	return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 }
+

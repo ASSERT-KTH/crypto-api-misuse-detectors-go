@@ -4,33 +4,18 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/parse"
 )
 
-// Takes a vulnerability json file as input and generates a docker-compose file.
-func GenerateCompose(vulnerabilityFilePath string, outFilePath string) error {
-	vulnerabilities, err := readVulnerabilities(vulnerabilityFilePath)
-	if err != nil {
-		return fmt.Errorf("failed to read vulnerabilities: %w", err)
-	}
-
-	baseFileName := getFileName(vulnerabilityFilePath)
-	composeContent := buildComposeFile(vulnerabilities, baseFileName)
-
-	if err := os.WriteFile(outFilePath, []byte(composeContent), 0644); err != nil {
-		return fmt.Errorf("failed to write compose file: %w", err)
-	}
-
-	return nil
-}
-
-// buildComposeFile constructs the complete Docker Compose YAML content as a string
-func buildComposeFile(vulnerabilities []Vulnerability, baseFileName string) string {
+// GenerateComposeFile constructs the complete Docker Compose YAML content as a string
+func GenerateComposeFile(vulnerabilities []parse.Vulnerability, outputBasePath string) string {
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString("version: '3.8'\n\n")
 	composeBuilder.WriteString("services:\n")
 
 	for _, vulnerability := range vulnerabilities {
-		addVulnerabilityServices(&composeBuilder, vulnerability, baseFileName)
+		addVulnerabilityServices(&composeBuilder, vulnerability, outputBasePath)
 	}
 
 	composeBuilder.WriteString(generateVolumeConfig())
@@ -38,7 +23,10 @@ func buildComposeFile(vulnerabilities []Vulnerability, baseFileName string) stri
 }
 
 // addVulnerabilityServices adds all services for a single vulnerability to the compose file
-func addVulnerabilityServices(builder *strings.Builder, vulnerability Vulnerability, baseFileName string) {
+func addVulnerabilityServices(builder *strings.Builder, vulnerability parse.Vulnerability, outputBasePath string) {
+	// Create a metadata writer for this vulnerability
+	metadataWriter := NewMetadataWriter(outputBasePath)
+
 	for packageIndex, vulnPackage := range vulnerability.VulPackages {
 		// Skip packages with no identified vulnerable git tags
 		if len(vulnPackage.VulGitTags) == 0 {
@@ -49,10 +37,9 @@ func addVulnerabilityServices(builder *strings.Builder, vulnerability Vulnerabil
 			vulnPackage.GoVersion = "1.11"
 		}
 
-		// Write metadata for this vulnerability package
+		// Write a metadata file for this vulnerability package
 		packageNum := packageIndex + 1
-		// Write metadata for this vulnerability
-		if err := writeMetadata(vulnerability, vulnPackage, packageNum, baseFileName); err != nil {
+		if err := metadataWriter.WriteMetadata(vulnerability, vulnPackage, packageNum); err != nil {
 			// Log error but continue with other packages
 			fmt.Fprintf(os.Stderr, "Warning: failed to write metadata for %s-%d-%d: %v\n",
 				vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum, err)
@@ -60,20 +47,20 @@ func addVulnerabilityServices(builder *strings.Builder, vulnerability Vulnerabil
 		}
 
 		// Add service configuration to compose file
-		serviceConfig := generateServiceConfig(vulnerability, vulnPackage, packageNum, baseFileName)
+		serviceConfig := generateServiceConfig(vulnerability, vulnPackage, packageNum, outputBasePath)
 		builder.WriteString(serviceConfig)
 	}
 }
 
 // generateServiceConfig creates the service configuration for a vulnerability
-func generateServiceConfig(vulnerability Vulnerability, vulnPackage VulPackage, packageNum int, baseFileName string) string {
+func generateServiceConfig(vulnerability parse.Vulnerability, vulnPackage parse.VulPackage, packageNum int, outputBasePath string) string {
 	var serviceBuilder strings.Builder
 
 	// Get the latest vulnerablen git tag
 	latestTag := vulnPackage.VulGitTags[len(vulnPackage.VulGitTags)-1]
 
 	// Generate metadata file path for this package
-	pkgOutpath := generatePackageAnalysisPath(baseFileName, vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
+	pkgOutpath := generatePackageAnalysisPath(outputBasePath, vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
 
 	// Create container name based on repo and IDs
 	containerName := fmt.Sprintf("%s-%d-%d",
