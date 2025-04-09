@@ -1,4 +1,4 @@
-package parse
+package dataset
 
 import (
 	"encoding/json"
@@ -40,13 +40,18 @@ type VulnerableModuleDataset struct {
 }
 
 // Count returns the number of vulnerabilities in the dataset
-func (vd *VulnerableModuleDataset) Count() int {
+func (vd VulnerableModuleDataset) Count() int {
 	return len(vd.Vulnerabilities)
 }
 
 // Type returns the type of the dataset
-func (vd *VulnerableModuleDataset) Type() string {
-	return "vulnerability"
+func (vd VulnerableModuleDataset) Type() DatasetType {
+	return VulnerabilityDatasetType
+}
+
+// String returns a string representation of the vulnerability dataset
+func (vd VulnerableModuleDataset) String() string {
+	return fmt.Sprintf("VulnerableModuleDataset{Count: %d}", len(vd.Vulnerabilities))
 }
 
 // GetVulnerabilities returns the vulnerabilities in the dataset

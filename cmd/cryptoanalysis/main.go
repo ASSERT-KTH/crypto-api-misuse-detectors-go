@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/parse"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
 func Usage() {
@@ -32,42 +32,40 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Parse the dataset based on file extension
-	dataset, err := parse.ParseDataset(inputPath)
+	// Parse the ds based on file extension
+	ds, err := dataset.ParseDataset(inputPath)
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to parse dataset: %w", err))
 	}
 
-	// Generate the docker compose yaml content
-	outputBasePath := compose.GetFileName(inputPath)
-	var composeContent string
-
-	switch d := dataset.(type) {
-	case *parse.VulnerableModuleDataset:
-		composeContent = compose.GenerateComposeFile(d.GetVulnerabilities(), outputBasePath)
-	case *parse.NormalModuleDataset:
-		// TODO: Implement normal module dataset handling
-		log.Fatal("Normal module dataset handling not implemented yet")
-	default:
-		log.Fatal("Unknown dataset type")
+	//
+	composer, err := compose.CreateComposer(ds)
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to create composer: %w", err))
 	}
 
+	// TODO this variable use and name is not clear
+	outputBasePath := strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath))
+	composeStr := composer.GenerateComposeStr(outputBasePath)
+	fmt.Println(composeStr)
+
+
 	// Write compose file
-	if err := os.WriteFile(filepath.Join("internal", "docker", "compose.yaml"), []byte(composeContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join("internal", "docker", "compose.yaml"), []byte(composeStr), 0644); err != nil {
 		log.Fatal(fmt.Errorf("failed to write compose file: %w", err))
 	}
 
-	// Run docker compose up command
-	if err := os.Chdir("internal/docker"); err != nil {
-		fmt.Printf("Error changing to docker directory: %v\n", err)
-		os.Exit(1)
-	}
-	dockerComposeCmd := exec.Command("docker", "compose", "up", "--build", "--remove-orphans")
-	dockerComposeCmd.Stdout = os.Stdout
-	dockerComposeCmd.Stderr = os.Stderr
+	// // Run docker compose up command
+	// if err := os.Chdir("internal/docker"); err != nil {
+	// 	fmt.Printf("Error changing to docker directory: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// dockerComposeCmd := exec.Command("docker", "compose", "up", "--build", "--remove-orphans")
+	// dockerComposeCmd.Stdout = os.Stdout
+	// dockerComposeCmd.Stderr = os.Stderr
 
-	if err := dockerComposeCmd.Run(); err != nil {
-		fmt.Printf("Error running docker compose: %v\n", err)
-		os.Exit(1)
-	}
+	// if err := dockerComposeCmd.Run(); err != nil {
+	// 	fmt.Printf("Error running docker compose: %v\n", err)
+	// 	os.Exit(1)
+	// }
 }

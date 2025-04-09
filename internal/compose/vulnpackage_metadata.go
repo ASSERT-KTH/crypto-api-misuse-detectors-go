@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/parse"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
 // VulnerabilityMetadata represents the metadata for a vulnerability
@@ -41,7 +41,7 @@ func NewMetadataWriter(outputBasePath string) *MetadataWriter {
 }
 
 // WriteMetadata writes metadata for a vulnerability package to a file
-func (w *MetadataWriter) WriteMetadata(vulnerability parse.Vulnerability, vulnPackage parse.VulPackage, packageNum int) error {
+func (w *MetadataWriter) WriteMetadata(vulnerability dataset.Vulnerability, vulnPackage dataset.VulPackage, packageNum int) error {
 	// Create metadata struct
 	metadata := VulnerabilityMetadata{
 		ID:          vulnerability.ID,
@@ -99,7 +99,7 @@ func (w *MetadataWriter) generateMetadataDirectory(repoSlug string, vulnID int, 
 }
 
 // Legacy function to maintain backward compatibility
-func writeMetadata(vulnerability parse.Vulnerability, vulnPackage parse.VulPackage, packageNum int, baseFileName string) error {
+func writeMetadata(vulnerability dataset.Vulnerability, vulnPackage dataset.VulPackage, packageNum int, baseFileName string) error {
 	writer := NewMetadataWriter(baseFileName)
 	return writer.WriteMetadata(vulnerability, vulnPackage, packageNum)
 }

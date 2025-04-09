@@ -5,16 +5,23 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/parse"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
-// GenerateComposeFile constructs the complete Docker Compose YAML content as a string
-func GenerateComposeFile(vulnerabilities []parse.Vulnerability, outputBasePath string) string {
+
+type VulComposer struct {
+	Dataset *dataset.VulnerableModuleDataset 
+}
+
+// GenerateComposeStr constructs the complete Docker Compose YAML content as a string
+func (vc *VulComposer) GenerateComposeStr(outputBasePath string) string {
+	// Generate the Docker Compose YAML content
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString("version: '3.8'\n\n")
 	composeBuilder.WriteString("services:\n")
 
-	for _, vulnerability := range vulnerabilities {
+	// TODO see over if should have GetDataset as interface method instead
+	for _, vulnerability := range vc.Dataset.GetVulnerabilities() {
 		addVulnerabilityServices(&composeBuilder, vulnerability, outputBasePath)
 	}
 
@@ -22,8 +29,9 @@ func GenerateComposeFile(vulnerabilities []parse.Vulnerability, outputBasePath s
 	return composeBuilder.String()
 }
 
+
 // addVulnerabilityServices adds all services for a single vulnerability to the compose file
-func addVulnerabilityServices(builder *strings.Builder, vulnerability parse.Vulnerability, outputBasePath string) {
+func addVulnerabilityServices(builder *strings.Builder, vulnerability dataset.Vulnerability, outputBasePath string) {
 	// Create a metadata writer for this vulnerability
 	metadataWriter := NewMetadataWriter(outputBasePath)
 
@@ -52,8 +60,9 @@ func addVulnerabilityServices(builder *strings.Builder, vulnerability parse.Vuln
 	}
 }
 
+// TODO GENERALISE TO INTERFACE
 // generateServiceConfig creates the service configuration for a vulnerability
-func generateServiceConfig(vulnerability parse.Vulnerability, vulnPackage parse.VulPackage, packageNum int, outputBasePath string) string {
+func generateServiceConfig(vulnerability dataset.Vulnerability, vulnPackage dataset.VulPackage, packageNum int, outputBasePath string) string {
 	var serviceBuilder strings.Builder
 
 	// Get the latest vulnerablen git tag
@@ -62,6 +71,7 @@ func generateServiceConfig(vulnerability parse.Vulnerability, vulnPackage parse.
 	// Generate metadata file path for this package
 	pkgOutpath := generatePackageAnalysisPath(outputBasePath, vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
 
+	// TODO extract to utility function
 	// Create container name based on repo and IDs
 	containerName := fmt.Sprintf("%s-%d-%d",
 		strings.ReplaceAll(vulnerability.Repo.RepoSlug, "/", "-"),
@@ -83,15 +93,11 @@ func generateServiceConfig(vulnerability parse.Vulnerability, vulnPackage parse.
 	return serviceBuilder.String()
 }
 
-// generateVolumeConfig creates the volume configuration
-func generateVolumeConfig() string {
-	return `
-volumes:
-  gopher-shared:
-    driver: local
-    driver_opts:
-      type: none
-      device: ${BASE_DIR}/gopher
-      o: bind
-`
+// generatePackageAnalysisPath generates the repository relative directory path for storing a package's analysis results
+func generatePackageAnalysisPath(baseName string, repoSlug string, id int, pkgNum int) string {
+	return fmt.Sprintf("data/analysis/cve/%s/%s-%d-%d",
+		baseName,
+		strings.ReplaceAll(repoSlug, "/", "-"),
+		id,
+		pkgNum)
 }

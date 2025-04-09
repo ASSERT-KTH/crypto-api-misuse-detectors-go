@@ -1,4 +1,4 @@
-package parse
+package dataset
 
 import (
 	"fmt"
@@ -9,15 +9,17 @@ import (
 type DatasetType string
 
 const (
-	VulnerableModuleDatasetType DatasetType = "vulnerability"
-	NormalModuleDatasetType     DatasetType = "normal"
+	VulnerabilityDatasetType DatasetType = "vulnerability"
+	ModuleDatasetType        DatasetType = "normal"
 )
 
 type Dataset interface {
 	// Get the number of items in the dataset
 	Count() int
 	// Get dataset type description
-	Type() string
+	Type() DatasetType
+	// Stringer
+	String() string
 }
 
 // InferDatasetType determines the type of dataset from the file extension
@@ -25,9 +27,9 @@ func InferDatasetType(filepath string) DatasetType {
 	ext := strings.ToLower(filepath[strings.LastIndex(filepath, ".")+1:])
 	switch ext {
 	case "json":
-		return VulnerableModuleDatasetType
+		return VulnerabilityDatasetType
 	case "csv":
-		return NormalModuleDatasetType
+		return ModuleDatasetType
 	default:
 		return ""
 	}
@@ -37,10 +39,10 @@ func InferDatasetType(filepath string) DatasetType {
 func ParseDataset(filepath string) (Dataset, error) {
 	datasetType := InferDatasetType(filepath)
 	switch datasetType {
-	case VulnerableModuleDatasetType:
+	case VulnerabilityDatasetType:
 		return ParseVulnerabilities(filepath)
-	case NormalModuleDatasetType:
-		return ParseNormalModules(filepath)
+	case ModuleDatasetType:
+		return ParseModules(filepath)
 	default:
 		return nil, fmt.Errorf("unsupported file type: %s", filepath)
 	}
