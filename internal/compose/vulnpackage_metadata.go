@@ -61,6 +61,7 @@ func (w *MetadataWriter) WriteMetadata(vulnerability dataset.Vulnerability, vuln
 	}
 
 	// Generate file path for metadata
+	
 	metadataDir := w.generateMetadataDirectory(vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
 	metadataFilePath := filepath.Join(metadataDir, "vulnerability_info.json")
 
@@ -82,13 +83,14 @@ func (w *MetadataWriter) WriteMetadata(vulnerability dataset.Vulnerability, vuln
 	return nil
 }
 
+// TODO there is another function that already does this
 // generateMetadataDirectory returns the full path to the directory where metadata should be stored
 func (w *MetadataWriter) generateMetadataDirectory(repoSlug string, vulnID int, packageNum int) string {
 	// Convert repo slug to file-safe format
 	repoSafeName := strings.ReplaceAll(repoSlug, "/", "-")
 
 	// Build the directory path
-	relativePath := fmt.Sprintf("data/analysis/cve/%s/%s-%d-%d",
+	relativePath := fmt.Sprintf("data/analysis/%s/%s-%d-%d",
 		w.outputBasePath,
 		repoSafeName,
 		vulnID,
@@ -96,10 +98,4 @@ func (w *MetadataWriter) generateMetadataDirectory(repoSlug string, vulnID int, 
 
 	// Return as relative path
 	return "./" + relativePath
-}
-
-// Legacy function to maintain backward compatibility
-func writeMetadata(vulnerability dataset.Vulnerability, vulnPackage dataset.VulPackage, packageNum int, baseFileName string) error {
-	writer := NewMetadataWriter(baseFileName)
-	return writer.WriteMetadata(vulnerability, vulnPackage, packageNum)
 }

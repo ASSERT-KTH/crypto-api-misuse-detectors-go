@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
@@ -44,11 +43,8 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to create composer: %w", err))
 	}
 
-	// TODO this variable use and name is not clear
-	outputBasePath := strings.TrimSuffix(filepath.Base(inputPath), filepath.Ext(inputPath))
-	composeStr := composer.GenerateComposeStr(outputBasePath)
+	composeStr := composer.GenerateComposeStr()
 	fmt.Println(composeStr)
-
 
 	// Write compose file
 	if err := os.WriteFile(filepath.Join("internal", "docker", "compose.yaml"), []byte(composeStr), 0644); err != nil {

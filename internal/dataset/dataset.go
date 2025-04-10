@@ -20,6 +20,8 @@ type Dataset interface {
 	Type() DatasetType
 	// Stringer
 	String() string
+	//
+	GetDatasetIdentifier() string
 }
 
 // InferDatasetType determines the type of dataset from the file extension
@@ -47,3 +49,4 @@ func ParseDataset(filepath string) (Dataset, error) {
 		return nil, fmt.Errorf("unsupported file type: %s", filepath)
 	}
 }
+

@@ -9,6 +9,7 @@ import (
 
 // Module represents data for a single normal repository based on CSV format
 type Module struct {
+	ID          string `csv:"id"`
 	RepoName    string `csv:"repo_name"`
 	URL         string `csv:"url"`
 	Stars       int    `csv:"stars"`
@@ -23,6 +24,8 @@ type Module struct {
 	Archived    bool   `csv:"archived"`
 	Educational bool   `csv:"educational"`
 	OutOfDate   bool   `csv:"out_of_date"`
+	LatestTag   string // TODO how to get latest tag
+	GoVersion   string // TODO how to get Go version
 }
 
 // ModuleDataset implements ProjectDataset for a collection of normal repositories
@@ -43,6 +46,11 @@ func (md ModuleDataset) Type() DatasetType {
 // String returns a string representation of the normal module
 func (md ModuleDataset) String() string {
 	return fmt.Sprintf("NormalModuleDataset{Count: %d}", len(md.Modules))
+}
+
+// GetDatasetIdentifier returns a string identifier for the dataset
+func (md ModuleDataset) GetDatasetIdentifier() string {
+	return fmt.Sprintf("%s-%d", md.Type(), md.Count())
 }
 
 // TODO generalise for interface
