@@ -30,7 +30,7 @@ type VulPackage struct {
 	Score       string   `json:"score"`
 	Remediation string   `json:"remediation_description"`
 	Summary     string   `json:"summary"`
-	VulGitTags  []string `json:"vul_git_tags"`
+	VulGitTags  []string `json:"vul_git_tags"` // change to one tag
 	GoVersion   string   `json:"go_version"`
 }
 

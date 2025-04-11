@@ -72,9 +72,10 @@ func generateServiceStr(URL string, gitTag string, goVersion string, serviceName
 
 func generateServiceName(nameOrSlug string, id string) string {
 	repoName := strings.TrimPrefix(nameOrSlug, "github.com/")
-	return fmt.Sprintf("%s-%s",
+	serviceName := fmt.Sprintf("%s-%s",
 		strings.ReplaceAll(repoName, "/", "-"),
 		id)
+	return strings.ToLower(serviceName)
 }
 
 // generateResultsPath generates the repository relative directory path for storing a package's analysis results
