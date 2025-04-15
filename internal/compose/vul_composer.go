@@ -15,7 +15,16 @@ const (
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
 	Dataset        *dataset.VulnerabilityDataset
-	MetadataWriter *MetadataWriter
+	DatasetID      string
+	//MetadataWriter *MetadataWriter
+}
+
+func NewVulComposer(ds *dataset.VulnerabilityDataset) *VulComposer {
+	return &VulComposer{
+		Dataset:   ds,
+		DatasetID: ds.GetDatasetIdentifier(),
+		//MetadataWriter: NewMetadataWriter(ds.GetDatasetIdentifier()),
+	}
 }
 
 // GenerateComposeStr constructs the complete Docker Compose YAML content as a string
@@ -24,10 +33,8 @@ func (vc *VulComposer) GenerateComposeStr() string {
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
 
-	datasetID := vc.Dataset.GetDatasetIdentifier()
-	// TODO see over if should have GetDataset as interface method instead
 	for _, vul := range vc.Dataset.GetVulnerabilities() {
-		services := vc.addVulServices(vul, datasetID)
+		services := vc.addVulServices(vul, vc.DatasetID)
 		composeBuilder.WriteString(services)
 	}
 

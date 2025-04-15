@@ -8,7 +8,8 @@ import (
 )
 
 type Composer interface {
-	// GenerateComposeStr constructs the complete Docker Compose YAML content as a string
+	// GenerateComposeStr returns the complete Docker Compose YAML content as a string
+	// including all services and volume configurations
 	GenerateComposeStr() string
 }
 
@@ -20,17 +21,18 @@ func CreateComposer(ds dataset.Dataset) (Composer, error) {
 		if !ok {
 			return nil, fmt.Errorf("incompatible dataset type: expected *VulnerableModuleDataset, got %T", ds)
 		}
-		return &VulComposer{Dataset: vulDataset, MetadataWriter: NewMetadataWriter(ds.GetDatasetIdentifier())}, nil
+		return NewVulComposer(vulDataset), nil
 	case dataset.ModuleDatasetType:
 		modDataset, ok := ds.(*dataset.ModuleDataset)
 		if !ok {
 			return nil, fmt.Errorf("incompatible dataset type: expected *ModuleDataset, got %T", ds)
 		}
-		return &ModComposer{Dataset: modDataset}, nil
+		return NewModComposer(modDataset), nil
 	default:
 		return nil, fmt.Errorf("unknown dataset type: %s", ds.Type())
 	}
 }
+
 
 // generateVolumeConfig creates the volume configuration
 func generateVolumeConfig() string {
