@@ -57,11 +57,11 @@ func (w *MetadataWriter) WriteMetadata(vulnerability dataset.Vulnerability, vuln
 		Score:       vulnPackage.Score,
 		Remediation: vulnPackage.Remediation,
 		VulRange:    vulnPackage.VulRange,
-		VulGitTags:  vulnPackage.VulGitTags,
+		VulGitTags:  vulnPackage.VulnerableGitTags,
 	}
 
 	// Generate file path for metadata
-	
+
 	metadataDir := w.generateMetadataDirectory(vulnerability.Repo.RepoSlug, vulnerability.ID, packageNum)
 	metadataFilePath := filepath.Join(metadataDir, "vulnerability_info.json")
 

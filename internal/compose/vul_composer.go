@@ -1,7 +1,6 @@
 package compose
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -14,21 +13,21 @@ const (
 
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
-	Dataset        *dataset.VulnerabilityDataset
-	DatasetID      string
+	Dataset   *dataset.VulnerabilityDataset
+	DatasetID string
 	//MetadataWriter *MetadataWriter
 }
 
 func NewVulComposer(ds *dataset.VulnerabilityDataset) *VulComposer {
 	return &VulComposer{
 		Dataset:   ds,
-		DatasetID: ds.GetDatasetIdentifier(),
+		DatasetID: ds.ID(),
 		//MetadataWriter: NewMetadataWriter(ds.GetDatasetIdentifier()),
 	}
 }
 
-// GenerateComposeStr constructs the complete Docker Compose YAML content as a string
-func (vc *VulComposer) GenerateComposeStr() string {
+// ComposeStr constructs the complete Docker Compose YAML content as a string
+func (vc *VulComposer) ComposeStr() string {
 	// Generate the Docker Compose YAML content
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
@@ -47,22 +46,21 @@ func (vc *VulComposer) addVulServices(vul dataset.Vulnerability, datasetID strin
 	// Create a metadata writer for this vulnerability
 	var servicesBuilder strings.Builder
 
-	for packageIndex, vulnPackage := range vul.VulPackages {
+	for pkgIndex, pkg := range vul.VulPackages {
 		// Skip packages with no identified vulnerable git tags
-		if len(vulnPackage.VulGitTags) == 0 {
+		if pkg.GitTag == "" {
+			// TODO error log
 			continue
 		}
 
 		// Set default Go version if not specified
-		if vulnPackage.GoVersion == "" {
-			vulnPackage.GoVersion = DefaultGoVersion
+		if pkg.GoVersion == "" {
+			pkg.GoVersion = DefaultGoVersion
 		}
 
 		// Prepare params for service configuration
-		packageID := strconv.Itoa(packageIndex + 1)
+		packageID := strconv.Itoa(pkgIndex + 1)
 		repoSlug := vul.Repo.RepoSlug
-		gitTag := vulnPackage.VulGitTags[len(vulnPackage.VulGitTags)-1]
-		URL := fmt.Sprintf("https://%s", vul.Repo.RepoSlug)
 
 		serviceName := generateServiceName(repoSlug, packageID)
 		resultsDir := generateResultsPath(datasetID, serviceName)
@@ -76,7 +74,7 @@ func (vc *VulComposer) addVulServices(vul dataset.Vulnerability, datasetID strin
 		// }
 
 		// Add service configuration to compose file
-		serviceStr := generateServiceStr(URL, gitTag, vulnPackage.GoVersion, serviceName, resultsDir)
+		serviceStr := generateServiceStr(vul.Repo.URL, pkg.GitTag, pkg.GoVersion, serviceName, resultsDir)
 		servicesBuilder.WriteString(serviceStr)
 	}
 

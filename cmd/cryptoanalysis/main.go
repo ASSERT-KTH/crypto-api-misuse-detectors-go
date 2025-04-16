@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
@@ -19,6 +17,7 @@ func Usage() {
 }
 
 func main() {
+	//verbose := true // todo
 	if len(os.Args) != 2 {
 		Usage()
 		os.Exit(1)
@@ -37,31 +36,45 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to parse dataset: %w", err))
 	}
 
-	//
-	composer, err := compose.CreateComposer(ds)
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create composer: %w", err))
-	}
+	fmt.Println("Parsed dataset:", ds)
 
-	composeStr := composer.GenerateComposeStr()
-	fmt.Println(composeStr)
-
-	// Write compose file
-	if err := os.WriteFile(filepath.Join("internal", "docker", "compose.yaml"), []byte(composeStr), 0644); err != nil {
-		log.Fatal(fmt.Errorf("failed to write compose file: %w", err))
-	}
-
-	// // Run docker compose up command
-	// if err := os.Chdir("internal/docker"); err != nil {
-	// 	fmt.Printf("Error changing to docker directory: %v\n", err)
-	// 	os.Exit(1)
+	// //
+	// composer, err := compose.NewComposer(ds)
+	// if err != nil {
+	// 	log.Fatal(fmt.Errorf("failed to create composer: %w", err))
 	// }
-	// dockerComposeCmd := exec.Command("docker", "compose", "up", "--build", "--remove-orphans")
-	// dockerComposeCmd.Stdout = os.Stdout
-	// dockerComposeCmd.Stderr = os.Stderr
 
-	// if err := dockerComposeCmd.Run(); err != nil {
-	// 	fmt.Printf("Error running docker compose: %v\n", err)
-	// 	os.Exit(1)
+	// // Get compose configuration string
+	// composeStr := composer.ComposeStr()
+
+	// if verbose {
+	// 	fmt.Println("Generated Docker Compose configuration:")
+	// 	fmt.Println(composeStr)
+	// }
+
+	// // Create docker directory if it doesn't exist
+
+	// dockerDir := filepath.Join("internal", "docker")
+	// if err := os.MkdirAll(dockerDir, 0755); err != nil {
+	// 	log.Fatal(fmt.Errorf("failed to create docker directory: %w", err))
+	// }
+
+	// composeFilePath := filepath.Join(dockerDir, "compose.yaml")
+	// // Write compose file
+	// if err := os.WriteFile(composeFilePath, []byte(composeStr), 0644); err != nil {
+	// 	log.Fatal(fmt.Errorf("failed to write compose file: %w", err))
+	// }
+	// fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
+
+	// // Run docker compose up command with timeout
+	// ctx, cancel := context.WithTimeout(context.Background(), 120*time.Minute)
+	// defer cancel()
+
+	// cmd := exec.CommandContext(ctx, "docker", "compose", "-f", composeFilePath, "up", "--build", "--remove-orphans")
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+
+	// if err := cmd.Run(); err != nil {
+	// 	log.Fatal(fmt.Errorf("failed to run docker compose up: %w", err))
 	// }
 }

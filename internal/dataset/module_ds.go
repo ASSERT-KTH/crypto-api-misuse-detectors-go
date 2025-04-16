@@ -3,6 +3,7 @@ package dataset
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/gocarina/gocsv"
 )
@@ -18,14 +19,13 @@ type Module struct {
 	ForksCount  int    `csv:"forks_count"`
 	Issues      int    `csv:"issues"`
 	CreatedAt   string `csv:"created_at"`
-	UpdatedAt   string `csv:"updated_at"`
-	PushedAt    string `csv:"pushed_at"`
 	Description string `csv:"description"`
-	Archived    bool   `csv:"archived"`
-	Educational bool   `csv:"educational"`
-	OutOfDate   bool   `csv:"out_of_date"`
-	LatestTag   string // TODO how to get latest tag
-	GoVersion   string // TODO how to get Go version
+	Archived    string `csv:"archived"`
+	Educational string `csv:"educational"`
+	OutOfDate   string `csv:"outofdate"`
+	GitTag      string `csv:"tag"`
+	Commit      string `csv:"commit"`
+	GoVersion   string `csv:"go_version"`
 }
 
 // ModuleDataset implements ProjectDataset for a collection of normal repositories
@@ -48,12 +48,11 @@ func (md ModuleDataset) String() string {
 	return fmt.Sprintf("NormalModuleDataset{Count: %d}", len(md.Modules))
 }
 
-// GetDatasetIdentifier returns a string identifier for the dataset
-func (md ModuleDataset) GetDatasetIdentifier() string {
+// ID returns a string identifier for the dataset
+func (md ModuleDataset) ID() string {
 	return fmt.Sprintf("%s-%d", md.Type(), md.Count())
 }
 
-// TODO generalise for interface
 // GetModules returns the modules in the dataset
 func (md *ModuleDataset) GetModules() []Module {
 	return md.Modules
@@ -61,6 +60,23 @@ func (md *ModuleDataset) GetModules() []Module {
 
 // ParseModules reads and parses a CSV file containing normal module data
 func ParseModules(filepath string) (*ModuleDataset, error) {
+	modules, err := readModuleCSV(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read normal modules CSV: %w", err)
+	}
+
+	md := &ModuleDataset{Modules: modules}
+	fmt.Println("Number of modules:", (md.Count()))
+	md.filterEducational()
+	md.filterOutOfDate()
+	md.filterArchived()
+	md.filterTopKStarred(500)
+
+	return md, nil
+}
+
+// Reads and unmarshals CSV file into a slice of Module structs
+func readModuleCSV(filepath string) ([]Module, error) {
 	// Open the CSV file
 	file, err := os.OpenFile(filepath, os.O_RDONLY, os.ModePerm)
 	if err != nil {
@@ -74,5 +90,46 @@ func ParseModules(filepath string) (*ModuleDataset, error) {
 		return nil, fmt.Errorf("failed to parse normal modules CSV: %w", err)
 	}
 
-	return &ModuleDataset{Modules: modules}, nil
+	return modules, nil
+}
+
+func filterModules(modules []Module, filterFunc func(Module) bool) []Module {
+	var filteredModules []Module
+	for _, module := range modules {
+		if filterFunc(module) {
+			filteredModules = append(filteredModules, module)
+		}
+	}
+	return filteredModules
+}
+
+func (md *ModuleDataset) filterEducational() {
+	md.Modules = filterModules(md.Modules, func(m Module) bool {
+		return m.Educational == "f"
+	})
+}
+
+func (md *ModuleDataset) filterOutOfDate() {
+	md.Modules = filterModules(md.Modules, func(m Module) bool {
+		return m.OutOfDate == "f"
+	})
+}
+
+// filterTopKStarred keeps only the top k modules with the highest star counts
+func (md *ModuleDataset) filterTopKStarred(k int) {
+	// Sort modules by stars in descending order
+	sort.Slice(md.Modules, func(i, j int) bool {
+		return md.Modules[i].Stars > md.Modules[j].Stars
+	})
+
+	// Keep only the top k modules (or all if we have fewer than k)
+	if len(md.Modules) > k {
+		md.Modules = md.Modules[:k]
+	}
+}
+
+func (md *ModuleDataset) filterArchived() {
+	md.Modules = filterModules(md.Modules, func(m Module) bool {
+		return m.Archived == "f"
+	})
 }

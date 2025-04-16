@@ -8,13 +8,13 @@ import (
 )
 
 type Composer interface {
-	// GenerateComposeStr returns the complete Docker Compose YAML content as a string
+	// ComposeStr returns the complete Docker Compose YAML content as a string
 	// including all services and volume configurations
-	GenerateComposeStr() string
+	ComposeStr() string
 }
 
-// CreateComposer is a factory function that creates the appropriate composer based on dataset type
-func CreateComposer(ds dataset.Dataset) (Composer, error) {
+// NewComposer is a factory function that creates the appropriate composer based on dataset type
+func NewComposer(ds dataset.Dataset) (Composer, error) {
 	switch ds.Type() {
 	case dataset.VulnerabilityDatasetType:
 		vulDataset, ok := ds.(*dataset.VulnerabilityDataset)
@@ -33,6 +33,8 @@ func CreateComposer(ds dataset.Dataset) (Composer, error) {
 	}
 }
 
+
+// --- common ---
 
 // generateVolumeConfig creates the volume configuration
 func generateVolumeConfig() string {

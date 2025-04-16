@@ -19,22 +19,25 @@ type Vulnerability struct {
 type Repository struct {
 	RepoSlug string   `json:"repo_slug"`
 	GitTags  []string `json:"git_tags"`
+	URL      string
 }
 
 type VulPackage struct {
-	Name        string   `json:"name"`
-	Publish     string   `json:"publish"`
-	VulName     string   `json:"vul_name"`
-	VulRange    string   `json:"vul_range"`
-	Level       string   `json:"level"`
-	Score       string   `json:"score"`
-	Remediation string   `json:"remediation_description"`
-	Summary     string   `json:"summary"`
-	VulGitTags  []string `json:"vul_git_tags"` // change to one tag
-	GoVersion   string   `json:"go_version"`
+	Name              string   `json:"name"`
+	Publish           string   `json:"publish"`
+	VulName           string   `json:"vul_name"`
+	VulRange          string   `json:"vul_range"`
+	Level             string   `json:"level"`
+	Score             string   `json:"score"`
+	Remediation       string   `json:"remediation_description"`
+	Summary           string   `json:"summary"`
+	VulnerableGitTags []string `json:"vul_git_tags"`
+	Commit            string   // TODO...
+	GitTag            string   // This is the last in VulnerableGitTags
+	GoVersion         string   `json:"go_version"`
 }
 
-// VulnerabilityDataset implements ProjectDataset for a collection of vulnerabilities
+// VulnerabilityDataset implements Dataset for a collection of vulnerabilities
 type VulnerabilityDataset struct {
 	Vulnerabilities []Vulnerability
 }
@@ -52,6 +55,11 @@ func (vd VulnerabilityDataset) Type() DatasetType {
 // String returns a string representation of the vulnerability dataset
 func (vd VulnerabilityDataset) String() string {
 	return fmt.Sprintf("VulnerableModuleDataset{Count: %d}", len(vd.Vulnerabilities))
+}
+
+// ID returns a string identifier for the dataset
+func (vd VulnerabilityDataset) ID() string {
+	return fmt.Sprintf("%s-%d", vd.Type(), vd.Count())
 }
 
 // GetVulnerabilities returns the vulnerabilities in the dataset
@@ -73,12 +81,35 @@ func ParseVulnerabilities(filepath string) (*VulnerabilityDataset, error) {
 		return nil, fmt.Errorf("failed to parse vulnerability JSON: %w", err)
 	}
 
+	vulnerabilities = setGitTag(vulnerabilities)
+	vulnerabilities = setURL(vulnerabilities)
+
 	return &VulnerabilityDataset{
 		Vulnerabilities: vulnerabilities,
 	}, nil
 }
 
-// GetDatasetIdentifier returns a string identifier for the dataset
-func (vd VulnerabilityDataset) GetDatasetIdentifier() string {
-	return fmt.Sprintf("%s-%d", vd.Type(), vd.Count())
+// setGitTag sets the GitTag field for each vulnerable package
+// using the most recent tag from its VulGitTags and returns the modified vulnerabilities
+func setGitTag(vulnerabilities []Vulnerability) []Vulnerability {
+	for i := range vulnerabilities {
+		for j := range vulnerabilities[i].VulPackages {
+			vulPackage := &vulnerabilities[i].VulPackages[j]
+
+			if tags := vulPackage.VulnerableGitTags; len(tags) > 0 {
+				vulPackage.GitTag = tags[len(tags)-1] // Use the last tag
+			} else {
+				vulPackage.GitTag = "" // No tags available
+			}
+		}
+	}
+	return vulnerabilities
+}
+
+
+func setURL(vulnerabilities []Vulnerability) []Vulnerability {
+	for i := range vulnerabilities {
+		vulnerabilities[i].Repo.URL = fmt.Sprintf("https://%s", vulnerabilities[i].Repo.RepoSlug)
+	}
+	return vulnerabilities
 }
