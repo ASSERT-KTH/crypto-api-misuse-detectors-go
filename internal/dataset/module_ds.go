@@ -59,8 +59,8 @@ func (md *ModuleDataset) GetModules() []Module {
 }
 
 // ParseModules reads and parses a CSV file containing normal module data
-func ParseModules(filepath string) (*ModuleDataset, error) {
-	modules, err := readModuleCSV(filepath)
+func ParseModules(filepath string, limit int) (*ModuleDataset, error) {
+	modules, err := ReadModuleCSV(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read normal modules CSV: %w", err)
 	}
@@ -70,13 +70,13 @@ func ParseModules(filepath string) (*ModuleDataset, error) {
 	md.filterEducational()
 	md.filterOutOfDate()
 	md.filterArchived()
-	md.filterTopKStarred(500)
+	md.filterTopKStarred(limit)
 
 	return md, nil
 }
 
 // Reads and unmarshals CSV file into a slice of Module structs
-func readModuleCSV(filepath string) ([]Module, error) {
+func ReadModuleCSV(filepath string) ([]Module, error) {
 	// Open the CSV file
 	file, err := os.OpenFile(filepath, os.O_RDONLY, os.ModePerm)
 	if err != nil {

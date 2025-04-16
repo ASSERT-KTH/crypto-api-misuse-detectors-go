@@ -44,7 +44,7 @@ func ParseDataset(filepath string) (Dataset, error) {
 	case VulnerabilityDatasetType:
 		return ParseVulnerabilities(filepath)
 	case ModuleDatasetType:
-		return ParseModules(filepath)
+		return ParseModules(filepath, 500)
 	default:
 		return nil, fmt.Errorf("unsupported file type: %s", filepath)
 	}
