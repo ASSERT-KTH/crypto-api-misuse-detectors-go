@@ -4,8 +4,9 @@ FROM golang:${GO_VERSION}
 WORKDIR /analysis/repo
 
 ARG REPO_URL
-ARG GIT_TAG
-ARG GIT_COMMIT
+ARG RELEASE_TAG
+ARG GIT_COMMIT 
+# TODO not sending commit at this point
 
 # Clone repository based on whether GIT_TAG or GIT_COMMIT is provided
 RUN if [ -n "${GIT_TAG}" ]; then \

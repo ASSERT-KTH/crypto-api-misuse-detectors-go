@@ -23,7 +23,7 @@ type Module struct {
 	Archived    string `csv:"archived"`
 	Educational string `csv:"educational"`
 	OutOfDate   string `csv:"outofdate"`
-	GitTag      string `csv:"tag"`
+	ReleaseTag  string `csv:"tag"`
 	Commit      string `csv:"commit"`
 	GoVersion   string `csv:"go_version"`
 }
@@ -31,6 +31,32 @@ type Module struct {
 // ModuleDataset implements ProjectDataset for a collection of normal repositories
 type ModuleDataset struct {
 	Modules []Module
+}
+
+func NewModuleDataset(filepath string, config *ModuleConfig) (*ModuleDataset, error) {
+	md, err := ParseModules(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse modules: %w", err)
+	}
+
+	// Apply filters based on configuration
+	if config.FilterArchived {
+		md.filterArchived()
+	}
+	if config.FilterEducational {
+		md.filterEducational()
+	}
+	if config.FilterOutOfDate {
+		md.filterOutOfDate()
+	}
+
+	if config.FilterIncomplete {
+		md.filterIncomplete()
+	}
+
+	// Apply limit after filtering
+	md.filterTopKStarred(config.Limit)
+	return md, nil
 }
 
 // Count returns the number of modules in the dataset
@@ -45,7 +71,28 @@ func (md ModuleDataset) Type() DatasetType {
 
 // String returns a string representation of the normal module
 func (md ModuleDataset) String() string {
-	return fmt.Sprintf("NormalModuleDataset{Count: %d}", len(md.Modules))
+	if len(md.Modules) == 0 {
+		return "NormalModuleDataset{Count: 0}"
+	}
+
+	// Take up to 3 samples to show
+	sampleSize := 3
+	if len(md.Modules) < sampleSize {
+		sampleSize = len(md.Modules)
+	}
+
+	samples := ""
+	for i := 0; i < sampleSize; i++ {
+		module := md.Modules[i]
+		samples += fmt.Sprintf("\n  %s (Stars: %d, URL: %s)",
+			module.RepoName,
+			module.Stars,
+			module.URL)
+	}
+
+	return fmt.Sprintf("NormalModuleDataset{Count: %d, ID: %s, Samples:%s}",
+		len(md.Modules), md.ID(),
+		samples)
 }
 
 // ID returns a string identifier for the dataset
@@ -59,7 +106,7 @@ func (md *ModuleDataset) GetModules() []Module {
 }
 
 // ParseModules reads and parses a CSV file containing normal module data
-func ParseModules(filepath string, limit int) (*ModuleDataset, error) {
+func ParseModules(filepath string) (*ModuleDataset, error) {
 	modules, err := ReadModuleCSV(filepath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read normal modules CSV: %w", err)
@@ -70,8 +117,6 @@ func ParseModules(filepath string, limit int) (*ModuleDataset, error) {
 	md.filterEducational()
 	md.filterOutOfDate()
 	md.filterArchived()
-	md.filterTopKStarred(limit)
-
 	return md, nil
 }
 
@@ -115,6 +160,12 @@ func (md *ModuleDataset) filterOutOfDate() {
 	})
 }
 
+func (md *ModuleDataset) filterIncomplete() {
+	md.Modules = filterModules(md.Modules, func(m Module) bool {
+		return m.ReleaseTag != "" && m.GoVersion != ""
+	})
+}
+
 // filterTopKStarred keeps only the top k modules with the highest star counts
 func (md *ModuleDataset) filterTopKStarred(k int) {
 	// Sort modules by stars in descending order
@@ -132,4 +183,9 @@ func (md *ModuleDataset) filterArchived() {
 	md.Modules = filterModules(md.Modules, func(m Module) bool {
 		return m.Archived == "f"
 	})
+}
+
+// WriteModuleCSV writes a slice of modules to a CSV file
+func WriteModuleCSV(modules []Module, file *os.File) error {
+	return gocsv.MarshalFile(modules, file)
 }

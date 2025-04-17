@@ -35,6 +35,7 @@ type VulPackage struct {
 	Commit            string   // TODO...
 	GitTag            string   // This is the last in VulnerableGitTags
 	GoVersion         string   `json:"go_version"`
+	// TODO here we should set the service path to ensure it is the same
 }
 
 // VulnerabilityDataset implements Dataset for a collection of vulnerabilities
@@ -44,7 +45,15 @@ type VulnerabilityDataset struct {
 
 // Count returns the number of vulnerabilities in the dataset
 func (vd VulnerabilityDataset) Count() int {
-	return len(vd.Vulnerabilities)
+	totalPackages := 0
+	for _, vul := range vd.Vulnerabilities {
+		for _, pkg := range vul.VulPackages {
+			if pkg.GitTag != "" { // Only count packages with git tags
+				totalPackages++
+			}
+		}
+	}
+	return totalPackages
 }
 
 // Type returns the type of the dataset
@@ -52,9 +61,32 @@ func (vd VulnerabilityDataset) Type() DatasetType {
 	return VulnerabilityDatasetType
 }
 
-// String returns a string representation of the vulnerability dataset
+// String returns a string representation of the normal module
 func (vd VulnerabilityDataset) String() string {
-	return fmt.Sprintf("VulnerableModuleDataset{Count: %d}", len(vd.Vulnerabilities))
+	if len(vd.Vulnerabilities) == 0 {
+		return "VulnerabilityDataset{Count: 0}"
+	}
+
+	// Take up to 3 samples to show
+	sampleSize := 3
+	if len(vd.Vulnerabilities) < sampleSize {
+		sampleSize = len(vd.Vulnerabilities)
+	}
+
+	samples := ""
+	for i := 0; i < sampleSize; i++ {
+		vuln := vd.Vulnerabilities[i]
+		samples += fmt.Sprintf("\n  Package: %s (CVE: %s, Name: %s)",
+			vuln.VulPackages[0].Name,
+			vuln.CVE,
+			vuln.VulPackages[0].VulName)
+	}
+	samples += "\n  ...\n"
+
+	return fmt.Sprintf("VulnerabilityDataset{Count: %d, ID: %s, Samples:%s}",
+		len(vd.Vulnerabilities),
+		vd.ID(),
+		samples)
 }
 
 // ID returns a string identifier for the dataset
@@ -68,7 +100,7 @@ func (vd *VulnerabilityDataset) GetVulnerabilities() []Vulnerability {
 }
 
 // ParseVulnerabilities reads and parses the vulnerabilities from a JSON file
-func ParseVulnerabilities(filepath string) (*VulnerabilityDataset, error) {
+func ParseVulnerabilities(filepath string, config *VulnerabilityConfig) (*VulnerabilityDataset, error) {
 	// Read the file
 	data, err := os.ReadFile(filepath)
 	if err != nil {
@@ -83,6 +115,11 @@ func ParseVulnerabilities(filepath string) (*VulnerabilityDataset, error) {
 
 	vulnerabilities = setGitTag(vulnerabilities)
 	vulnerabilities = setURL(vulnerabilities)
+
+	// Apply filters based on configuration
+	if config != nil {
+		vulnerabilities = filterVulnerabilities(vulnerabilities, config)
+	}
 
 	return &VulnerabilityDataset{
 		Vulnerabilities: vulnerabilities,
@@ -106,10 +143,46 @@ func setGitTag(vulnerabilities []Vulnerability) []Vulnerability {
 	return vulnerabilities
 }
 
-
 func setURL(vulnerabilities []Vulnerability) []Vulnerability {
 	for i := range vulnerabilities {
 		vulnerabilities[i].Repo.URL = fmt.Sprintf("https://%s", vulnerabilities[i].Repo.RepoSlug)
 	}
 	return vulnerabilities
+}
+
+// filterVulnerabilities applies all configured filters to the vulnerabilities
+func filterVulnerabilities(vulnerabilities []Vulnerability, config *VulnerabilityConfig) []Vulnerability {
+	return filterVulnerabilitiesByConfig(vulnerabilities, func(v Vulnerability) bool {
+		// Filter by severity level if specified
+		if config.SeverityLevel != "" {
+			for _, pkg := range v.VulPackages {
+				if pkg.Level != config.SeverityLevel {
+					return false
+				}
+			}
+		}
+
+		// Filter by CWE if specified
+		if config.CWE != "" && v.CWE != config.CWE {
+			return false
+		}
+
+		// Filter by CVE if specified
+		if config.CVE != "" && v.CVE != config.CVE {
+			return false
+		}
+
+		return true
+	})
+}
+
+// filterVulnerabilitiesByConfig applies a filter function to the vulnerabilities
+func filterVulnerabilitiesByConfig(vulnerabilities []Vulnerability, filterFunc func(Vulnerability) bool) []Vulnerability {
+	var filtered []Vulnerability
+	for _, v := range vulnerabilities {
+		if filterFunc(v) {
+			filtered = append(filtered, v)
+		}
+	}
+	return filtered
 }

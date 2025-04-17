@@ -9,8 +9,8 @@ import (
 type DatasetType string
 
 const (
-	VulnerabilityDatasetType DatasetType = "vulnerability"
-	ModuleDatasetType        DatasetType = "normal"
+	VulnerabilityDatasetType DatasetType = "crypto-vulnerabilities"
+	ModuleDatasetType        DatasetType = "top-starred"
 )
 
 type Dataset interface {
@@ -38,13 +38,19 @@ func InferDatasetType(filepath string) DatasetType {
 }
 
 // Parses the data into the appropriate dataset type depending on the dataset type
-func ParseDataset(filepath string) (Dataset, error) {
-	datasetType := InferDatasetType(filepath)
-	switch datasetType {
+func ParseDataset(filepath string, config *DatasetConfig) (Dataset, error) {
+	if config == nil {
+		config = NewDatasetConfig(InferDatasetType(filepath))
+	}
+
+	switch config.Type {
 	case VulnerabilityDatasetType:
-		return ParseVulnerabilities(filepath)
+		return ParseVulnerabilities(filepath, config.VulnerabilityConfig)
 	case ModuleDatasetType:
-		return ParseModules(filepath, 500)
+		if config.ModuleConfig == nil {
+			config.ModuleConfig = NewModuleConfig()
+		}
+		return NewModuleDataset(filepath, config.ModuleConfig)
 	default:
 		return nil, fmt.Errorf("unsupported file type: %s", filepath)
 	}

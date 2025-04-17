@@ -2,89 +2,59 @@ package compose
 
 import (
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
+
+// ComposerConfig holds configuration options for service composition
+type ComposerConfig struct {
+	// Number of items per batch for parallel processing
+	BatchSize int
+	OutDir    string
+}
+
+// DefaultComposerConfig returns a new ComposerConfig with default values
+func DefaultComposerConfig() *ComposerConfig {
+	return &ComposerConfig{
+		BatchSize: 10, // Default batch size of 10 items
+	}
+}
 
 type Composer interface {
 	// ComposeStr returns the complete Docker Compose YAML content as a string
 	// including all services and volume configurations
 	ComposeStr() string
+	// GetTotalBatches returns the total number of batches in the compose file
+	GetTotalBatches() int
+	// RunBatches executes all batches in sequence using docker compose
+	RunBatches(composeFilePath string, timeout time.Duration) error
+	// TODO add "up"
 }
 
 // NewComposer is a factory function that creates the appropriate composer based on dataset type
-func NewComposer(ds dataset.Dataset) (Composer, error) {
+func NewComposer(ds dataset.Dataset, config *ComposerConfig) (Composer, error) {
+	if config == nil {
+		config = DefaultComposerConfig()
+	}
+
+	// Set output directory to dataset ID
+	config.OutDir = fmt.Sprintf("data/analysis/%s", ds.ID())
+
 	switch ds.Type() {
 	case dataset.VulnerabilityDatasetType:
 		vulDataset, ok := ds.(*dataset.VulnerabilityDataset)
 		if !ok {
 			return nil, fmt.Errorf("incompatible dataset type: expected *VulnerableModuleDataset, got %T", ds)
 		}
-		return NewVulComposer(vulDataset), nil
+		return NewVulComposer(vulDataset, config), nil
 	case dataset.ModuleDatasetType:
 		modDataset, ok := ds.(*dataset.ModuleDataset)
 		if !ok {
 			return nil, fmt.Errorf("incompatible dataset type: expected *ModuleDataset, got %T", ds)
 		}
-		return NewModComposer(modDataset), nil
+		return NewModComposer(modDataset, config), nil
 	default:
 		return nil, fmt.Errorf("unknown dataset type: %s", ds.Type())
 	}
-}
-
-
-// --- common ---
-
-// generateVolumeConfig creates the volume configuration
-func generateVolumeConfig() string {
-	return `
-volumes:
-  gopher-shared:
-    driver: local
-    driver_opts:
-      type: none
-      device: ${BASE_DIR}/gopher
-      o: bind
-`
-}
-
-// generateComposeHeader creates the common header for all compose files
-func generateComposeHeader() string {
-	return "version: '3.8'\n\nservices:\n"
-}
-
-// TODO needs refactoring...
-// generateServiceConfigVul creates the service configuration for specified package/module
-func generateServiceStr(URL string, gitTag string, goVersion string, serviceName string, resultsDir string) string {
-	var serviceBuilder strings.Builder
-
-	// Build service configuration
-	serviceBuilder.WriteString(fmt.Sprintf("  %s:\n", serviceName))
-	serviceBuilder.WriteString("    build:\n")
-	serviceBuilder.WriteString("      context: .\n")
-	serviceBuilder.WriteString(fmt.Sprintf("      args:\n        REPO_URL: \"%s\"\n", URL))
-	serviceBuilder.WriteString(fmt.Sprintf("        GIT_TAG: \"%s\"\n", gitTag))
-	serviceBuilder.WriteString(fmt.Sprintf("        GO_VERSION: \"%s\"\n", goVersion))
-	serviceBuilder.WriteString(fmt.Sprintf("    container_name: %s\n", serviceName))
-	serviceBuilder.WriteString("    volumes:\n")
-	serviceBuilder.WriteString("      - gopher-shared:/analysis/gopher\n")
-	serviceBuilder.WriteString(fmt.Sprintf("      - \"${BASE_DIR}/%s:/analysis/repo/scan_results\"\n", resultsDir))
-
-	return serviceBuilder.String()
-}
-
-func generateServiceName(nameOrSlug string, id string) string {
-	repoName := strings.TrimPrefix(nameOrSlug, "github.com/")
-	serviceName := fmt.Sprintf("%s-%s",
-		strings.ReplaceAll(repoName, "/", "-"),
-		id)
-	return strings.ToLower(serviceName)
-}
-
-// generateResultsPath generates the repository relative directory path for storing a package's analysis results
-func generateResultsPath(baseName string, containerName string) string {
-	return fmt.Sprintf("data/analysis/%s/%s",
-		baseName,
-		containerName)
 }

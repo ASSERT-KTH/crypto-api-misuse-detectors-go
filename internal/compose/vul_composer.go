@@ -1,8 +1,11 @@
 package compose
 
 import (
+	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
@@ -15,15 +18,32 @@ const (
 type VulComposer struct {
 	Dataset   *dataset.VulnerabilityDataset
 	DatasetID string
+	Config    *ComposerConfig
 	//MetadataWriter *MetadataWriter
 }
 
-func NewVulComposer(ds *dataset.VulnerabilityDataset) *VulComposer {
+func NewVulComposer(ds *dataset.VulnerabilityDataset, config *ComposerConfig) *VulComposer {
+	if config == nil {
+		config = DefaultComposerConfig()
+	}
 	return &VulComposer{
 		Dataset:   ds,
 		DatasetID: ds.ID(),
+		Config:    config,
 		//MetadataWriter: NewMetadataWriter(ds.GetDatasetIdentifier()),
 	}
+}
+
+// GetTotalBatches returns the total number of batches in the compose file
+func (vc *VulComposer) GetTotalBatches() int {
+	totalPackages := vc.Dataset.Count()
+
+	// Calculate total batches, rounding up
+	totalBatches := (totalPackages + vc.Config.BatchSize - 1) / vc.Config.BatchSize
+	if totalBatches < 1 {
+		totalBatches = 1 // Ensure at least one batch
+	}
+	return totalBatches
 }
 
 // ComposeStr constructs the complete Docker Compose YAML content as a string
@@ -32,8 +52,11 @@ func (vc *VulComposer) ComposeStr() string {
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
 
+	// Track total package index across all vulnerabilities
+	totalPackageIndex := 0
+
 	for _, vul := range vc.Dataset.GetVulnerabilities() {
-		services := vc.addVulServices(vul, vc.DatasetID)
+		services := vc.addVulServices(vul, vc.DatasetID, &totalPackageIndex)
 		composeBuilder.WriteString(services)
 	}
 
@@ -42,14 +65,13 @@ func (vc *VulComposer) ComposeStr() string {
 }
 
 // addVulServices adds all services for a single vulnerability (potentially multiple packages) to the compose file
-func (vc *VulComposer) addVulServices(vul dataset.Vulnerability, datasetID string) string {
-	// Create a metadata writer for this vulnerability
-	var servicesBuilder strings.Builder
+func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID string, totalPkgIndex *int) string {
+	var services strings.Builder
 
-	for pkgIndex, pkg := range vul.VulPackages {
+	for pkgIndex, pkg := range vuln.VulPackages {
 		// Skip packages with no identified vulnerable git tags
 		if pkg.GitTag == "" {
-			// TODO error log
+			fmt.Printf("Warning: skipping package %s with no git tag\n", pkg.Name)
 			continue
 		}
 
@@ -58,25 +80,32 @@ func (vc *VulComposer) addVulServices(vul dataset.Vulnerability, datasetID strin
 			pkg.GoVersion = DefaultGoVersion
 		}
 
-		// Prepare params for service configuration
-		packageID := strconv.Itoa(pkgIndex + 1)
-		repoSlug := vul.Repo.RepoSlug
+		// Calculate batch number based on total package index and batch size
+		batchNum := (*totalPkgIndex / vc.Config.BatchSize) + 1
+		*totalPkgIndex++
 
-		serviceName := generateServiceName(repoSlug, packageID)
-		resultsDir := generateResultsPath(datasetID, serviceName)
+		// Generate service name and paths
+		vulnID := strconv.Itoa(vuln.ID)
+		pkgID := strconv.Itoa(pkgIndex + 1) // 1-based index for better readability
+		uniqueID := fmt.Sprintf("%s-%s", vulnID, pkgID)
+		serviceName := generateServiceName(vuln.Repo.RepoSlug, uniqueID)
+		analysisDir := filepath.Join(vc.Config.OutDir, serviceName)
 
-		// // Write a metadata file for this vulnerability package
-		// if err := vc.MetadataWriter.WriteMetadata(vulnerability, vulnPackage, packageID); err != nil {
-		// 	// Log error but continue with other packages
-		// 	fmt.Fprintf(os.Stderr, "Warning: failed to write vulnerability metadata for %s-%d-%d: %v\n",
-		// 		vulnerability.Repo.RepoSlug, vulnerability.ID, packageID, err)
-		// 	continue
-		// }
+		// Write metadata for this package
+		metadataWriter := NewMetadataWriter(vc.Config.OutDir)
+		if err := metadataWriter.WriteMetadata(vuln, pkg, serviceName); err != nil {
+			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
+		}
 
-		// Add service configuration to compose file
-		serviceStr := generateServiceStr(vul.Repo.URL, pkg.GitTag, pkg.GoVersion, serviceName, resultsDir)
-		servicesBuilder.WriteString(serviceStr)
+		// Add service configuration
+		serviceStr := generateServiceStr(vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, serviceName, batchNum, analysisDir)
+		services.WriteString(serviceStr)
 	}
 
-	return servicesBuilder.String()
+	return services.String()
+}
+
+// RunBatches executes all batches in sequence using docker compose
+func (vc *VulComposer) RunBatches(composeFilePath string, timeout time.Duration) error {
+	return runBatches(composeFilePath, vc.GetTotalBatches(), timeout)
 }
