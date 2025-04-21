@@ -38,6 +38,16 @@ type VulPackage struct {
 	// TODO here we should set the service path to ensure it is the same
 }
 
+// VulnerabilityConfig holds configuration options specific to vulnerability datasets
+type VulnerabilityConfig struct {
+	// Filter by severity level (e.g., "high", "medium", "low")
+	SeverityLevel string
+	// Filter by CWE type
+	CWE string
+	// Filter by CVE
+	CVE string
+}
+
 // VulnerabilityDataset implements Dataset for a collection of vulnerabilities
 type VulnerabilityDataset struct {
 	Vulnerabilities []Vulnerability

@@ -28,6 +28,20 @@ type Module struct {
 	GoVersion   string `csv:"go_version"`
 }
 
+// ModuleConfig holds configuration options specific to module datasets
+type ModuleConfig struct {
+	// Limit the number of modules to include (e.g., top N by stars)
+	Limit int
+	// Filter out archived repositories
+	FilterArchived bool
+	// Filter out educational repositories
+	FilterEducational bool
+	// Filter out out-of-date repositories
+	FilterOutOfDate bool
+	// Filter modules without either ReleaseTag or GoVersion
+	FilterIncomplete bool
+}
+
 // ModuleDataset implements ProjectDataset for a collection of normal repositories
 type ModuleDataset struct {
 	Modules []Module
@@ -134,8 +148,8 @@ func ReadModuleCSV(filepath string) ([]Module, error) {
 			closeError = fmt.Errorf("error closing file: %v", err)
 		}
 	}()
-	
-	if closeError != nil {	
+
+	if closeError != nil {
 		return nil, closeError
 	}
 

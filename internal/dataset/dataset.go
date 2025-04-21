@@ -9,9 +9,16 @@ import (
 type DatasetType string
 
 const (
-	VulnerabilityDatasetType DatasetType = "crypto-vulnerabilities"
-	ModuleDatasetType        DatasetType = "top-starred"
+	VulnerabilityDatasetType DatasetType = "crypto-misuse-cves"
+	ModuleDatasetType        DatasetType = "top-starred-modules"
 )
+
+type DatasetConfig struct {
+	Type DatasetType
+
+	ModuleConfig        *ModuleConfig
+	VulnerabilityConfig *VulnerabilityConfig
+}
 
 type Dataset interface {
 	// Get the number of items in the dataset
@@ -38,20 +45,22 @@ func InferDatasetType(filepath string) DatasetType {
 }
 
 // Parses the data into the appropriate dataset type depending on the dataset type
-func ParseDataset(filepath string, config *DatasetConfig) (Dataset, error) {
-	if config == nil {
-		config = NewDatasetConfig(InferDatasetType(filepath))
+func CreateDataset(path string, cfg *DatasetConfig) (Dataset, error) {
+	if cfg == nil {
+		panic("dataset config is nil")
 	}
 
-	switch config.Type {
+	if path == "" {
+		return nil, fmt.Errorf("input path is empty")
+	}
+
+	fmt.Print(string(cfg.Type))
+	switch cfg.Type {
 	case VulnerabilityDatasetType:
-		return ParseVulnerabilities(filepath, config.VulnerabilityConfig)
+		return ParseVulnerabilities(path, cfg.VulnerabilityConfig)
 	case ModuleDatasetType:
-		if config.ModuleConfig == nil {
-			config.ModuleConfig = NewModuleConfig()
-		}
-		return NewModuleDataset(filepath, config.ModuleConfig)
+		return NewModuleDataset(path, cfg.ModuleConfig)
 	default:
-		return nil, fmt.Errorf("unsupported file type: %s", filepath)
+		return nil, fmt.Errorf("unsupported dataset type: %s", cfg.Type)
 	}
 }
