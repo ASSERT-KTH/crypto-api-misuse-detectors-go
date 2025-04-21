@@ -23,19 +23,25 @@ volumes:
 `
 }
 
-// generateServiceStr creates the service configuration for specified package/module
-func generateServiceStr(URL string, releaseTag string, goVersion string, serviceName string, batch int, analysisDir string) string {
+// generateServiceStr creates a service configuration string for Docker Compose
+func generateServiceStr(repoURL, gitTag, goVersion, serviceName string, analysisDir string) string {
 	var serviceBuilder strings.Builder
 
-	// TODO missing service name
+	// Service name
 	serviceBuilder.WriteString(fmt.Sprintf("  %s:\n", serviceName))
+
+	// Build configuration
 	serviceBuilder.WriteString("    build:\n")
 	serviceBuilder.WriteString("      context: .\n")
-	serviceBuilder.WriteString(fmt.Sprintf("      args:\n        REPO_URL: \"%s\"\n", URL))
-	serviceBuilder.WriteString(fmt.Sprintf("        RELEASE_TAG: \"%s\"\n", releaseTag))
-	serviceBuilder.WriteString(fmt.Sprintf("        GO_VERSION: \"%s\"\n", goVersion))
+	serviceBuilder.WriteString("      dockerfile: Dockerfile\n")
 	serviceBuilder.WriteString(fmt.Sprintf("    container_name: %s\n", serviceName))
-	serviceBuilder.WriteString(fmt.Sprintf("    profiles: [\"batch%d\"]\n", batch))
+
+	serviceBuilder.WriteString("      args:\n")
+	serviceBuilder.WriteString(fmt.Sprintf("        - REPO_URL=%s\n", repoURL))
+	serviceBuilder.WriteString(fmt.Sprintf("        - GIT_TAG=%s\n", gitTag))
+	serviceBuilder.WriteString(fmt.Sprintf("        - GO_VERSION=%s\n", goVersion))
+
+	// Volume configuration
 	serviceBuilder.WriteString("    volumes:\n")
 	serviceBuilder.WriteString("      - gopher-shared:/analysis/gopher\n")
 	serviceBuilder.WriteString(fmt.Sprintf("      - \"${BASE_DIR}/%s:/analysis/repo/scan_results\"\n", analysisDir))

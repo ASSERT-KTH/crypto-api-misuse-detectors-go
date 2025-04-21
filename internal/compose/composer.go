@@ -2,59 +2,77 @@ package compose
 
 import (
 	"fmt"
+	"os/exec"
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
-// ComposerConfig holds configuration options for service composition
+// ComposerConfig holds configuration for the composer
 type ComposerConfig struct {
-	// Number of items per batch for parallel processing
-	BatchSize int
-	OutDir    string
+	OutDir      string
+	Parallelism int
 }
 
-// DefaultComposerConfig returns a new ComposerConfig with default values
+// DefaultComposerConfig returns a default composer configuration
 func DefaultComposerConfig() *ComposerConfig {
 	return &ComposerConfig{
-		BatchSize: 10, // Default batch size of 10 items
+		OutDir:      "data/analysis",
+		Parallelism: 4,
 	}
 }
 
+// Composer interface defines methods for generating Docker Compose configurations
 type Composer interface {
 	// ComposeStr returns the complete Docker Compose YAML content as a string
 	// including all services and volume configurations
 	ComposeStr() string
-	// GetTotalBatches returns the total number of batches in the compose file
-	GetTotalBatches() int
-	// RunBatches executes all batches in sequence using docker compose
-	RunBatches(composeFilePath string, timeout time.Duration) error
+	// RunCompose executes the Docker Compose configuration
+	RunCompose(composeFilePath string, timeout time.Duration) error
 	// TODO add "up"
 }
 
-// NewComposer is a factory function that creates the appropriate composer based on dataset type
-func NewComposer(ds dataset.Dataset, config *ComposerConfig) (Composer, error) {
+// NewComposer creates a new Composer based on the dataset type
+func NewComposer(ds dataset.Dataset, config *ComposerConfig) Composer {
 	if config == nil {
 		config = DefaultComposerConfig()
 	}
 
-	// Set output directory to dataset ID
-	config.OutDir = fmt.Sprintf("data/analysis/%s", ds.ID())
-
-	switch ds.Type() {
-	case dataset.VulnerabilityDatasetType:
-		vulDataset, ok := ds.(*dataset.VulnerabilityDataset)
-		if !ok {
-			return nil, fmt.Errorf("incompatible dataset type: expected *VulnerableModuleDataset, got %T", ds)
-		}
-		return NewVulComposer(vulDataset, config), nil
-	case dataset.ModuleDatasetType:
-		modDataset, ok := ds.(*dataset.ModuleDataset)
-		if !ok {
-			return nil, fmt.Errorf("incompatible dataset type: expected *ModuleDataset, got %T", ds)
-		}
-		return NewModComposer(modDataset, config), nil
+	switch v := ds.(type) {
+	case *dataset.VulnerabilityDataset:
+		return NewVulComposer(v, config)
+	case *dataset.ModuleDataset:
+		return NewModComposer(v, config)
 	default:
-		return nil, fmt.Errorf("unknown dataset type: %s", ds.Type())
+		panic("unsupported dataset type")
 	}
+}
+
+// RunCompose executes docker compose with the given file path and parallelism level
+func RunCompose(composeFilePath string, parallelism int, timeout time.Duration) error {
+	// Build the docker compose command with parallelism
+	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "up", "--build", "--parallel", fmt.Sprintf("%d", parallelism))
+
+	// Set timeout for the command
+	if timeout > 0 {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CLIENT_TIMEOUT=%d", int(timeout.Seconds())))
+	}
+
+	// Run the command and capture output
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("docker compose failed: %v\nOutput: %s", err, string(output))
+	}
+
+	return nil
+}
+
+// StopCompose stops all services in the compose file
+func StopCompose(composeFilePath string) error {
+	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "down")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to stop docker compose: %v\nOutput: %s", err, string(output))
+	}
+	return nil
 }

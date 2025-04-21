@@ -2,7 +2,6 @@ package compose
 
 import (
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -27,38 +26,37 @@ func NewModComposer(ds *dataset.ModuleDataset, config *ComposerConfig) *ModCompo
 	}
 }
 
-// GetTotalBatches returns the total number of batches in the compose file
-func (mc *ModComposer) GetTotalBatches() int {
-	totalModules := mc.Dataset.Count()
-
-	// Calculate total batches, rounding up
-	totalBatches := (totalModules + mc.Config.BatchSize - 1) / mc.Config.BatchSize
-	if totalBatches < 1 {
-		totalBatches = 1 // Ensure at least one batch
-	}
-	return totalBatches
-}
-
+// ComposeStr constructs the complete Docker Compose YAML content as a string
 func (mc *ModComposer) ComposeStr() string {
 	// Generate the Docker Compose YAML content
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
 
-	modules := mc.Dataset.GetModules()
-	for i, module := range modules {
-		// Calculate batch number based on index and batch size
-		batchNumber := (i / mc.Config.BatchSize) + 1
-
-		serviceName := generateServiceName(module.RepoName, strconv.Itoa(i+1)) // Use 0 as vulID for modules
-		analysisDir := filepath.Join(mc.Config.OutDir, serviceName)
-		composeBuilder.WriteString(generateServiceStr(module.URL, module.ReleaseTag, module.GoVersion, serviceName, batchNumber, analysisDir))
+	for _, mod := range mc.Dataset.GetModules() {
+		services := mc.addModServices(mod, mc.DatasetID)
+		composeBuilder.WriteString(services)
 	}
 
 	composeBuilder.WriteString(generateVolumeConfig())
 	return composeBuilder.String()
 }
 
-// RunBatches executes all batches in sequence using docker compose
-func (mc *ModComposer) RunBatches(composeFilePath string, timeout time.Duration) error {
-	return runBatches(composeFilePath, mc.GetTotalBatches(), timeout)
+// addModServices adds all services for a single module to the compose file
+func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) string {
+	var services strings.Builder
+
+	// Generate service name and paths
+	serviceName := generateServiceName(mod.RepoName, "mod0-pkg1")
+	analysisDir := filepath.Join(mc.Config.OutDir, serviceName)
+
+	// Add service configuration
+	serviceStr := generateServiceStr(mod.URL, mod.ReleaseTag, mod.GoVersion, serviceName, analysisDir)
+	services.WriteString(serviceStr)
+
+	return services.String()
+}
+
+// RunCompose executes the Docker Compose configuration with parallelism
+func (mc *ModComposer) RunCompose(composeFilePath string, timeout time.Duration) error {
+	return RunCompose(composeFilePath, mc.Config.Parallelism, timeout)
 }

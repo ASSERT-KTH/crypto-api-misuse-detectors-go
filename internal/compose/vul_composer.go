@@ -34,29 +34,14 @@ func NewVulComposer(ds *dataset.VulnerabilityDataset, config *ComposerConfig) *V
 	}
 }
 
-// GetTotalBatches returns the total number of batches in the compose file
-func (vc *VulComposer) GetTotalBatches() int {
-	totalPackages := vc.Dataset.Count()
-
-	// Calculate total batches, rounding up
-	totalBatches := (totalPackages + vc.Config.BatchSize - 1) / vc.Config.BatchSize
-	if totalBatches < 1 {
-		totalBatches = 1 // Ensure at least one batch
-	}
-	return totalBatches
-}
-
 // ComposeStr constructs the complete Docker Compose YAML content as a string
 func (vc *VulComposer) ComposeStr() string {
 	// Generate the Docker Compose YAML content
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
 
-	// Track total package index across all vulnerabilities
-	totalPackageIndex := 0
-
 	for _, vul := range vc.Dataset.GetVulnerabilities() {
-		services := vc.addVulServices(vul, vc.DatasetID, &totalPackageIndex)
+		services := vc.addVulServices(vul, vc.DatasetID)
 		composeBuilder.WriteString(services)
 	}
 
@@ -65,7 +50,7 @@ func (vc *VulComposer) ComposeStr() string {
 }
 
 // addVulServices adds all services for a single vulnerability (potentially multiple packages) to the compose file
-func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID string, totalPkgIndex *int) string {
+func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID string) string {
 	var services strings.Builder
 
 	for pkgIndex, pkg := range vuln.VulPackages {
@@ -79,10 +64,6 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 		if pkg.GoVersion == "" {
 			pkg.GoVersion = DefaultGoVersion
 		}
-
-		// Calculate batch number based on total package index and batch size
-		batchNum := (*totalPkgIndex / vc.Config.BatchSize) + 1
-		*totalPkgIndex++
 
 		// Generate service name and paths
 		vulnID := strconv.Itoa(vuln.ID)
@@ -98,14 +79,14 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 		}
 
 		// Add service configuration
-		serviceStr := generateServiceStr(vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, serviceName, batchNum, analysisDir)
+		serviceStr := generateServiceStr(vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, serviceName, analysisDir)
 		services.WriteString(serviceStr)
 	}
 
 	return services.String()
 }
 
-// RunBatches executes all batches in sequence using docker compose
-func (vc *VulComposer) RunBatches(composeFilePath string, timeout time.Duration) error {
-	return runBatches(composeFilePath, vc.GetTotalBatches(), timeout)
+// RunCompose executes the Docker Compose configuration with parallelism
+func (vc *VulComposer) RunCompose(composeFilePath string, timeout time.Duration) error {
+	return RunCompose(composeFilePath, vc.Config.Parallelism, timeout)
 }
