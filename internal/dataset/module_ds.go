@@ -127,7 +127,17 @@ func ReadModuleCSV(filepath string) ([]Module, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open normal modules file: %w", err)
 	}
-	defer file.Close()
+
+	var closeError error
+	defer func() {
+		if err := file.Close(); err != nil {
+			closeError = fmt.Errorf("error closing file: %v", err)
+		}
+	}()
+	
+	if closeError != nil {	
+		return nil, closeError
+	}
 
 	// Parse the CSV data
 	var modules []Module
