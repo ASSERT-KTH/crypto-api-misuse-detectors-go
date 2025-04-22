@@ -5,14 +5,14 @@ import (
 	"log"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/config"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/flags"
 )
 
 // run executes the cryptoanalysis workflow and returns an error on failure.
 func run() error {
 	// Parse CLI flags and get input dataset path
-	cfg, err := config.ParseFlags()
+	cfg, err := flags.ParseFlags()
 	if err != nil {
 		return err
 	}
@@ -47,9 +47,9 @@ func run() error {
 	if cfg.Verbose {
 		fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
 	}
-	
+
 	// Run Docker Compose
-	if err := composer.RunCompose(composeFilePath, cfg.Timeout); err != nil {
+	if err := composer.RunCompose(composeFilePath); err != nil {
 		return fmt.Errorf("failed to run Docker Compose: %w", err)
 	}
 	return nil

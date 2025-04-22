@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/log"
 )
 
 // ModComposer implements the Composer interface for module datasets
@@ -32,7 +30,7 @@ func (mc *ModComposer) ComposeStr() string {
 	composeBuilder.WriteString(generateComposeHeader())
 
 	for _, mod := range mc.Dataset.GetModules() {
-		services := mc.addModServices(mod, mc.Dataset.ID())
+		services := mc.addModServices(mod)
 		composeBuilder.WriteString(services)
 	}
 
@@ -41,15 +39,15 @@ func (mc *ModComposer) ComposeStr() string {
 }
 
 // addModServices adds all services for a single module to the compose file
-func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) string {
+func (mc *ModComposer) addModServices(mod dataset.Module) string {
 	var services strings.Builder
 
 	// Generate service name and paths
 	serviceName := generateServiceName(mod.RepoName, "mod0-pkg1")
-	analysisDir := filepath.Join(mc.OutDir, mc.Dataset.ID(), serviceName)
+	analysisDir := filepath.Join(mc.OutDir, serviceName)
 
 	// Write metadata for this package
-	metadataWriter := log.NewMetadataWriter(mc.OutDir)
+	metadataWriter := NewMetadataWriter(mc.OutDir)
 	if err := metadataWriter.WriteModuleMetadata(mod, serviceName); err != nil {
 		fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
 	}
@@ -62,6 +60,6 @@ func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) stri
 }
 
 // RunCompose executes the Docker Compose configuration with parallelism
-func (mc *ModComposer) RunCompose(composeFilePath string, timeout time.Duration) error {
-	return RunCompose(composeFilePath, mc.Parallelism, timeout)
+func (mc *ModComposer) RunCompose(composeFilePath string) error {
+	return RunCompose(composeFilePath, mc.Parallelism)
 }

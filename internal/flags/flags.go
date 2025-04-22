@@ -1,4 +1,4 @@
-package config
+package flags
 
 import (
 	"flag"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
+
+// TODO this is messy, use cli option instead like cobra
 
 type Config struct {
 	DatasetConfig  *dataset.DatasetConfig
@@ -26,13 +28,11 @@ func ParseFlags() (*Config, error) {
 	// Shared flags
 	verbose := vulnFlagSet.Bool("verbose", true, "Enable verbose output")
 	parallel := vulnFlagSet.Int("parallel", 4, "Number of parallel operations for Docker Compose")
-	timeout := vulnFlagSet.Duration("timeout", 1*time.Minute, "Timeout for Docker Compose execution")
 	dockerDir := vulnFlagSet.String("docker-dir", "internal/docker", "Directory for Docker files")
 	analysisOutDir := vulnFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
 
 	moduleFlagSet.BoolVar(verbose, "verbose", true, "Enable verbose output")
 	moduleFlagSet.IntVar(parallel, "parallel", 4, "Number of parallel operations for Docker Compose")
-	moduleFlagSet.DurationVar(timeout, "timeout", 1*time.Minute, "Timeout for Docker Compose execution")
 	moduleFlagSet.StringVar(dockerDir, "docker-dir", "internal/docker", "Directory for Docker files")
 	moduleFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
 
@@ -104,7 +104,6 @@ func ParseFlags() (*Config, error) {
 		AnalysisOutDir: *analysisOutDir,
 		Verbose:        *verbose,
 		Parallelism:    *parallel,
-		Timeout:        *timeout,
 		DockerDir:      *dockerDir,
 	}
 

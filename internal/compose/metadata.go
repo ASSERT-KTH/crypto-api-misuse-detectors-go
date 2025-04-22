@@ -1,4 +1,4 @@
-package log
+package compose
 
 import (
 	"encoding/json"
@@ -8,6 +8,9 @@ import (
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
+
+// TODO needs many refactoring
+
 
 // VulnerabilityMetadata represents the metadata for a vulnerability
 type VulnerabilityMetadata struct {

@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+// TODO maybe compile this into a binary instead of using go run in docker
+
 // GopherResult represents the structure of the Gopher JSON output
 type GopherResult struct {
 	FuncName        string          `json:"FuncName"`

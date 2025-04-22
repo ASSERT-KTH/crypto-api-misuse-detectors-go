@@ -5,10 +5,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/log"
 )
 
 const (
@@ -38,7 +36,7 @@ func (vc *VulComposer) ComposeStr() string {
 	composeBuilder.WriteString(generateComposeHeader())
 
 	for _, vul := range vc.Dataset.GetVulnerabilities() {
-		services := vc.addVulServices(vul, vc.Dataset.ID())
+		services := vc.addVulServices(vul)
 		composeBuilder.WriteString(services)
 	}
 
@@ -47,7 +45,7 @@ func (vc *VulComposer) ComposeStr() string {
 }
 
 // addVulServices adds all services for a single vulnerability (potentially multiple packages) to the compose file
-func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID string) string {
+func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability) string {
 	var services strings.Builder
 
 	for pkgIndex, pkg := range vuln.VulPackages {
@@ -67,10 +65,10 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 		pkgID := strconv.Itoa(pkgIndex + 1) // 1-based index for better readability
 		uniqueID := fmt.Sprintf("%s-%s", vulnID, pkgID)
 		serviceName := generateServiceName(vuln.Repo.RepoSlug, uniqueID)
-		analysisDir := filepath.Join(vc.OutDir, vc.Dataset.ID(), serviceName)
+		analysisDir := filepath.Join(vc.OutDir, serviceName)
 
 		// Write metadata for this package
-		metadataWriter := log.NewMetadataWriter(vc.OutDir)
+		metadataWriter := NewMetadataWriter(vc.OutDir)
 		if err := metadataWriter.WriteVulMetadata(vuln, pkg, serviceName); err != nil {
 			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
 		}
@@ -84,6 +82,6 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 }
 
 // RunCompose executes the Docker Compose configuration with parallelism
-func (vc *VulComposer) RunCompose(composeFilePath string, timeout time.Duration) error {
-	return RunCompose(composeFilePath, vc.Parallelism, timeout)
+func (vc *VulComposer) RunCompose(composeFilePath string) error {
+	return RunCompose(composeFilePath, vc.Parallelism)
 }

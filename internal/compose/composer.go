@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
@@ -16,24 +15,27 @@ type Composer interface {
 	// including all services and volume configurations
 	ComposeStr() string
 	// RunCompose executes the Docker Compose configuration
-	RunCompose(composeFilePath string, timeout time.Duration) error
+	RunCompose(composeFilePath string) error
 	// TODO add "up"
 }
 
 // NewComposer creates a new Composer based on the dataset type
 func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
-   if ds == nil {
-       panic("dataset cannot be nil")
-   }
-   // Apply default output directory if not set
-   if outDir == "" {
-       outDir = "data/analysis"
-   }
-   // Apply default parallelism if non-positive
-   if parallelism <= 0 {
-       parallelism = 4
-   }
-   switch v := ds.(type) {
+	if ds == nil {
+		panic("dataset cannot be nil")
+	}
+	// Apply default output directory if not set
+	if outDir == "" {
+		outDir = "data/analysis"
+	}
+	// Apply default parallelism if non-positive
+	if parallelism <= 0 {
+		parallelism = 4
+	}
+
+	outDir = filepath.Join(outDir, ds.ID())
+
+	switch v := ds.(type) {
 	case *dataset.VulnerabilityDataset:
 		return NewVulComposer(v, outDir, parallelism)
 	case *dataset.ModuleDataset:
@@ -44,21 +46,19 @@ func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
 }
 
 // RunCompose executes docker compose with the given file path and parallelism level
-func RunCompose(composeFilePath string, parallelism int, timeout time.Duration) error {
+func RunCompose(composeFilePath string, parallelism int) error {
+	// TODO Check if the compose file and env file and dockerfile exists
+
 	// Build the docker compose command with parallelism
 	cmd := exec.Command("docker", "compose", "--parallel", fmt.Sprintf("%d", parallelism), "-f", composeFilePath, "up", "--build")
+	cmd.Env = append(cmd.Env, "DOCKER_CLIENT_TIMEOUT=60")
 
-	// Set timeout for the command
-	if timeout > 0 {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("DOCKER_CLIENT_TIMEOUT=%d", int(timeout.Seconds())))
+	// Stream stdout/stderr so users see logs in real time
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker compose failed: %v", err)
 	}
-
-	// Run the command and capture output
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("docker compose failed: %v\nOutput: %s", err, string(output))
-	}
-
 	return nil
 }
 
@@ -84,3 +84,20 @@ func WriteComposeFile(dir, content string) (string, error) {
 	}
 	return path, nil
 }
+
+// func createEnvFile(envPath string) error {
+// 	// if no .env file in the directory, create one
+// 	envPath := filepath.Join(dir, ".env")
+// 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
+// 		// Also write a .env file so ${BASE_DIR} is set for variable substitution
+// 		cwd, err := os.Getwd()
+// 		if err != nil {
+// 			return "", fmt.Errorf("failed to get working directory for BASE_DIR: %w", err)
+// 		}
+// 		envContent := fmt.Sprintf("BASE_DIR=%s\n", cwd)
+// 		envPath := filepath.Join(dir, ".env")
+// 		if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
+// 			return "", fmt.Errorf("failed to write .env file: %w", err)
+// 		}
+// 	}
+// }
