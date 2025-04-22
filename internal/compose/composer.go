@@ -32,9 +32,6 @@ func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
 	if parallelism <= 0 {
 		parallelism = 4
 	}
-
-	outDir = filepath.Join(outDir, ds.ID())
-
 	switch v := ds.(type) {
 	case *dataset.VulnerabilityDataset:
 		return NewVulComposer(v, outDir, parallelism)

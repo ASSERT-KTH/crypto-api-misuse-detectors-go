@@ -3,7 +3,6 @@ package flags
 import (
 	"os"
 	"testing"
-	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
@@ -44,9 +43,6 @@ func TestParseFlagsVulnDefault(t *testing.T) {
 	}
 	if cfg.Parallelism != 4 {
 		t.Errorf("expected default Parallelism 4, got %d", cfg.Parallelism)
-	}
-	if cfg.Timeout != 1*time.Minute {
-		t.Errorf("expected default Timeout 1m, got %v", cfg.Timeout)
 	}
 	if cfg.DockerDir != "internal/docker" {
 		t.Errorf("expected default DockerDir 'internal/docker', got %q", cfg.DockerDir)

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
@@ -29,7 +30,9 @@ func run() error {
 	}
 
 	// Initialize composer
-	composer := compose.NewComposer(ds, "data/analysis", cfg.Parallelism)
+	outDir := filepath.Join("data", "analysis", ds.ID())
+
+	composer := compose.NewComposer(ds, outDir, cfg.Parallelism)
 
 	// Generate Docker Compose configuration
 	composeStr := composer.ComposeStr()
