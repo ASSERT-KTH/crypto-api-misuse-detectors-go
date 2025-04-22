@@ -10,12 +10,13 @@ import (
 )
 
 type Config struct {
-	DatasetConfig *dataset.DatasetConfig
-	DatasetPath   string
-	Verbose       bool
-	Parallelism   int
-	Timeout       time.Duration
-	DockerDir     string
+	DatasetConfig  *dataset.DatasetConfig
+	DatasetPath    string
+	AnalysisOutDir string
+	Verbose        bool
+	Parallelism    int
+	Timeout        time.Duration
+	DockerDir      string
 }
 
 func ParseFlags() (*Config, error) {
@@ -27,11 +28,13 @@ func ParseFlags() (*Config, error) {
 	parallel := vulnFlagSet.Int("parallel", 4, "Number of parallel operations for Docker Compose")
 	timeout := vulnFlagSet.Duration("timeout", 1*time.Minute, "Timeout for Docker Compose execution")
 	dockerDir := vulnFlagSet.String("docker-dir", "internal/docker", "Directory for Docker files")
+	analysisOutDir := vulnFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
 
 	moduleFlagSet.BoolVar(verbose, "verbose", true, "Enable verbose output")
 	moduleFlagSet.IntVar(parallel, "parallel", 4, "Number of parallel operations for Docker Compose")
 	moduleFlagSet.DurationVar(timeout, "timeout", 1*time.Minute, "Timeout for Docker Compose execution")
 	moduleFlagSet.StringVar(dockerDir, "docker-dir", "internal/docker", "Directory for Docker files")
+	moduleFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
 
 	// Vulnerability-specific flags
 	severity := vulnFlagSet.String("severity", "", "Filter vulnerabilities by severity level")
@@ -96,14 +99,14 @@ func ParseFlags() (*Config, error) {
 	}
 
 	config := &Config{
-		DatasetConfig: dsConfig,
-		DatasetPath:   inputArgs[0],
-		Verbose:       *verbose,
-		Parallelism:   *parallel,
-		Timeout:       *timeout,
-		DockerDir:     *dockerDir,
+		DatasetConfig:  dsConfig,
+		DatasetPath:    inputArgs[0],
+		AnalysisOutDir: *analysisOutDir,
+		Verbose:        *verbose,
+		Parallelism:    *parallel,
+		Timeout:        *timeout,
+		DockerDir:      *dockerDir,
 	}
-
 
 	return config, nil
 }

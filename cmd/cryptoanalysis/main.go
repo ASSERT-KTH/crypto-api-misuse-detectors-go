@@ -43,8 +43,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
 
+	if cfg.Verbose {
+		fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
+	}
+	
 	// Run Docker Compose
 	if err := composer.RunCompose(composeFilePath, cfg.Timeout); err != nil {
 		return fmt.Errorf("failed to run Docker Compose: %w", err)

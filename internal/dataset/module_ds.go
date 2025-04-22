@@ -127,7 +127,6 @@ func ParseModules(filepath string) (*ModuleDataset, error) {
 	}
 
 	md := &ModuleDataset{Modules: modules}
-	fmt.Println("Number of modules:", (md.Count()))
 	md.filterEducational()
 	md.filterOutOfDate()
 	md.filterArchived()

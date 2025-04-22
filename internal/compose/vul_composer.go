@@ -17,19 +17,17 @@ const (
 
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
-	Dataset   *dataset.VulnerabilityDataset
-	Config    *ComposerConfig
+	Dataset     *dataset.VulnerabilityDataset
+	OutDir      string
+	Parallelism int
 	//MetadataWriter *MetadataWriter
 }
 
-func NewVulComposer(ds *dataset.VulnerabilityDataset, config *ComposerConfig) *VulComposer {
-	if config == nil {
-		config = DefaultComposerConfig()
-	}
+func NewVulComposer(ds *dataset.VulnerabilityDataset, outdir string, parallelism int) *VulComposer {
 	return &VulComposer{
-		Dataset:   ds,
-		Config:    config,
-		//MetadataWriter: NewMetadataWriter(ds.GetDatasetIdentifier()),
+		Dataset: ds,
+		OutDir: outdir,
+		Parallelism: parallelism,
 	}
 }
 
@@ -69,10 +67,10 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 		pkgID := strconv.Itoa(pkgIndex + 1) // 1-based index for better readability
 		uniqueID := fmt.Sprintf("%s-%s", vulnID, pkgID)
 		serviceName := generateServiceName(vuln.Repo.RepoSlug, uniqueID)
-		analysisDir := filepath.Join(vc.Config.OutDir, vc.Dataset.ID(), serviceName)
-		
+		analysisDir := filepath.Join(vc.OutDir, vc.Dataset.ID(), serviceName)
+
 		// Write metadata for this package
-		metadataWriter := log.NewMetadataWriter(vc.Config.OutDir)
+		metadataWriter := log.NewMetadataWriter(vc.OutDir)
 		if err := metadataWriter.WriteMetadata(vuln, pkg, serviceName); err != nil {
 			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
 		}
@@ -87,5 +85,5 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 
 // RunCompose executes the Docker Compose configuration with parallelism
 func (vc *VulComposer) RunCompose(composeFilePath string, timeout time.Duration) error {
-	return RunCompose(composeFilePath, vc.Config.Parallelism, timeout)
+	return RunCompose(composeFilePath, vc.Parallelism, timeout)
 }

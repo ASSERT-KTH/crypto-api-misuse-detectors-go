@@ -10,17 +10,16 @@ import (
 
 // ModComposer implements the Composer interface for module datasets
 type ModComposer struct {
-	Dataset *dataset.ModuleDataset
-	Config  *ComposerConfig
+	Dataset     *dataset.ModuleDataset
+	OutDir      string
+	Parallelism int
 }
 
-func NewModComposer(ds *dataset.ModuleDataset, config *ComposerConfig) *ModComposer {
-	if config == nil {
-		config = DefaultComposerConfig()
-	}
+func NewModComposer(ds *dataset.ModuleDataset, outDir string, parallelism int) *ModComposer {
 	return &ModComposer{
 		Dataset: ds,
-		Config:  config,
+		OutDir:  outDir,
+		Parallelism: parallelism,
 	}
 }
 
@@ -45,7 +44,7 @@ func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) stri
 
 	// Generate service name and paths
 	serviceName := generateServiceName(mod.RepoName, "mod0-pkg1")
-	analysisDir := filepath.Join(mc.Config.OutDir, mc.Dataset.ID(), serviceName)
+	analysisDir := filepath.Join(mc.OutDir, mc.Dataset.ID(), serviceName)
 
 	// Add service configuration
 	serviceStr := generateServiceStr(mod.URL, mod.ReleaseTag, mod.GoVersion, serviceName, analysisDir)
@@ -56,5 +55,5 @@ func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) stri
 
 // RunCompose executes the Docker Compose configuration with parallelism
 func (mc *ModComposer) RunCompose(composeFilePath string, timeout time.Duration) error {
-	return RunCompose(composeFilePath, mc.Config.Parallelism, timeout)
+	return RunCompose(composeFilePath, mc.Parallelism, timeout)
 }

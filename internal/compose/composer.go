@@ -10,20 +10,6 @@ import (
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
-// ComposerConfig holds configuration for the composer
-type ComposerConfig struct {
-	OutDir      string
-	Parallelism int
-}
-
-// DefaultComposerConfig returns a default composer configuration
-func DefaultComposerConfig() *ComposerConfig {
-	return &ComposerConfig{
-		OutDir:      "data/analysis",
-		Parallelism: 4,
-	}
-}
-
 // Composer interface defines methods for generating Docker Compose configurations
 type Composer interface {
 	// ComposeStr returns the complete Docker Compose YAML content as a string
@@ -35,24 +21,23 @@ type Composer interface {
 }
 
 // NewComposer creates a new Composer based on the dataset type
-func NewComposer(ds dataset.Dataset, outdir string, parallelism int) Composer {
-	if outdir == "" {
-		outdir = ""
-	}
-	if parallelism <= 0 {
-		parallelism = 4
-	}
-
-	config := &ComposerConfig{
-		OutDir:      outdir,
-		Parallelism: parallelism,
-	}
-
-	switch v := ds.(type) {
+func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
+   if ds == nil {
+       panic("dataset cannot be nil")
+   }
+   // Apply default output directory if not set
+   if outDir == "" {
+       outDir = "data/analysis"
+   }
+   // Apply default parallelism if non-positive
+   if parallelism <= 0 {
+       parallelism = 4
+   }
+   switch v := ds.(type) {
 	case *dataset.VulnerabilityDataset:
-		return NewVulComposer(v, config)
+		return NewVulComposer(v, outDir, parallelism)
 	case *dataset.ModuleDataset:
-		return NewModComposer(v, config)
+		return NewModComposer(v, outDir, parallelism)
 	default:
 		panic("unsupported dataset type")
 	}
