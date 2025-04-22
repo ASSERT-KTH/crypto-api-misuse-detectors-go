@@ -2,7 +2,9 @@ package compose
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
@@ -33,9 +35,17 @@ type Composer interface {
 }
 
 // NewComposer creates a new Composer based on the dataset type
-func NewComposer(ds dataset.Dataset, config *ComposerConfig) Composer {
-	if config == nil {
-		config = DefaultComposerConfig()
+func NewComposer(ds dataset.Dataset, outdir string, parallelism int) Composer {
+	if outdir == "" {
+		outdir = ""
+	}
+	if parallelism <= 0 {
+		parallelism = 4
+	}
+
+	config := &ComposerConfig{
+		OutDir:      outdir,
+		Parallelism: parallelism,
 	}
 
 	switch v := ds.(type) {
@@ -75,4 +85,17 @@ func StopCompose(composeFilePath string) error {
 		return fmt.Errorf("failed to stop docker compose: %v\nOutput: %s", err, string(output))
 	}
 	return nil
+}
+
+// writeComposeFile ensures the target directory exists and writes the Docker Compose YAML.
+// It returns the full path to the compose file.
+func WriteComposeFile(dir, content string) (string, error) {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create docker directory: %w", err)
+	}
+	path := filepath.Join(dir, "compose.yaml")
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return "", fmt.Errorf("failed to write compose file: %w", err)
+	}
+	return path, nil
 }

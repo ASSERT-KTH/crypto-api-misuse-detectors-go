@@ -3,57 +3,58 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/config"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
-func main() {
-	cfg, datasetFilePath, err := config.ParseFlags()
+// run executes the cryptoanalysis workflow and returns an error on failure.
+func run() error {
+	// Parse CLI flags and get input dataset path
+	cfg, err := config.ParseFlags()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	// TODO a verify function to check if the dataset path is valid
 
 	// Create the dataset
-	ds, err := dataset.CreateDataset(datasetFilePath, cfg.DatasetConfig)
+	ds, err := dataset.CreateDataset(cfg.DatasetPath, cfg.DatasetConfig)
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to parse dataset: %w", err))
+		return fmt.Errorf("failed to parse dataset: %w", err)
 	}
-
 	if cfg.Verbose {
 		fmt.Println("Parsed dataset:", ds)
 	}
 
-	// Create composer with parallelism configuration
-	composerConfig := compose.DefaultComposerConfig()
-	composerConfig.Parallelism = cfg.Parallelism
-	composer := compose.NewComposer(ds, composerConfig)
+	// Initialize composer
+	composer := compose.NewComposer(ds, "data/analysis", cfg.Parallelism)
 
-	// Get compose configuration string
+	// Generate Docker Compose configuration
 	composeStr := composer.ComposeStr()
-
 	if cfg.Verbose {
 		fmt.Println("Generated Docker Compose configuration:")
 		fmt.Println(composeStr)
 	}
 
-	// Create docker directory if it doesn't exist
-	if err := os.MkdirAll(cfg.DockerDir, 0755); err != nil {
-		log.Fatal(fmt.Errorf("failed to create docker directory: %w", err))
-	}
-
 	// Write compose file
-	composeFilePath := filepath.Join(cfg.DockerDir, "compose.yaml")
-	if err := os.WriteFile(composeFilePath, []byte(composeStr), 0644); err != nil {
-		log.Fatal(fmt.Errorf("failed to write compose file: %w", err))
+	composeFilePath, err := compose.WriteComposeFile(cfg.DockerDir, composeStr)
+	if err != nil {
+		return err
 	}
 	fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
 
-	// Run Docker Compose with parallelism
+	// Run Docker Compose
 	if err := composer.RunCompose(composeFilePath, cfg.Timeout); err != nil {
-		log.Fatal(fmt.Errorf("failed to run Docker Compose: %w", err))
+		return fmt.Errorf("failed to run Docker Compose: %w", err)
+	}
+	return nil
+}
+
+// main is the entry point for the tool.
+func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
 	}
 }

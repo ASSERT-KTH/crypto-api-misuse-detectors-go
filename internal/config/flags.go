@@ -11,13 +11,14 @@ import (
 
 type Config struct {
 	DatasetConfig *dataset.DatasetConfig
+	DatasetPath   string
 	Verbose       bool
 	Parallelism   int
 	Timeout       time.Duration
 	DockerDir     string
 }
 
-func ParseFlags() (*Config, string, error) {
+func ParseFlags() (*Config, error) {
 	vulnFlagSet := flag.NewFlagSet("vuln", flag.ExitOnError)
 	moduleFlagSet := flag.NewFlagSet("module", flag.ExitOnError)
 
@@ -46,14 +47,14 @@ func ParseFlags() (*Config, string, error) {
 
 	// Parse subcommand
 	if len(os.Args) < 2 {
-		return nil, "", fmt.Errorf("expected 'vuln' or 'module' subcommand")
+		return nil, fmt.Errorf("expected 'vuln' or 'module' subcommand")
 	}
 
 	var dsConfig *dataset.DatasetConfig
 
 	dsType, err := datasetTypeFromSubcommand(os.Args[1])
 	if err != nil {
-		return nil, "", fmt.Errorf("invalid subcommand: %s", os.Args[1])
+		return nil, fmt.Errorf("invalid subcommand: %s", os.Args[1])
 	}
 	switch dsType {
 	case dataset.VulnerabilityDatasetType:
@@ -79,15 +80,7 @@ func ParseFlags() (*Config, string, error) {
 			Type: dataset.ModuleDatasetType,
 		}
 	default:
-		return nil, "", fmt.Errorf("unknown subcommand: %s", os.Args[1])
-	}
-
-	config := &Config{
-		DatasetConfig: dsConfig,
-		Verbose:       *verbose,
-		Parallelism:   *parallel,
-		Timeout:       *timeout,
-		DockerDir:     *dockerDir,
+		return nil, fmt.Errorf("unknown subcommand: %s", os.Args[1])
 	}
 
 	// positional argument (input file path)
@@ -99,10 +92,20 @@ func ParseFlags() (*Config, string, error) {
 	}
 
 	if len(inputArgs) != 1 {
-		return nil, "", fmt.Errorf("input file path is required")
+		return nil, fmt.Errorf("input file path is required")
 	}
 
-	return config, inputArgs[0], nil
+	config := &Config{
+		DatasetConfig: dsConfig,
+		DatasetPath:   inputArgs[0],
+		Verbose:       *verbose,
+		Parallelism:   *parallel,
+		Timeout:       *timeout,
+		DockerDir:     *dockerDir,
+	}
+
+
+	return config, nil
 }
 
 func datasetTypeFromSubcommand(cmd string) (dataset.DatasetType, error) {
