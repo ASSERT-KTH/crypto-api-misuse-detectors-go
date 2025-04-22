@@ -1,4 +1,4 @@
-package compose
+package log
 
 import (
 	"encoding/json"

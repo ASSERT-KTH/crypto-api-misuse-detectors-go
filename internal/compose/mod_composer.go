@@ -10,9 +10,8 @@ import (
 
 // ModComposer implements the Composer interface for module datasets
 type ModComposer struct {
-	Dataset   *dataset.ModuleDataset
-	DatasetID string
-	Config    *ComposerConfig
+	Dataset *dataset.ModuleDataset
+	Config  *ComposerConfig
 }
 
 func NewModComposer(ds *dataset.ModuleDataset, config *ComposerConfig) *ModComposer {
@@ -20,9 +19,8 @@ func NewModComposer(ds *dataset.ModuleDataset, config *ComposerConfig) *ModCompo
 		config = DefaultComposerConfig()
 	}
 	return &ModComposer{
-		Dataset:   ds,
-		DatasetID: ds.ID(),
-		Config:    config,
+		Dataset: ds,
+		Config:  config,
 	}
 }
 
@@ -33,7 +31,7 @@ func (mc *ModComposer) ComposeStr() string {
 	composeBuilder.WriteString(generateComposeHeader())
 
 	for _, mod := range mc.Dataset.GetModules() {
-		services := mc.addModServices(mod, mc.DatasetID)
+		services := mc.addModServices(mod, mc.Dataset.ID())
 		composeBuilder.WriteString(services)
 	}
 
@@ -47,7 +45,7 @@ func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) stri
 
 	// Generate service name and paths
 	serviceName := generateServiceName(mod.RepoName, "mod0-pkg1")
-	analysisDir := filepath.Join(mc.Config.OutDir, serviceName)
+	analysisDir := filepath.Join(mc.Config.OutDir, mc.Dataset.ID(), serviceName)
 
 	// Add service configuration
 	serviceStr := generateServiceStr(mod.URL, mod.ReleaseTag, mod.GoVersion, serviceName, analysisDir)

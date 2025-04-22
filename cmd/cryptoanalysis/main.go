@@ -14,9 +14,7 @@ import (
 func main() {
 	cfg, datasetFilePath, err := config.ParseFlags()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\nUsage: %s [vuln|module] [flags] <input-file>\n",
-			err, os.Args[0])
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	// Create the dataset

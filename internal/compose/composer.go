@@ -51,7 +51,7 @@ func NewComposer(ds dataset.Dataset, config *ComposerConfig) Composer {
 // RunCompose executes docker compose with the given file path and parallelism level
 func RunCompose(composeFilePath string, parallelism int, timeout time.Duration) error {
 	// Build the docker compose command with parallelism
-	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "up", "--build", "--parallel", fmt.Sprintf("%d", parallelism))
+	cmd := exec.Command("docker", "compose", "--parallel", fmt.Sprintf("%d", parallelism), "-f", composeFilePath, "up", "--build")
 
 	// Set timeout for the command
 	if timeout > 0 {

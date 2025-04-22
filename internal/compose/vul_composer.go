@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/log"
 )
 
 const (
@@ -17,7 +18,6 @@ const (
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
 	Dataset   *dataset.VulnerabilityDataset
-	DatasetID string
 	Config    *ComposerConfig
 	//MetadataWriter *MetadataWriter
 }
@@ -28,7 +28,6 @@ func NewVulComposer(ds *dataset.VulnerabilityDataset, config *ComposerConfig) *V
 	}
 	return &VulComposer{
 		Dataset:   ds,
-		DatasetID: ds.ID(),
 		Config:    config,
 		//MetadataWriter: NewMetadataWriter(ds.GetDatasetIdentifier()),
 	}
@@ -41,7 +40,7 @@ func (vc *VulComposer) ComposeStr() string {
 	composeBuilder.WriteString(generateComposeHeader())
 
 	for _, vul := range vc.Dataset.GetVulnerabilities() {
-		services := vc.addVulServices(vul, vc.DatasetID)
+		services := vc.addVulServices(vul, vc.Dataset.ID())
 		composeBuilder.WriteString(services)
 	}
 
@@ -70,10 +69,10 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 		pkgID := strconv.Itoa(pkgIndex + 1) // 1-based index for better readability
 		uniqueID := fmt.Sprintf("%s-%s", vulnID, pkgID)
 		serviceName := generateServiceName(vuln.Repo.RepoSlug, uniqueID)
-		analysisDir := filepath.Join(vc.Config.OutDir, serviceName)
-
+		analysisDir := filepath.Join(vc.Config.OutDir, vc.Dataset.ID(), serviceName)
+		
 		// Write metadata for this package
-		metadataWriter := NewMetadataWriter(vc.Config.OutDir)
+		metadataWriter := log.NewMetadataWriter(vc.Config.OutDir)
 		if err := metadataWriter.WriteMetadata(vuln, pkg, serviceName); err != nil {
 			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
 		}

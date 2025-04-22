@@ -24,12 +24,12 @@ func ParseFlags() (*Config, string, error) {
 	// Shared flags
 	verbose := vulnFlagSet.Bool("verbose", true, "Enable verbose output")
 	parallel := vulnFlagSet.Int("parallel", 4, "Number of parallel operations for Docker Compose")
-	timeout := vulnFlagSet.Duration("timeout", 50*time.Minute, "Timeout for Docker Compose execution")
+	timeout := vulnFlagSet.Duration("timeout", 1*time.Minute, "Timeout for Docker Compose execution")
 	dockerDir := vulnFlagSet.String("docker-dir", "internal/docker", "Directory for Docker files")
 
 	moduleFlagSet.BoolVar(verbose, "verbose", true, "Enable verbose output")
 	moduleFlagSet.IntVar(parallel, "parallel", 4, "Number of parallel operations for Docker Compose")
-	moduleFlagSet.DurationVar(timeout, "timeout", 50*time.Minute, "Timeout for Docker Compose execution")
+	moduleFlagSet.DurationVar(timeout, "timeout", 1*time.Minute, "Timeout for Docker Compose execution")
 	moduleFlagSet.StringVar(dockerDir, "docker-dir", "internal/docker", "Directory for Docker files")
 
 	// Vulnerability-specific flags

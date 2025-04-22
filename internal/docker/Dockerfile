@@ -4,18 +4,13 @@ FROM golang:${GO_VERSION}
 WORKDIR /analysis/repo
 
 ARG REPO_URL
-ARG RELEASE_TAG
-ARG GIT_COMMIT 
-# TODO not sending commit at this point
+ARG GIT_TAG
 
 # Clone repository based on whether GIT_TAG or GIT_COMMIT is provided
 RUN if [ -n "${GIT_TAG}" ]; then \
         git clone --depth 1 --branch ${GIT_TAG} ${REPO_URL} .; \
-    elif [ -n "${GIT_COMMIT}" ]; then \
-        git clone ${REPO_URL} . && \
-        git checkout ${GIT_COMMIT}; \
     else \
-        echo "Error: Either GIT_TAG or GIT_COMMIT must be provided" && \
+        echo "Error: GIT_TAG must be provided" && \
         exit 1; \
     fi
 

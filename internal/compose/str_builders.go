@@ -33,13 +33,10 @@ func generateServiceStr(repoURL, gitTag, goVersion, serviceName string, analysis
 	// Build configuration
 	serviceBuilder.WriteString("    build:\n")
 	serviceBuilder.WriteString("      context: .\n")
-	serviceBuilder.WriteString("      dockerfile: Dockerfile\n")
+	serviceBuilder.WriteString(fmt.Sprintf("      args:\n        REPO_URL: \"%s\"\n", repoURL))
+	serviceBuilder.WriteString(fmt.Sprintf("        GIT_TAG: \"%s\"\n", gitTag))
+	serviceBuilder.WriteString(fmt.Sprintf("        GO_VERSION: \"%s\"\n", goVersion))
 	serviceBuilder.WriteString(fmt.Sprintf("    container_name: %s\n", serviceName))
-
-	serviceBuilder.WriteString("      args:\n")
-	serviceBuilder.WriteString(fmt.Sprintf("        - REPO_URL=%s\n", repoURL))
-	serviceBuilder.WriteString(fmt.Sprintf("        - GIT_TAG=%s\n", gitTag))
-	serviceBuilder.WriteString(fmt.Sprintf("        - GO_VERSION=%s\n", goVersion))
 
 	// Volume configuration
 	serviceBuilder.WriteString("    volumes:\n")
