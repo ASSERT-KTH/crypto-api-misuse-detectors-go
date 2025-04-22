@@ -1,11 +1,13 @@
 package compose
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/log"
 )
 
 // ModComposer implements the Composer interface for module datasets
@@ -17,8 +19,8 @@ type ModComposer struct {
 
 func NewModComposer(ds *dataset.ModuleDataset, outDir string, parallelism int) *ModComposer {
 	return &ModComposer{
-		Dataset: ds,
-		OutDir:  outDir,
+		Dataset:     ds,
+		OutDir:      outDir,
 		Parallelism: parallelism,
 	}
 }
@@ -45,6 +47,12 @@ func (mc *ModComposer) addModServices(mod dataset.Module, datasetID string) stri
 	// Generate service name and paths
 	serviceName := generateServiceName(mod.RepoName, "mod0-pkg1")
 	analysisDir := filepath.Join(mc.OutDir, mc.Dataset.ID(), serviceName)
+
+	// Write metadata for this package
+	metadataWriter := log.NewMetadataWriter(mc.OutDir)
+	if err := metadataWriter.WriteModuleMetadata(mod, serviceName); err != nil {
+		fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
+	}
 
 	// Add service configuration
 	serviceStr := generateServiceStr(mod.URL, mod.ReleaseTag, mod.GoVersion, serviceName, analysisDir)

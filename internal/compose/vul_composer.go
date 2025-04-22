@@ -25,8 +25,8 @@ type VulComposer struct {
 
 func NewVulComposer(ds *dataset.VulnerabilityDataset, outdir string, parallelism int) *VulComposer {
 	return &VulComposer{
-		Dataset: ds,
-		OutDir: outdir,
+		Dataset:     ds,
+		OutDir:      outdir,
 		Parallelism: parallelism,
 	}
 }
@@ -71,7 +71,7 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability, datasetID stri
 
 		// Write metadata for this package
 		metadataWriter := log.NewMetadataWriter(vc.OutDir)
-		if err := metadataWriter.WriteMetadata(vuln, pkg, serviceName); err != nil {
+		if err := metadataWriter.WriteVulMetadata(vuln, pkg, serviceName); err != nil {
 			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
 		}
 

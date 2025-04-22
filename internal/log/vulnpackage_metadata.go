@@ -27,7 +27,24 @@ type VulnerabilityMetadata struct {
 	VulGitTags  []string `json:"vul_git_tags"`
 }
 
-// MetadataWriter handles writing vulnerability metadata to files
+// writeJSON is a helper that marshals data to JSON and writes it to a file under baseDir/serviceName
+func (mw *MetadataWriter) writeJSON(serviceName, fileName string, data interface{}) error {
+	metadataDir := filepath.Join(mw.baseDir, serviceName)
+	if err := os.MkdirAll(metadataDir, 0755); err != nil {
+		return fmt.Errorf("failed to create metadata directory %s: %w", metadataDir, err)
+	}
+	filePath := filepath.Join(metadataDir, fileName)
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
+	}
+	if err := os.WriteFile(filePath, jsonData, 0644); err != nil {
+		return fmt.Errorf("failed to write metadata file %s: %w", filePath, err)
+	}
+	return nil
+}
+
+// MetadataWriter handles writing metadata for vulnerability packages and modules to files
 type MetadataWriter struct {
 	baseDir string
 }
@@ -39,8 +56,8 @@ func NewMetadataWriter(baseDir string) *MetadataWriter {
 	}
 }
 
-// WriteMetadata writes metadata for a vulnerability package to a file
-func (mw *MetadataWriter) WriteMetadata(vuln dataset.Vulnerability, pkg dataset.VulPackage, serviceName string) error {
+// WriteVulMetadata writes metadata for a vulnerability package to a file
+func (mw *MetadataWriter) WriteVulMetadata(vuln dataset.Vulnerability, pkg dataset.VulPackage, serviceName string) error {
 	metadata := VulnerabilityMetadata{
 		ID:          vuln.ID,
 		Package:     pkg.Name,
@@ -57,25 +74,49 @@ func (mw *MetadataWriter) WriteMetadata(vuln dataset.Vulnerability, pkg dataset.
 		VulRange:    pkg.VulRange,
 		VulGitTags:  pkg.VulnerableGitTags,
 	}
+	return mw.writeJSON(serviceName, "vulnerability_info.json", metadata)
+}
 
-	// Generate paths using service name
-	metadataDir := filepath.Join(mw.baseDir, serviceName)
-	metadataFile := filepath.Join(metadataDir, "vulnerability_info.json")
+// ModuleMetadata represents the metadata for a module
+type ModuleMetadata struct {
+	ID          string `json:"id"`
+	RepoName    string `json:"repo_name"`
+	URL         string `json:"url"`
+	Stars       int    `json:"stars"`
+	LOC         int    `json:"loc"`
+	Size        int    `json:"size"`
+	ForksCount  int    `json:"forks_count"`
+	Issues      int    `json:"issues"`
+	CreatedAt   string `json:"created_at"`
+	Description string `json:"description"`
+	Archived    string `json:"archived"`
+	Educational string `json:"educational"`
+	OutOfDate   string `json:"outofdate"`
+	ReleaseTag  string `json:"tag"`
+	Commit      string `json:"commit"`
+	GoVersion   string `json:"go_version"`
+}
 
-	// Create directory
-	if err := os.MkdirAll(metadataDir, 0755); err != nil {
-		return fmt.Errorf("failed to create metadata directory: %w", err)
+// WriteModuleMetadata writes metadata for a module to a file
+func (mw *MetadataWriter) WriteModuleMetadata(mod dataset.Module, serviceName string) error {
+	metadata := ModuleMetadata{
+		ID:          mod.ID,
+		RepoName:    mod.RepoName,
+		URL:         mod.URL,
+		Stars:       mod.Stars,
+		LOC:         mod.LOC,
+		Size:        mod.Size,
+		ForksCount:  mod.ForksCount,
+		Issues:      mod.Issues,
+		CreatedAt:   mod.CreatedAt,
+		Description: mod.Description,
+		Archived:    mod.Archived,
+		Educational: mod.Educational,
+		OutOfDate:   mod.OutOfDate,
+		ReleaseTag:  mod.ReleaseTag,
+		Commit:      mod.Commit,
+		GoVersion:   mod.GoVersion,
 	}
 
-	// Write metadata
-	jsonData, err := json.MarshalIndent(metadata, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
-	}
-
-	if err := os.WriteFile(metadataFile, jsonData, 0644); err != nil {
-		return fmt.Errorf("failed to write metadata file: %w", err)
-	}
-
-	return nil
+	return mw.writeJSON(serviceName, "module_info.json", metadata)
 }
