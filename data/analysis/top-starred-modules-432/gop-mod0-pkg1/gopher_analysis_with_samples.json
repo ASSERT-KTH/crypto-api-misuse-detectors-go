@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "runGoFile",
+    "file_path": "/analysis/repo/cmd/chore/goptestgo/goptestgo.go",
+    "line_number": 53,
+    "full_implementation": "func runGoFile(dir, file, fname string) {\n\tgopEnv := gopenv.Get()\n\tconf := \u0026tool.Config{Gop: gopEnv}\n\tconfCmd := \u0026gocmd.BuildConfig{Gop: gopEnv}\n\tfi, err := os.Stat(file)\n\tif err != nil {\n\t\tlog.Panicln(err)\n\t}\n\tabsFile, _ := filepath.Abs(file)\n\thash := sha1.Sum([]byte(absFile))\n\toutFile := dir + \"g\" + base64.RawURLEncoding.EncodeToString(hash[:]) + fname\n\tif fileIsDirty(fi.ModTime(), outFile) {\n\t\terr = tool.RunFiles(outFile, []string{file}, nil, conf, confCmd)\n\t\tif err != nil {\n\t\t\tos.Remove(outFile)\n\t\t\tswitch e := err.(type) {\n\t\t\tcase *exec.ExitError:\n\t\t\t\tos.Exit(e.ExitCode())\n\t\t\tdefault:\n\t\t\t\tlog.Fatalln(\"runGoFile:\", err)\n\t\t\t}\n\t\t}\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum([]byte(absFile))",
+        "SourceFilename": "/analysis/repo/cmd/chore/goptestgo/goptestgo.go",
+        "SourceLineNum": 53,
+        "ParentFunction": "runGoFile (dir string, file string, fname string)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

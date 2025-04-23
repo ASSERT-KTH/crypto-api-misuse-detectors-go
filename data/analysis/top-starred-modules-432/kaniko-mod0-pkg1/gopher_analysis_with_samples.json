@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "MakeTransport",
+    "file_path": "/analysis/repo/pkg/util/transport_util.go",
+    "line_number": 87,
+    "full_implementation": "func MakeTransport(opts config.RegistryOptions, registryName string) (http.RoundTripper, error) {\n\t// Create a transport to set our user-agent.\n\tvar tr http.RoundTripper = http.DefaultTransport.(*http.Transport).Clone()\n\tif opts.SkipTLSVerify || opts.SkipTLSVerifyRegistries.Contains(registryName) {\n\t\ttr.(*http.Transport).TLSClientConfig = \u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t}\n\t} else if certificatePath := opts.RegistriesCertificates[registryName]; certificatePath != \"\" {\n\t\tif err := systemCertLoader.append(certificatePath); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to load certificate %s for %s: %w\", certificatePath, registryName, err)\n\t\t}\n\t\ttr.(*http.Transport).TLSClientConfig = \u0026tls.Config{\n\t\t\tRootCAs: systemCertLoader.value(),\n\t\t}\n\t}\n\n\tif clientCertificatePath := opts.RegistriesClientCertificates[registryName]; clientCertificatePath != \"\" {\n\t\tcertFiles := strings.Split(clientCertificatePath, \",\")\n\t\tif len(certFiles) != 2 {\n\t\t\treturn nil, fmt.Errorf(\"failed to load client certificate/key '%s=%s', expected format: %s=/path/to/cert,/path/to/key\", registryName, clientCertificatePath, registryName)\n\t\t}\n\t\tcert, err := systemKeyPairLoader.load(certFiles[0], certFiles[1])\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to load client certificate/key '%s' for %s: %w\", clientCertificatePath, registryName, err)\n\t\t}\n\t\ttr.(*http.Transport).TLSClientConfig.Certificates = []tls.Certificate{cert}\n\t}\n\n\treturn tr, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/pkg/util/transport_util.go",
+        "SourceLineNum": 87,
+        "ParentFunction": "MakeTransport (opts github.com/GoogleContainerTools/kaniko/pkg/config.RegistryOptions, registryName string) (net/http.RoundTripper, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/pkg/util/transport_util.go",
+          "SourceLineNum": 87,
+          "ParentFunction": "MakeTransport (opts github.com/GoogleContainerTools/kaniko/pkg/config.RegistryOptions, registryName string) (net/http.RoundTripper, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

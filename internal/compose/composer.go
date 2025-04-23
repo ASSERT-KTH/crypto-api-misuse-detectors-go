@@ -61,7 +61,7 @@ func RunCompose(composeFilePath string, parallelism int) error {
 
 // StopCompose stops all services in the compose file
 func StopCompose(composeFilePath string) error {
-	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "down")
+	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "down", "--remove-orphans")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to stop docker compose: %v\nOutput: %s", err, string(output))

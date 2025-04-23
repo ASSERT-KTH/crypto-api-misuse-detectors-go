@@ -1,0 +1,52 @@
+[
+  {
+    "function_name": "GeneratePasswordHash",
+    "file_path": "/analysis/repo/auth/auth.go",
+    "line_number": 48,
+    "full_implementation": "func GeneratePasswordHash(password string) (string, error) {\n\th, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\treturn string(h), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/auth/auth.go",
+        "SourceLineNum": 48,
+        "ParentFunction": "GeneratePasswordHash (password string) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/auth/auth.go",
+          "SourceLineNum": 48,
+          "ParentFunction": "GeneratePasswordHash (password string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "ImportSite",
+    "file_path": "/analysis/repo/controllers/api/import.go",
+    "line_number": 121,
+    "full_implementation": "func (as *Server) ImportSite(w http.ResponseWriter, r *http.Request) {\n\tcr := cloneRequest{}\n\tif r.Method != \"POST\" {\n\t\tJSONResponse(w, models.Response{Success: false, Message: \"Method not allowed\"}, http.StatusBadRequest)\n\t\treturn\n\t}\n\terr := json.NewDecoder(r.Body).Decode(\u0026cr)\n\tif err != nil {\n\t\tJSONResponse(w, models.Response{Success: false, Message: \"Error decoding JSON Request\"}, http.StatusBadRequest)\n\t\treturn\n\t}\n\tif err = cr.validate(); err != nil {\n\t\tJSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)\n\t\treturn\n\t}\n\trestrictedDialer := dialer.Dialer()\n\ttr := \u0026http.Transport{\n\t\tDialContext: restrictedDialer.DialContext,\n\t\tTLSClientConfig: \u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t},\n\t}\n\tclient := \u0026http.Client{Transport: tr}\n\tresp, err := client.Get(cr.URL)\n\tif err != nil {\n\t\tJSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)\n\t\treturn\n\t}\n\t// Insert the base href tag to better handle relative resources\n\td, err := goquery.NewDocumentFromResponse(resp)\n\tif err != nil {\n\t\tJSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)\n\t\treturn\n\t}\n\t// Assuming we don't want to include resources, we'll need a base href\n\tif d.Find(\"head base\").Length() == 0 {\n\t\td.Find(\"head\").PrependHtml(fmt.Sprintf(\"\u003cbase href=\\\"%s\\\"\u003e\", cr.URL))\n\t}\n\tforms := d.Find(\"form\")\n\tforms.Each(func(i int, f *goquery.Selection) {\n\t\t// We'll want to store where we got the form from\n\t\t// (the current URL)\n\t\turl := f.AttrOr(\"action\", cr.URL)\n\t\tif !strings.HasPrefix(url, \"http\") {\n\t\t\turl = fmt.Sprintf(\"%s%s\", cr.URL, url)\n\t\t}\n\t\tf.PrependHtml(fmt.Sprintf(\"\u003cinput type=\\\"hidden\\\" name=\\\"__original_url\\\" value=\\\"%s\\\"/\u003e\", url))\n\t})\n\th, err := d.Html()\n\tif err != nil {\n\t\tJSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)\n\t\treturn\n\t}\n\tcs := cloneResponse{HTML: h}\n\tJSONResponse(w, cs, http.StatusOK)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/controllers/api/import.go",
+        "SourceLineNum": 121,
+        "ParentFunction": "ImportSite (w net/http.ResponseWriter, r *net/http.Request)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/controllers/api/import.go",
+          "SourceLineNum": 121,
+          "ParentFunction": "ImportSite (w net/http.ResponseWriter, r *net/http.Request)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

@@ -1,0 +1,95 @@
+[
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "Name:  fmt.Sprintf(\"mk%x\", sha1.Sum([]byte(path)))[0:40],",
+			"SourceFilename": "/analysis/repo/pkg/util/lock/lock.go",
+			"SourceLineNum": 70,
+			"ParentFunction": "PathMutexSpec (path string) github.com/juju/mutex/v2.Spec"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/pkg/util/crypto.go",
+			"SourceLineNum": 39,
+			"ParentFunction": "GenerateCACert (certPath string, keyPath string, name string) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/pkg/util/crypto.go",
+				"SourceLineNum": 39,
+				"ParentFunction": "GenerateCACert (certPath string, keyPath string, name string) error"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/pkg/util/crypto.go",
+			"SourceLineNum": 130,
+			"ParentFunction": "loadOrGeneratePrivateKey (keyPath string) (*crypto/rsa.PrivateKey, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/pkg/util/crypto.go",
+				"SourceLineNum": 130,
+				"ParentFunction": "loadOrGeneratePrivateKey (keyPath string) (*crypto/rsa.PrivateKey, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "net/http.Get",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "resp, err := http.Get(\"http://metadata.google.internal\")",
+			"SourceFilename": "/analysis/repo/pkg/minikube/detect/detect.go",
+			"SourceLineNum": 67,
+			"ParentFunction": "IsOnGCE () bool"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "resp, err := http.Get(\"http://metadata.google.internal\")",
+				"SourceFilename": "/analysis/repo/pkg/minikube/detect/detect.go",
+				"SourceLineNum": 67,
+				"ParentFunction": "IsOnGCE () bool"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hash:           fmt.Sprintf(\"%x\", sha1.Sum([]byte(strings.Join(hi, \"/\"))))[0:8],",
+			"SourceFilename": "/analysis/repo/pkg/minikube/bootstrapper/certs.go",
+			"SourceLineNum": 324,
+			"ParentFunction": "generateProfileCerts (cfg k8s.io/minikube/pkg/minikube/config.ClusterConfig, n k8s.io/minikube/pkg/minikube/config.Node, shared k8s.io/minikube/pkg/minikube/bootstrapper.sharedCACerts, regen bool) ([]string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/cmd/minikube/main.go",
+			"SourceLineNum": 158,
+			"ParentFunction": "logFileName (dir string, logIdx int64) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

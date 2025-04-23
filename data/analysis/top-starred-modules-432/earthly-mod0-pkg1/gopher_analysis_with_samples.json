@@ -1,0 +1,56 @@
+[
+  {
+    "function_name": "New",
+    "file_path": "/analysis/repo/util/buildkitskipper/hasher/hasher.go",
+    "line_number": 20,
+    "full_implementation": "func New() *Hasher {\n\treturn \u0026Hasher{\n\t\th: sha1.New(),\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h: sha1.New(),",
+        "SourceFilename": "/analysis/repo/util/buildkitskipper/hasher/hasher.go",
+        "SourceLineNum": 20,
+        "ParentFunction": "New () *github.com/earthly/earthly/util/buildkitskipper/hasher.Hasher"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getSharedKeyHintFromInclude",
+    "file_path": "/analysis/repo/earthfile2llb/local_state_cache.go",
+    "line_number": 51,
+    "full_implementation": "func getSharedKeyHintFromInclude(name string, incl []string) string {\n\th := sha1.New()\n\tb := make([]byte, 8)\n\n\taddToHash := func(path string) {\n\t\th.Write([]byte(path))\n\t\tinode := inodeutil.GetInodeBestEffort(path)\n\t\tbinary.LittleEndian.PutUint64(b, inode)\n\t\th.Write(b)\n\t}\n\n\taddToHash(name)\n\tfor _, path := range incl {\n\t\taddToHash(path)\n\t}\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/earthfile2llb/local_state_cache.go",
+        "SourceLineNum": 51,
+        "ParentFunction": "getSharedKeyHintFromInclude (name string, incl []string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getDebuggerSecretKey",
+    "file_path": "/analysis/repo/earthfile2llb/converter.go",
+    "line_number": 2087,
+    "full_implementation": "func getDebuggerSecretKey(saveFilesSettings []debuggercommon.SaveFilesSettings) string {\n\th := sha1.New()\n\tb := make([]byte, 8)\n\n\taddToHash := func(path string) {\n\t\th.Write([]byte(path))\n\t\tinode := inodeutil.GetInodeBestEffort(path)\n\t\tbinary.LittleEndian.PutUint64(b, inode)\n\t\th.Write(b)\n\t}\n\n\tfor _, saveFile := range saveFilesSettings {\n\t\taddToHash(saveFile.Src)\n\t\taddToHash(saveFile.Dst)\n\t}\n\treturn hex.EncodeToString(h.Sum(nil))\n\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/earthfile2llb/converter.go",
+        "SourceLineNum": 2087,
+        "ParentFunction": "getDebuggerSecretKey (saveFilesSettings []github.com/earthly/earthly/debugger/common.SaveFilesSettings) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

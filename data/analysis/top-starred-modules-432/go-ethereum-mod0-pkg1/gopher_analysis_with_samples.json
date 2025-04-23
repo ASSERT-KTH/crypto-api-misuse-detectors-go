@@ -1,0 +1,256 @@
+[
+  {
+    "function_name": "decryptPreSaleKey",
+    "file_path": "/analysis/repo/accounts/keystore/presale.go",
+    "line_number": 83,
+    "full_implementation": "func decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error) {\n\tpreSaleKeyStruct := struct {\n\t\tEncSeed string\n\t\tEthAddr string\n\t\tEmail   string\n\t\tBtcAddr string\n\t}{}\n\terr = json.Unmarshal(fileContent, \u0026preSaleKeyStruct)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tencSeedBytes, err := hex.DecodeString(preSaleKeyStruct.EncSeed)\n\tif err != nil {\n\t\treturn nil, errors.New(\"invalid hex in encSeed\")\n\t}\n\tif len(encSeedBytes) \u003c 16 {\n\t\treturn nil, errors.New(\"invalid encSeed, too short\")\n\t}\n\tiv := encSeedBytes[:16]\n\tcipherText := encSeedBytes[16:]\n\t/*\n\t\tSee https://github.com/ethereum/pyethsaletool\n\n\t\tpyethsaletool generates the encryption key from password by\n\t\t2000 rounds of PBKDF2 with HMAC-SHA-256 using password as salt (:().\n\t\t16 byte key length within PBKDF2 and resulting key is used as AES key\n\t*/\n\tpassBytes := []byte(password)\n\tderivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)\n\tplainText, err := aesCBCDecrypt(derivedKey, cipherText, iv)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tethPriv := crypto.Keccak256(plainText)\n\tecKey := crypto.ToECDSAUnsafe(ethPriv)\n\n\tkey = \u0026Key{\n\t\tId:         uuid.UUID{},\n\t\tAddress:    crypto.PubkeyToAddress(ecKey.PublicKey),\n\t\tPrivateKey: ecKey,\n\t}\n\tderivedAddr := hex.EncodeToString(key.Address.Bytes()) // needed because .Hex() gives leading \"0x\"\n\texpectedAddr := preSaleKeyStruct.EthAddr\n\tif derivedAddr != expectedAddr {\n\t\terr = fmt.Errorf(\"decrypted addr '%s' not equal to expected addr '%s'\", derivedAddr, expectedAddr)\n\t}\n\treturn key, err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 2000",
+      "Slicing_Criteria": {
+        "SourceCode": "derivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)",
+        "SourceFilename": "/analysis/repo/accounts/keystore/presale.go",
+        "SourceLineNum": 83,
+        "ParentFunction": "decryptPreSaleKey (fileContent []byte, password string) (key *github.com/ethereum/go-ethereum/accounts/keystore.Key, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "derivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/keystore/presale.go",
+          "SourceLineNum": 83,
+          "ParentFunction": "decryptPreSaleKey (fileContent []byte, password string) (key *github.com/ethereum/go-ethereum/accounts/keystore.Key, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Run",
+    "file_path": "/analysis/repo/core/vm/contracts.go",
+    "line_number": 298,
+    "full_implementation": "func (c *ripemd160hash) Run(input []byte) ([]byte, error) {\n\tripemd := ripemd160.New()\n\tripemd.Write(input)\n\treturn common.LeftPadBytes(ripemd.Sum(nil), 32), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ripemd160.New",
+      "Message": "Mendel et al. On the Collision Resistance of RIPEMD-160. \nDeprecated: RIPEMD-160 is a legacy hash and should not be used for new applications. Also, this package does not and will not provide an optimized implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).",
+      "Slicing_Criteria": {
+        "SourceCode": "ripemd := ripemd160.New()",
+        "SourceFilename": "/analysis/repo/core/vm/contracts.go",
+        "SourceLineNum": 298,
+        "ParentFunction": "Run (input []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Pair",
+    "file_path": "/analysis/repo/accounts/scwallet/securechannel.go",
+    "line_number": 84,
+    "full_implementation": "func (s *SecureChannelSession) Pair(pairingPassword []byte) error {\n\tsecretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)\n\n\tchallenge := make([]byte, 32)\n\tif _, err := rand.Read(challenge); err != nil {\n\t\treturn err\n\t}\n\n\tresponse, err := s.pair(pairP1FirstStep, challenge)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd := sha256.New()\n\tmd.Write(secretHash[:])\n\tmd.Write(challenge)\n\n\texpectedCryptogram := md.Sum(nil)\n\tcardCryptogram := response.Data[:32]\n\tcardChallenge := response.Data[32:64]\n\n\tif !bytes.Equal(expectedCryptogram, cardCryptogram) {\n\t\treturn fmt.Errorf(\"invalid card cryptogram %v != %v\", expectedCryptogram, cardCryptogram)\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(cardChallenge)\n\tresponse, err = s.pair(pairP1LastStep, md.Sum(nil))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(response.Data[1:])\n\ts.PairingKey = md.Sum(nil)\n\ts.PairingIndex = response.Data[0]\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 50000",
+      "Slicing_Criteria": {
+        "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+        "SourceLineNum": 84,
+        "ParentFunction": "Pair (pairingPassword []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+          "SourceLineNum": 84,
+          "ParentFunction": "Pair (pairingPassword []byte) error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "initialize",
+    "file_path": "/analysis/repo/accounts/scwallet/wallet.go",
+    "line_number": 925,
+    "full_implementation": "func (s *Session) initialize(seed []byte) error {\n\t// Check that the wallet isn't currently initialized,\n\t// otherwise the key would be overwritten.\n\tstatus, err := s.Wallet.Status()\n\tif err != nil {\n\t\treturn err\n\t}\n\tif status == \"Online\" {\n\t\treturn errors.New(\"card is already initialized, cowardly refusing to proceed\")\n\t}\n\n\ts.Wallet.lock.Lock()\n\tdefer s.Wallet.lock.Unlock()\n\n\t// HMAC the seed to produce the private key and chain code\n\tmac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))\n\tmac.Write(seed)\n\tseed = mac.Sum(nil)\n\n\tkey, err := crypto.ToECDSA(seed[:32])\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tid := initializeData{}\n\tid.PublicKey = crypto.FromECDSAPub(\u0026key.PublicKey)\n\tid.PrivateKey = seed[:32]\n\tid.ChainCode = seed[32:]\n\tdata, err := asn1.Marshal(id)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Nasty hack to force the top-level struct tag to be context-specific\n\tdata[0] = 0xA1\n\n\t_, err = s.Channel.transmitEncrypted(claSCWallet, insLoadKey, 0x02, 0, data)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\nWe Found: 12",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+        "SourceLineNum": 925,
+        "ParentFunction": "initialize (seed []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+          "SourceLineNum": 925,
+          "ParentFunction": "initialize (seed []byte) error"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "Pair",
+    "file_path": "/analysis/repo/accounts/scwallet/securechannel.go",
+    "line_number": 84,
+    "full_implementation": "func (s *SecureChannelSession) Pair(pairingPassword []byte) error {\n\tsecretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)\n\n\tchallenge := make([]byte, 32)\n\tif _, err := rand.Read(challenge); err != nil {\n\t\treturn err\n\t}\n\n\tresponse, err := s.pair(pairP1FirstStep, challenge)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd := sha256.New()\n\tmd.Write(secretHash[:])\n\tmd.Write(challenge)\n\n\texpectedCryptogram := md.Sum(nil)\n\tcardCryptogram := response.Data[:32]\n\tcardChallenge := response.Data[32:64]\n\n\tif !bytes.Equal(expectedCryptogram, cardCryptogram) {\n\t\treturn fmt.Errorf(\"invalid card cryptogram %v != %v\", expectedCryptogram, cardCryptogram)\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(cardChallenge)\n\tresponse, err = s.pair(pairP1LastStep, md.Sum(nil))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(response.Data[1:])\n\ts.PairingKey = md.Sum(nil)\n\ts.PairingIndex = response.Data[0]\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "Salt should be random",
+      "Slicing_Criteria": {
+        "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+        "SourceLineNum": 84,
+        "ParentFunction": "Pair (pairingPassword []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+          "SourceLineNum": 84,
+          "ParentFunction": "Pair (pairingPassword []byte) error"
+        },
+        {
+          "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+          "SourceLineNum": 84,
+          "ParentFunction": "Pair (pairingPassword []byte) error"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "initialize",
+    "file_path": "/analysis/repo/accounts/scwallet/wallet.go",
+    "line_number": 925,
+    "full_implementation": "func (s *Session) initialize(seed []byte) error {\n\t// Check that the wallet isn't currently initialized,\n\t// otherwise the key would be overwritten.\n\tstatus, err := s.Wallet.Status()\n\tif err != nil {\n\t\treturn err\n\t}\n\tif status == \"Online\" {\n\t\treturn errors.New(\"card is already initialized, cowardly refusing to proceed\")\n\t}\n\n\ts.Wallet.lock.Lock()\n\tdefer s.Wallet.lock.Unlock()\n\n\t// HMAC the seed to produce the private key and chain code\n\tmac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))\n\tmac.Write(seed)\n\tseed = mac.Sum(nil)\n\n\tkey, err := crypto.ToECDSA(seed[:32])\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tid := initializeData{}\n\tid.PublicKey = crypto.FromECDSAPub(\u0026key.PublicKey)\n\tid.PrivateKey = seed[:32]\n\tid.ChainCode = seed[32:]\n\tdata, err := asn1.Marshal(id)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Nasty hack to force the top-level struct tag to be context-specific\n\tdata[0] = 0xA1\n\n\t_, err = s.Channel.transmitEncrypted(claSCWallet, insLoadKey, 0x02, 0, data)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+        "SourceLineNum": 925,
+        "ParentFunction": "initialize (seed []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+          "SourceLineNum": 925,
+          "ParentFunction": "initialize (seed []byte) error"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "encryptSeed",
+    "file_path": "/analysis/repo/cmd/clef/main.go",
+    "line_number": 1051,
+    "full_implementation": "func encryptSeed(seed []byte, auth []byte, scryptN, scryptP int) ([]byte, error) {\n\tcryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn json.Marshal(\u0026encryptedSeedStorage{\"Clef seed\", 1, cryptoStruct})\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/ethereum/go-ethereum/accounts/keystore.EncryptDataV3",
+      "Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\n\u003e\u003e/analysis/repo/accounts/keystore/passphrase.go\nEncryptDataV3 (data []byte, auth []byte, scryptN int, scryptP int) (github.com/ethereum/go-ethereum/accounts/keystore.CryptoJSON, error)\n\t145:\tderivedKey, err := scrypt.Key(auth, salt, scryptN, scryptR, scryptP, scryptDKLen)\n\t140:\tfunc EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) {\nWe Found: 4096",
+      "Slicing_Criteria": {
+        "SourceCode": "cryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP)",
+        "SourceFilename": "/analysis/repo/cmd/clef/main.go",
+        "SourceLineNum": 1051,
+        "ParentFunction": "encryptSeed (seed []byte, auth []byte, scryptN int, scryptP int) ([]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func encryptSeed(seed []byte, auth []byte, scryptN, scryptP int) ([]byte, error) {",
+          "SourceFilename": "/analysis/repo/cmd/clef/main.go",
+          "SourceLineNum": 1050,
+          "ParentFunction": "encryptSeed (seed []byte, auth []byte, scryptN int, scryptP int) ([]byte, error)"
+        },
+        {
+          "SourceCode": "n, p := keystore.StandardScryptN, keystore.StandardScryptP",
+          "SourceFilename": "/analysis/repo/cmd/clef/main.go",
+          "SourceLineNum": 332,
+          "ParentFunction": "initializeSecrets (c *github.com/urfave/cli/v2.Context) error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "importWallet",
+    "file_path": "/analysis/repo/cmd/geth/accountcmd.go",
+    "line_number": 334,
+    "full_implementation": "func importWallet(ctx *cli.Context) error {\n\tif ctx.Args().Len() != 1 {\n\t\tutils.Fatalf(\"keyfile must be given as the only argument\")\n\t}\n\tkeyfile := ctx.Args().First()\n\tkeyJSON, err := os.ReadFile(keyfile)\n\tif err != nil {\n\t\tutils.Fatalf(\"Could not read wallet file: %v\", err)\n\t}\n\n\tam := makeAccountManager(ctx)\n\tbackends := am.Backends(keystore.KeyStoreType)\n\tif len(backends) == 0 {\n\t\tutils.Fatalf(\"Keystore is not available\")\n\t}\n\tpassword, ok := readPasswordFromFile(ctx.Path(utils.PasswordFileFlag.Name))\n\tif !ok {\n\t\tpassword = utils.GetPassPhrase(\"\", false)\n\t}\n\tks := backends[0].(*keystore.KeyStore)\n\tacct, err := ks.ImportPreSaleKey(keyJSON, password)\n\tif err != nil {\n\t\tutils.Fatalf(\"%v\", err)\n\t}\n\tfmt.Printf(\"Address: {%x}\\n\", acct.Address)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*github.com/ethereum/go-ethereum/accounts/keystore.KeyStore).ImportPreSaleKey",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/accounts/keystore/presale.go\ndecryptPreSaleKey (fileContent []byte, password string) (key *github.com/ethereum/go-ethereum/accounts/keystore.Key, err error)\n\t83:\tderivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)\n\t82:\tpassBytes := []byte(password)\n\t55:\tfunc decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error) {\n\u003e\u003e/analysis/repo/accounts/keystore/presale.go\nimportPreSaleKey (keyStore github.com/ethereum/go-ethereum/accounts/keystore.keyStore, keyJSON []byte, password string) (github.com/ethereum/go-ethereum/accounts.Account, *github.com/ethereum/go-ethereum/accounts/keystore.Key, error)\n\t35:\tfunc importPreSaleKey(keyStore keyStore, keyJSON []byte, password string) (accounts.Account, *Key, error) {\n\u003e\u003e/analysis/repo/accounts/keystore/keystore.go\nImportPreSaleKey (keyJSON []byte, passphrase string) (github.com/ethereum/go-ethereum/accounts.Account, error)\n\t481:\tfunc (ks *KeyStore) ImportPreSaleKey(keyJSON []byte, passphrase string) (accounts.Account, error) {\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "acct, err := ks.ImportPreSaleKey(keyJSON, password)",
+        "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+        "SourceLineNum": 334,
+        "ParentFunction": "importWallet (ctx *github.com/urfave/cli/v2.Context) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "password, ok := readPasswordFromFile(ctx.Path(utils.PasswordFileFlag.Name))",
+          "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+          "SourceLineNum": 329,
+          "ParentFunction": "importWallet (ctx *github.com/urfave/cli/v2.Context) error"
+        },
+        {
+          "SourceCode": "password, ok := readPasswordFromFile(ctx.Path(utils.PasswordFileFlag.Name))",
+          "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+          "SourceLineNum": 329,
+          "ParentFunction": "importWallet (ctx *github.com/urfave/cli/v2.Context) error"
+        },
+        {
+          "SourceCode": "return \"\", false",
+          "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+          "SourceLineNum": 228,
+          "ParentFunction": "readPasswordFromFile (path string) (string, bool)"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "importWallet",
+    "file_path": "/analysis/repo/cmd/geth/accountcmd.go",
+    "line_number": 334,
+    "full_implementation": "func importWallet(ctx *cli.Context) error {\n\tif ctx.Args().Len() != 1 {\n\t\tutils.Fatalf(\"keyfile must be given as the only argument\")\n\t}\n\tkeyfile := ctx.Args().First()\n\tkeyJSON, err := os.ReadFile(keyfile)\n\tif err != nil {\n\t\tutils.Fatalf(\"Could not read wallet file: %v\", err)\n\t}\n\n\tam := makeAccountManager(ctx)\n\tbackends := am.Backends(keystore.KeyStoreType)\n\tif len(backends) == 0 {\n\t\tutils.Fatalf(\"Keystore is not available\")\n\t}\n\tpassword, ok := readPasswordFromFile(ctx.Path(utils.PasswordFileFlag.Name))\n\tif !ok {\n\t\tpassword = utils.GetPassPhrase(\"\", false)\n\t}\n\tks := backends[0].(*keystore.KeyStore)\n\tacct, err := ks.ImportPreSaleKey(keyJSON, password)\n\tif err != nil {\n\t\tutils.Fatalf(\"%v\", err)\n\t}\n\tfmt.Printf(\"Address: {%x}\\n\", acct.Address)\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*github.com/ethereum/go-ethereum/accounts/keystore.KeyStore).ImportPreSaleKey",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/accounts/keystore/presale.go\ndecryptPreSaleKey (fileContent []byte, password string) (key *github.com/ethereum/go-ethereum/accounts/keystore.Key, err error)\n\t83:\tderivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)\n\t82:\tpassBytes := []byte(password)\n\t55:\tfunc decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error) {\n\u003e\u003e/analysis/repo/accounts/keystore/presale.go\nimportPreSaleKey (keyStore github.com/ethereum/go-ethereum/accounts/keystore.keyStore, keyJSON []byte, password string) (github.com/ethereum/go-ethereum/accounts.Account, *github.com/ethereum/go-ethereum/accounts/keystore.Key, error)\n\t35:\tfunc importPreSaleKey(keyStore keyStore, keyJSON []byte, password string) (accounts.Account, *Key, error) {\n\u003e\u003e/analysis/repo/accounts/keystore/keystore.go\nImportPreSaleKey (keyJSON []byte, passphrase string) (github.com/ethereum/go-ethereum/accounts.Account, error)\n\t481:\tfunc (ks *KeyStore) ImportPreSaleKey(keyJSON []byte, passphrase string) (accounts.Account, error) {\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "acct, err := ks.ImportPreSaleKey(keyJSON, password)",
+        "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+        "SourceLineNum": 334,
+        "ParentFunction": "importWallet (ctx *github.com/urfave/cli/v2.Context) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "password, ok := readPasswordFromFile(ctx.Path(utils.PasswordFileFlag.Name))",
+          "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+          "SourceLineNum": 329,
+          "ParentFunction": "importWallet (ctx *github.com/urfave/cli/v2.Context) error"
+        },
+        {
+          "SourceCode": "password, ok := readPasswordFromFile(ctx.Path(utils.PasswordFileFlag.Name))",
+          "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+          "SourceLineNum": 329,
+          "ParentFunction": "importWallet (ctx *github.com/urfave/cli/v2.Context) error"
+        },
+        {
+          "SourceCode": "return \"\", false",
+          "SourceFilename": "/analysis/repo/cmd/geth/accountcmd.go",
+          "SourceLineNum": 236,
+          "ParentFunction": "readPasswordFromFile (path string) (string, bool)"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  }
+]

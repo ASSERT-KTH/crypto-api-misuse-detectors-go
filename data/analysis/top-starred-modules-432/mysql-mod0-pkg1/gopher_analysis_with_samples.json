@@ -1,0 +1,88 @@
+[
+  {
+    "function_name": "normalize",
+    "file_path": "/analysis/repo/dsn.go",
+    "line_number": 204,
+    "full_implementation": "func (cfg *Config) normalize() error {\n\tif cfg.InterpolateParams \u0026\u0026 cfg.Collation != \"\" \u0026\u0026 unsafeCollations[cfg.Collation] {\n\t\treturn errInvalidDSNUnsafeCollation\n\t}\n\n\t// Set default network if empty\n\tif cfg.Net == \"\" {\n\t\tcfg.Net = \"tcp\"\n\t}\n\n\t// Set default address if empty\n\tif cfg.Addr == \"\" {\n\t\tswitch cfg.Net {\n\t\tcase \"tcp\":\n\t\t\tcfg.Addr = \"127.0.0.1:3306\"\n\t\tcase \"unix\":\n\t\t\tcfg.Addr = \"/tmp/mysql.sock\"\n\t\tdefault:\n\t\t\treturn errors.New(\"default addr for network '\" + cfg.Net + \"' unknown\")\n\t\t}\n\t} else if cfg.Net == \"tcp\" {\n\t\tcfg.Addr = ensureHavePort(cfg.Addr)\n\t}\n\n\tif cfg.TLS == nil {\n\t\tswitch cfg.TLSConfig {\n\t\tcase \"false\", \"\":\n\t\t\t// don't set anything\n\t\tcase \"true\":\n\t\t\tcfg.TLS = \u0026tls.Config{}\n\t\tcase \"skip-verify\":\n\t\t\tcfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}\n\t\tcase \"preferred\":\n\t\t\tcfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}\n\t\t\tcfg.AllowFallbackToPlaintext = true\n\t\tdefault:\n\t\t\tcfg.TLS = getTLSConfigClone(cfg.TLSConfig)\n\t\t\tif cfg.TLS == nil {\n\t\t\t\treturn errors.New(\"invalid value / unknown config name: \" + cfg.TLSConfig)\n\t\t\t}\n\t\t}\n\t}\n\n\tif cfg.TLS != nil \u0026\u0026 cfg.TLS.ServerName == \"\" \u0026\u0026 !cfg.TLS.InsecureSkipVerify {\n\t\thost, _, err := net.SplitHostPort(cfg.Addr)\n\t\tif err == nil {\n\t\t\tcfg.TLS.ServerName = host\n\t\t}\n\t}\n\n\tif cfg.ServerPubKey != \"\" {\n\t\tcfg.pubKey = getServerPubKey(cfg.ServerPubKey)\n\t\tif cfg.pubKey == nil {\n\t\t\treturn errors.New(\"invalid value / unknown server pub key name: \" + cfg.ServerPubKey)\n\t\t}\n\t}\n\n\tif cfg.Logger == nil {\n\t\tcfg.Logger = defaultLogger\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/dsn.go",
+        "SourceLineNum": 204,
+        "ParentFunction": "normalize () error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/dsn.go",
+          "SourceLineNum": 204,
+          "ParentFunction": "normalize () error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "normalize",
+    "file_path": "/analysis/repo/dsn.go",
+    "line_number": 206,
+    "full_implementation": "func (cfg *Config) normalize() error {\n\tif cfg.InterpolateParams \u0026\u0026 cfg.Collation != \"\" \u0026\u0026 unsafeCollations[cfg.Collation] {\n\t\treturn errInvalidDSNUnsafeCollation\n\t}\n\n\t// Set default network if empty\n\tif cfg.Net == \"\" {\n\t\tcfg.Net = \"tcp\"\n\t}\n\n\t// Set default address if empty\n\tif cfg.Addr == \"\" {\n\t\tswitch cfg.Net {\n\t\tcase \"tcp\":\n\t\t\tcfg.Addr = \"127.0.0.1:3306\"\n\t\tcase \"unix\":\n\t\t\tcfg.Addr = \"/tmp/mysql.sock\"\n\t\tdefault:\n\t\t\treturn errors.New(\"default addr for network '\" + cfg.Net + \"' unknown\")\n\t\t}\n\t} else if cfg.Net == \"tcp\" {\n\t\tcfg.Addr = ensureHavePort(cfg.Addr)\n\t}\n\n\tif cfg.TLS == nil {\n\t\tswitch cfg.TLSConfig {\n\t\tcase \"false\", \"\":\n\t\t\t// don't set anything\n\t\tcase \"true\":\n\t\t\tcfg.TLS = \u0026tls.Config{}\n\t\tcase \"skip-verify\":\n\t\t\tcfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}\n\t\tcase \"preferred\":\n\t\t\tcfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}\n\t\t\tcfg.AllowFallbackToPlaintext = true\n\t\tdefault:\n\t\t\tcfg.TLS = getTLSConfigClone(cfg.TLSConfig)\n\t\t\tif cfg.TLS == nil {\n\t\t\t\treturn errors.New(\"invalid value / unknown config name: \" + cfg.TLSConfig)\n\t\t\t}\n\t\t}\n\t}\n\n\tif cfg.TLS != nil \u0026\u0026 cfg.TLS.ServerName == \"\" \u0026\u0026 !cfg.TLS.InsecureSkipVerify {\n\t\thost, _, err := net.SplitHostPort(cfg.Addr)\n\t\tif err == nil {\n\t\t\tcfg.TLS.ServerName = host\n\t\t}\n\t}\n\n\tif cfg.ServerPubKey != \"\" {\n\t\tcfg.pubKey = getServerPubKey(cfg.ServerPubKey)\n\t\tif cfg.pubKey == nil {\n\t\t\treturn errors.New(\"invalid value / unknown server pub key name: \" + cfg.ServerPubKey)\n\t\t}\n\t}\n\n\tif cfg.Logger == nil {\n\t\tcfg.Logger = defaultLogger\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/dsn.go",
+        "SourceLineNum": 206,
+        "ParentFunction": "normalize () error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg.TLS = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/dsn.go",
+          "SourceLineNum": 206,
+          "ParentFunction": "normalize () error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "scramblePassword",
+    "file_path": "/analysis/repo/auth.go",
+    "line_number": 169,
+    "full_implementation": "func scramblePassword(scramble []byte, password string) []byte {\n\tif len(password) == 0 {\n\t\treturn nil\n\t}\n\n\t// stage1Hash = SHA1(password)\n\tcrypt := sha1.New()\n\tcrypt.Write([]byte(password))\n\tstage1 := crypt.Sum(nil)\n\n\t// scrambleHash = SHA1(scramble + SHA1(stage1Hash))\n\t// inner Hash\n\tcrypt.Reset()\n\tcrypt.Write(stage1)\n\thash := crypt.Sum(nil)\n\n\t// outer Hash\n\tcrypt.Reset()\n\tcrypt.Write(scramble)\n\tcrypt.Write(hash)\n\tscramble = crypt.Sum(nil)\n\n\t// token = scrambleHash XOR stage1Hash\n\tfor i := range scramble {\n\t\tscramble[i] ^= stage1[i]\n\t}\n\treturn scramble\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "crypt := sha1.New()",
+        "SourceFilename": "/analysis/repo/auth.go",
+        "SourceLineNum": 169,
+        "ParentFunction": "scramblePassword (scramble []byte, password string) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "encryptPassword",
+    "file_path": "/analysis/repo/auth.go",
+    "line_number": 227,
+    "full_implementation": "func encryptPassword(password string, seed []byte, pub *rsa.PublicKey) ([]byte, error) {\n\tplain := make([]byte, len(password)+1)\n\tcopy(plain, password)\n\tfor i := range plain {\n\t\tj := i % len(seed)\n\t\tplain[i] ^= seed[j]\n\t}\n\tsha1 := sha1.New()\n\treturn rsa.EncryptOAEP(sha1, rand.Reader, pub, plain, nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha1 := sha1.New()",
+        "SourceFilename": "/analysis/repo/auth.go",
+        "SourceLineNum": 227,
+        "ParentFunction": "encryptPassword (password string, seed []byte, pub *crypto/rsa.PublicKey) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

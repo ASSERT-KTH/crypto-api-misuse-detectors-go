@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "formatName",
+    "file_path": "/analysis/repo/schema/naming.go",
+    "line_number": 79,
+    "full_implementation": "func (ns NamingStrategy) formatName(prefix, table, name string) string {\n\tformatedName := strings.Replace(fmt.Sprintf(\"%v_%v_%v\", prefix, table, name), \".\", \"_\", -1)\n\n\tif utf8.RuneCountInString(formatedName) \u003e 64 {\n\t\th := sha1.New()\n\t\th.Write([]byte(formatedName))\n\t\tbs := h.Sum(nil)\n\n\t\tformatedName = fmt.Sprintf(\"%v%v%v\", prefix, table, name)[0:56] + string(bs)[:8]\n\t}\n\treturn formatedName\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/schema/naming.go",
+        "SourceLineNum": 79,
+        "ParentFunction": "formatName (prefix string, table string, name string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

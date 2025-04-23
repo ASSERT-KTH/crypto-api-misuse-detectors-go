@@ -1,0 +1,174 @@
+[
+  {
+    "function_name": "ListenAndServe",
+    "file_path": "/analysis/repo/registry/registry.go",
+    "line_number": 305,
+    "full_implementation": "func (registry *Registry) ListenAndServe() error {\n\tconfig := registry.config\n\n\tln, err := listener.NewListener(config.HTTP.Net, config.HTTP.Addr)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tif config.HTTP.TLS.Certificate != \"\" || config.HTTP.TLS.LetsEncrypt.CacheFile != \"\" {\n\t\tif config.HTTP.TLS.MinimumTLS == \"\" {\n\t\t\tconfig.HTTP.TLS.MinimumTLS = defaultTLSVersionStr\n\t\t}\n\t\ttlsMinVersion, ok := tlsVersions[config.HTTP.TLS.MinimumTLS]\n\t\tif !ok {\n\t\t\treturn fmt.Errorf(\"unknown minimum TLS level '%s' specified for http.tls.minimumtls\", config.HTTP.TLS.MinimumTLS)\n\t\t}\n\t\tdcontext.GetLogger(registry.app).Infof(\"restricting TLS version to %s or higher\", config.HTTP.TLS.MinimumTLS)\n\n\t\tvar tlsCipherSuites []uint16\n\t\t// configuring cipher suites are no longer supported after the tls1.3.\n\t\t// (https://go.dev/blog/tls-cipher-suites)\n\t\tif tlsMinVersion \u003e tls.VersionTLS12 {\n\t\t\tdcontext.GetLogger(registry.app).Warnf(\"restricting TLS cipher suites to empty. Because configuring cipher suites is no longer supported in %s\", config.HTTP.TLS.MinimumTLS)\n\t\t} else {\n\t\t\ttlsCipherSuites, err = getCipherSuites(config.HTTP.TLS.CipherSuites)\n\t\t\tif err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\tdcontext.GetLogger(registry.app).Infof(\"restricting TLS cipher suites to: %s\", strings.Join(getCipherSuiteNames(tlsCipherSuites), \",\"))\n\t\t}\n\n\t\ttlsConf := \u0026tls.Config{\n\t\t\tClientAuth:   tls.NoClientCert,\n\t\t\tNextProtos:   nextProtos(config),\n\t\t\tMinVersion:   tlsMinVersion,\n\t\t\tCipherSuites: tlsCipherSuites,\n\t\t}\n\n\t\tif config.HTTP.TLS.LetsEncrypt.CacheFile != \"\" {\n\t\t\tif config.HTTP.TLS.Certificate != \"\" {\n\t\t\t\treturn fmt.Errorf(\"cannot specify both certificate and Let's Encrypt\")\n\t\t\t}\n\t\t\tm := \u0026autocert.Manager{\n\t\t\t\tHostPolicy: autocert.HostWhitelist(config.HTTP.TLS.LetsEncrypt.Hosts...),\n\t\t\t\tCache:      autocert.DirCache(config.HTTP.TLS.LetsEncrypt.CacheFile),\n\t\t\t\tEmail:      config.HTTP.TLS.LetsEncrypt.Email,\n\t\t\t\tPrompt:     autocert.AcceptTOS,\n\t\t\t\tClient:     setDirectoryURL(config.HTTP.TLS.LetsEncrypt.DirectoryURL),\n\t\t\t}\n\t\t\ttlsConf.GetCertificate = m.GetCertificate\n\t\t\ttlsConf.NextProtos = append(tlsConf.NextProtos, acme.ALPNProto)\n\t\t} else {\n\t\t\ttlsConf.Certificates = make([]tls.Certificate, 1)\n\t\t\ttlsConf.Certificates[0], err = tls.LoadX509KeyPair(config.HTTP.TLS.Certificate, config.HTTP.TLS.Key)\n\t\t\tif err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\tif len(config.HTTP.TLS.ClientCAs) != 0 {\n\t\t\tpool := x509.NewCertPool()\n\n\t\t\tfor _, ca := range config.HTTP.TLS.ClientCAs {\n\t\t\t\tcaPem, err := os.ReadFile(ca)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn err\n\t\t\t\t}\n\n\t\t\t\tif ok := pool.AppendCertsFromPEM(caPem); !ok {\n\t\t\t\t\treturn fmt.Errorf(\"could not add CA to pool\")\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tfor _, subj := range pool.Subjects() { //nolint:staticcheck // FIXME(thaJeztah): ignore SA1019: ac.(*accessController).rootCerts.Subjects has been deprecated since Go 1.18: if s was returned by SystemCertPool, Subjects will not include the system roots. (staticcheck)\n\t\t\t\tdcontext.GetLogger(registry.app).Debugf(\"CA Subject: %s\", string(subj))\n\t\t\t}\n\n\t\t\tif config.HTTP.TLS.ClientAuth != \"\" {\n\t\t\t\ttlsClientAuthMod, ok := tlsClientAuth[string(config.HTTP.TLS.ClientAuth)]\n\n\t\t\t\tif !ok {\n\t\t\t\t\treturn fmt.Errorf(\"unknown client auth mod '%s' specified for http.tls.clientauth\", config.HTTP.TLS.ClientAuth)\n\t\t\t\t}\n\n\t\t\t\ttlsConf.ClientAuth = tlsClientAuthMod\n\t\t\t} else {\n\t\t\t\ttlsConf.ClientAuth = tls.RequireAndVerifyClientCert\n\t\t\t}\n\n\t\t\ttlsConf.ClientCAs = pool\n\t\t}\n\n\t\tln = tls.NewListener(ln, tlsConf)\n\t\tdcontext.GetLogger(registry.app).Infof(\"listening on %v, tls\", ln.Addr())\n\t} else {\n\t\tdcontext.GetLogger(registry.app).Infof(\"listening on %v\", ln.Addr())\n\t}\n\n\tif config.HTTP.DrainTimeout == 0 {\n\t\treturn registry.server.Serve(ln)\n\t}\n\n\t// setup channel to get notified on SIGTERM signal\n\tsignal.Notify(registry.quit, os.Interrupt, syscall.SIGTERM)\n\tserveErr := make(chan error)\n\n\t// Start serving in goroutine and listen for stop signal in main thread\n\tgo func() {\n\t\tserveErr \u003c- registry.server.Serve(ln)\n\t}()\n\n\tselect {\n\tcase err := \u003c-serveErr:\n\t\treturn err\n\tcase \u003c-registry.quit:\n\t\tdcontext.GetLogger(registry.app).Info(\"stopping server gracefully. Draining connections for \", config.HTTP.DrainTimeout)\n\t\t// shutdown the server with a grace period of configured timeout\n\t\tc, cancel := context.WithTimeout(context.Background(), config.HTTP.DrainTimeout)\n\t\tdefer cancel()\n\t\treturn registry.Shutdown(c)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/x509.CertPool).Subjects",
+      "Message": "Deprecated: if s was returned by SystemCertPool, Subjects will not include the system roots.",
+      "Slicing_Criteria": {
+        "SourceCode": "for _, subj := range pool.Subjects() { //nolint:staticcheck // FIXME(thaJeztah): ignore SA1019: ac.(*accessController).rootCerts.Subjects has been deprecated since Go 1.18: if s was returned by SystemCertPool, Subjects will not include the system roots. (staticcheck)",
+        "SourceFilename": "/analysis/repo/registry/registry.go",
+        "SourceLineNum": 305,
+        "ParentFunction": "ListenAndServe () error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "createHtpasswdFile",
+    "file_path": "/analysis/repo/registry/auth/htpasswd/access.go",
+    "line_number": 146,
+    "full_implementation": "func createHtpasswdFile(path string) error {\n\tif f, err := os.Open(path); err == nil {\n\t\tf.Close()\n\t\treturn nil\n\t} else if !os.IsNotExist(err) {\n\t\treturn err\n\t}\n\n\tif err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {\n\t\treturn err\n\t}\n\tf, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0o600)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"failed to open htpasswd path %s\", err)\n\t}\n\tdefer f.Close()\n\tvar secretBytes [32]byte\n\tif _, err := rand.Read(secretBytes[:]); err != nil {\n\t\treturn err\n\t}\n\tpass := base64.RawURLEncoding.EncodeToString(secretBytes[:])\n\tencryptedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif _, err := f.Write([]byte(fmt.Sprintf(\"docker:%s\", string(encryptedPass[:])))); err != nil {\n\t\treturn err\n\t}\n\tdcontext.GetLoggerWithFields(context.Background(), map[interface{}]interface{}{\n\t\t\"user\":     \"docker\",\n\t\t\"password\": pass,\n\t}).Warnf(\"htpasswd is missing, provisioning with default user\")\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "encryptedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/registry/auth/htpasswd/access.go",
+        "SourceLineNum": 146,
+        "ParentFunction": "createHtpasswdFile (path string) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "encryptedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/registry/auth/htpasswd/access.go",
+          "SourceLineNum": 146,
+          "ParentFunction": "createHtpasswdFile (path string) error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "newSharedKeyCredentialsClient",
+    "file_path": "/analysis/repo/registry/storage/driver/azure/auth.go",
+    "line_number": 141,
+    "full_implementation": "func newSharedKeyCredentialsClient(params *DriverParameters) (*azureClient, error) {\n\tcred, err := azblob.NewSharedKeyCredential(params.AccountName, params.AccountKey)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"shared key credentials: %v\", err)\n\t}\n\tazBlobOpts := \u0026azblob.ClientOptions{\n\t\tClientOptions: azcore.ClientOptions{\n\t\t\tPerRetryPolicies: []policy.Policy{newRetryNotificationPolicy()},\n\t\t\tLogging: policy.LogOptions{\n\t\t\t\tAllowedHeaders: []string{\n\t\t\t\t\t\"x-ms-error-code\",\n\t\t\t\t\t\"Retry-After\",\n\t\t\t\t\t\"Retry-After-Ms\",\n\t\t\t\t\t\"If-Match\",\n\t\t\t\t\t\"x-ms-blob-condition-appendpos\",\n\t\t\t\t},\n\t\t\t\tAllowedQueryParams: []string{\"comp\"},\n\t\t\t},\n\t\t},\n\t}\n\tif params.SkipVerify {\n\t\thttpTransport := http.DefaultTransport.(*http.Transport).Clone()\n\t\thttpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t\tazBlobOpts.Transport = \u0026http.Client{\n\t\t\tTransport: httpTransport,\n\t\t}\n\t}\n\tclient, err := azblob.NewClientWithSharedKeyCredential(params.ServiceURL, cred, azBlobOpts)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"new azure client with shared credentials: %v\", err)\n\t}\n\n\treturn \u0026azureClient{\n\t\tcontainer: params.Container,\n\t\tclient:    client,\n\t\tsigner: \u0026sharedKeySigner{\n\t\t\tcred: cred,\n\t\t},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+        "SourceLineNum": 141,
+        "ParentFunction": "newSharedKeyCredentialsClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+          "SourceLineNum": 141,
+          "ParentFunction": "newSharedKeyCredentialsClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "chunkUploadVerify",
+    "file_path": "/analysis/repo/registry/storage/driver/azure/azure.go",
+    "line_number": 756,
+    "full_implementation": "func (bw *blockWriter) chunkUploadVerify(appendPos int64, chunk []byte) (int64, *azcore.ETag, error) {\n\t// NOTE(prozlach): We need to see if the chunk uploaded or not. As per\n\t// the documentation, the operation __might__ have succeeded. There are\n\t// three options:\n\t// * chunk did not upload, the file size will be the same as bw.size.\n\t// In this case we simply need to re-upload the last chunk\n\t// * chunk or part of it was uploaded - we need to verify the contents\n\t// of what has been uploaded with MD5 hash and either:\n\t//   * MD5 is ok - let's continue uploading data starting from the next\n\t//   chunk\n\t//   * MD5 is not OK - we have garbadge at the end of the file and\n\t//   AppendBlock supports only appending, we need to abort and return\n\t//   permament error to the caller.\n\n\tblobRef := bw.client.NewBlobClient(bw.path)\n\tprops, err := blobRef.GetProperties(bw.ctx, nil)\n\tif err != nil {\n\t\treturn 0, nil, fmt.Errorf(\"determining the end of the blob: %v\", err)\n\t}\n\tif props.ContentLength == nil {\n\t\treturn 0, nil, fmt.Errorf(\"ContentLength in blob properties is missing in reply: %v\", err)\n\t}\n\treuploadedBytes := *props.ContentLength - appendPos\n\tif reuploadedBytes == 0 {\n\t\t// NOTE(prozlach): This should never happen really and is here only as\n\t\t// a precaution in case something changes in the future. The idea is\n\t\t// that if the HTTP call did not succed and nothing was uploaded, then\n\t\t// this code path is not going to be triggered as there will be no\n\t\t// AppendPos condition violation during the retry. OTOH, if the write\n\t\t// succeeded even partially, then the reuploadedBytes will be greater\n\t\t// than zero.\n\t\treturn 0, props.ETag, nil\n\t}\n\n\tresp, err := blobRef.DownloadStream(\n\t\tbw.ctx,\n\t\t\u0026blob.DownloadStreamOptions{\n\t\t\tRange:              blob.HTTPRange{Offset: appendPos, Count: reuploadedBytes},\n\t\t\tRangeGetContentMD5: to.Ptr(true), // we always upload \u003c= 4MiB (i.e the maxChunkSize), so we can try to offload the MD5 calculation to azure\n\t\t},\n\t)\n\tif err != nil {\n\t\treturn 0, nil, fmt.Errorf(\"determining the MD5 of the upload blob chunk: %v\", err)\n\t}\n\tvar uploadedMD5 []byte\n\t// If upstream makes this extra check, then let's be paranoid too.\n\tif len(resp.ContentMD5) \u003e 0 {\n\t\tuploadedMD5 = resp.ContentMD5\n\t} else {\n\t\t// compute md5\n\t\tbody := resp.NewRetryReader(bw.ctx, \u0026blob.RetryReaderOptions{MaxRetries: bw.maxRetries})\n\t\th := md5.New() // nolint: gosec // ok for content verification\n\t\t_, err = io.Copy(h, body)\n\t\t// nolint:errcheck\n\t\tdefer body.Close()\n\t\tif err != nil {\n\t\t\treturn 0, nil, fmt.Errorf(\"calculating the MD5 of the uploaded blob chunk: %v\", err)\n\t\t}\n\t\tuploadedMD5 = h.Sum(nil)\n\t}\n\n\th := md5.New() // nolint: gosec // ok for content verification\n\tif _, err = io.Copy(h, bytes.NewReader(chunk)); err != nil {\n\t\treturn 0, nil, fmt.Errorf(\"calculating the MD5 of the local blob chunk: %v\", err)\n\t}\n\tlocalMD5 := h.Sum(nil)\n\n\tif !bytes.Equal(uploadedMD5, localMD5) {\n\t\treturn 0, nil, fmt.Errorf(\"verifying contents of the uploaded blob chunk: %v\", ErrCorruptedData)\n\t}\n\n\treturn reuploadedBytes, resp.ETag, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New() // nolint: gosec // ok for content verification",
+        "SourceFilename": "/analysis/repo/registry/storage/driver/azure/azure.go",
+        "SourceLineNum": 756,
+        "ParentFunction": "chunkUploadVerify (appendPos int64, chunk []byte) (int64, *github.com/Azure/azure-sdk-for-go/sdk/azcore.ETag, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newTokenClient",
+    "file_path": "/analysis/repo/registry/storage/driver/azure/auth.go",
+    "line_number": 99,
+    "full_implementation": "func newTokenClient(params *DriverParameters) (*azureClient, error) {\n\tvar (\n\t\tcred azcore.TokenCredential\n\t\terr  error\n\t)\n\n\tswitch params.Credentials.Type {\n\tcase CredentialsTypeClientSecret:\n\t\tcreds := \u0026params.Credentials\n\t\tcred, err = azidentity.NewClientSecretCredential(creds.TenantID, creds.ClientID, creds.Secret, nil)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"client secret credentials: %v\", err)\n\t\t}\n\tdefault:\n\t\tcred, err = azidentity.NewDefaultAzureCredential(nil)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"default credentials: %v\", err)\n\t\t}\n\t}\n\n\tazBlobOpts := \u0026azblob.ClientOptions{\n\t\tClientOptions: azcore.ClientOptions{\n\t\t\tPerRetryPolicies: []policy.Policy{newRetryNotificationPolicy()},\n\t\t\tLogging: policy.LogOptions{\n\t\t\t\tAllowedHeaders: []string{\n\t\t\t\t\t\"x-ms-error-code\",\n\t\t\t\t\t\"Retry-After\",\n\t\t\t\t\t\"Retry-After-Ms\",\n\t\t\t\t\t\"If-Match\",\n\t\t\t\t\t\"x-ms-blob-condition-appendpos\",\n\t\t\t\t},\n\t\t\t\tAllowedQueryParams: []string{\"comp\"},\n\t\t\t},\n\t\t},\n\t}\n\tif params.SkipVerify {\n\t\thttpTransport := http.DefaultTransport.(*http.Transport).Clone()\n\t\thttpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t\tazBlobOpts.Transport = \u0026http.Client{\n\t\t\tTransport: httpTransport,\n\t\t}\n\t}\n\tclient, err := azblob.NewClient(params.ServiceURL, cred, azBlobOpts)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"new azure token client: %v\", err)\n\t}\n\n\treturn \u0026azureClient{\n\t\tcontainer: params.Container,\n\t\tclient:    client,\n\t\tsigner: \u0026clientTokenSigner{\n\t\t\tclient: client,\n\t\t\tcred:   cred,\n\t\t},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+        "SourceLineNum": 99,
+        "ParentFunction": "newTokenClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+          "SourceLineNum": 99,
+          "ParentFunction": "newTokenClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "chunkUploadVerify",
+    "file_path": "/analysis/repo/registry/storage/driver/azure/azure.go",
+    "line_number": 746,
+    "full_implementation": "func (bw *blockWriter) chunkUploadVerify(appendPos int64, chunk []byte) (int64, *azcore.ETag, error) {\n\t// NOTE(prozlach): We need to see if the chunk uploaded or not. As per\n\t// the documentation, the operation __might__ have succeeded. There are\n\t// three options:\n\t// * chunk did not upload, the file size will be the same as bw.size.\n\t// In this case we simply need to re-upload the last chunk\n\t// * chunk or part of it was uploaded - we need to verify the contents\n\t// of what has been uploaded with MD5 hash and either:\n\t//   * MD5 is ok - let's continue uploading data starting from the next\n\t//   chunk\n\t//   * MD5 is not OK - we have garbadge at the end of the file and\n\t//   AppendBlock supports only appending, we need to abort and return\n\t//   permament error to the caller.\n\n\tblobRef := bw.client.NewBlobClient(bw.path)\n\tprops, err := blobRef.GetProperties(bw.ctx, nil)\n\tif err != nil {\n\t\treturn 0, nil, fmt.Errorf(\"determining the end of the blob: %v\", err)\n\t}\n\tif props.ContentLength == nil {\n\t\treturn 0, nil, fmt.Errorf(\"ContentLength in blob properties is missing in reply: %v\", err)\n\t}\n\treuploadedBytes := *props.ContentLength - appendPos\n\tif reuploadedBytes == 0 {\n\t\t// NOTE(prozlach): This should never happen really and is here only as\n\t\t// a precaution in case something changes in the future. The idea is\n\t\t// that if the HTTP call did not succed and nothing was uploaded, then\n\t\t// this code path is not going to be triggered as there will be no\n\t\t// AppendPos condition violation during the retry. OTOH, if the write\n\t\t// succeeded even partially, then the reuploadedBytes will be greater\n\t\t// than zero.\n\t\treturn 0, props.ETag, nil\n\t}\n\n\tresp, err := blobRef.DownloadStream(\n\t\tbw.ctx,\n\t\t\u0026blob.DownloadStreamOptions{\n\t\t\tRange:              blob.HTTPRange{Offset: appendPos, Count: reuploadedBytes},\n\t\t\tRangeGetContentMD5: to.Ptr(true), // we always upload \u003c= 4MiB (i.e the maxChunkSize), so we can try to offload the MD5 calculation to azure\n\t\t},\n\t)\n\tif err != nil {\n\t\treturn 0, nil, fmt.Errorf(\"determining the MD5 of the upload blob chunk: %v\", err)\n\t}\n\tvar uploadedMD5 []byte\n\t// If upstream makes this extra check, then let's be paranoid too.\n\tif len(resp.ContentMD5) \u003e 0 {\n\t\tuploadedMD5 = resp.ContentMD5\n\t} else {\n\t\t// compute md5\n\t\tbody := resp.NewRetryReader(bw.ctx, \u0026blob.RetryReaderOptions{MaxRetries: bw.maxRetries})\n\t\th := md5.New() // nolint: gosec // ok for content verification\n\t\t_, err = io.Copy(h, body)\n\t\t// nolint:errcheck\n\t\tdefer body.Close()\n\t\tif err != nil {\n\t\t\treturn 0, nil, fmt.Errorf(\"calculating the MD5 of the uploaded blob chunk: %v\", err)\n\t\t}\n\t\tuploadedMD5 = h.Sum(nil)\n\t}\n\n\th := md5.New() // nolint: gosec // ok for content verification\n\tif _, err = io.Copy(h, bytes.NewReader(chunk)); err != nil {\n\t\treturn 0, nil, fmt.Errorf(\"calculating the MD5 of the local blob chunk: %v\", err)\n\t}\n\tlocalMD5 := h.Sum(nil)\n\n\tif !bytes.Equal(uploadedMD5, localMD5) {\n\t\treturn 0, nil, fmt.Errorf(\"verifying contents of the uploaded blob chunk: %v\", ErrCorruptedData)\n\t}\n\n\treturn reuploadedBytes, resp.ETag, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New() // nolint: gosec // ok for content verification",
+        "SourceFilename": "/analysis/repo/registry/storage/driver/azure/azure.go",
+        "SourceLineNum": 746,
+        "ParentFunction": "chunkUploadVerify (appendPos int64, chunk []byte) (int64, *github.com/Azure/azure-sdk-for-go/sdk/azcore.ETag, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "putContent",
+    "file_path": "/analysis/repo/registry/storage/driver/gcs/gcs.go",
+    "line_number": 433,
+    "full_implementation": "func (d *driver) putContent(ctx context.Context, obj *storage.ObjectHandle, content []byte, contentType string, metadata map[string]string) error {\n\twc := obj.NewWriter(ctx)\n\twc.Metadata = metadata\n\twc.ContentType = contentType\n\twc.ChunkSize = d.chunkSize\n\n\tif _, err := bytes.NewReader(content).WriteTo(wc); err != nil {\n\t\treturn err\n\t}\n\t// NOTE(milosgajdos): Apparently it's posisble to to upload 0-byte content to GCS.\n\t// Setting MD5 on the Writer helps to prevent presisting that data.\n\t// If set, the uploaded data is rejected if its MD5 hash does not match this field.\n\t// See: https://pkg.go.dev/cloud.google.com/go/storage#ObjectAttrs\n\th := md5.New()\n\th.Write(content)\n\twc.MD5 = h.Sum(nil)\n\n\treturn wc.Close()\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/registry/storage/driver/gcs/gcs.go",
+        "SourceLineNum": 433,
+        "ParentFunction": "putContent (ctx context.Context, obj *cloud.google.com/go/storage.ObjectHandle, content []byte, contentType string, metadata map[string]string) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "New",
+    "file_path": "/analysis/repo/registry/storage/driver/s3-aws/s3.go",
+    "line_number": 537,
+    "full_implementation": "func New(ctx context.Context, params DriverParameters) (*Driver, error) {\n\tif !params.V4Auth \u0026\u0026\n\t\t(params.RegionEndpoint == \"\" ||\n\t\t\tstrings.Contains(params.RegionEndpoint, \"s3.amazonaws.com\")) {\n\t\treturn nil, fmt.Errorf(\"on Amazon S3 this storage driver can only be used with v4 authentication\")\n\t}\n\n\tawsConfig := aws.NewConfig().WithLogLevel(params.LogLevel)\n\n\tif params.AccessKey != \"\" \u0026\u0026 params.SecretKey != \"\" {\n\t\tcreds := credentials.NewStaticCredentials(\n\t\t\tparams.AccessKey,\n\t\t\tparams.SecretKey,\n\t\t\tparams.SessionToken,\n\t\t)\n\t\tawsConfig.WithCredentials(creds)\n\t}\n\n\tif params.RegionEndpoint != \"\" {\n\t\tawsConfig.WithEndpoint(params.RegionEndpoint)\n\t}\n\n\tawsConfig.WithS3ForcePathStyle(params.ForcePathStyle)\n\tawsConfig.WithS3UseAccelerate(params.Accelerate)\n\tawsConfig.WithRegion(params.Region)\n\tawsConfig.WithDisableSSL(!params.Secure)\n\tif params.UseDualStack {\n\t\tawsConfig.UseDualStackEndpoint = endpoints.DualStackEndpointStateEnabled\n\t}\n\n\tif params.SkipVerify {\n\t\thttpTransport := http.DefaultTransport.(*http.Transport).Clone()\n\t\thttpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t\tawsConfig.WithHTTPClient(\u0026http.Client{\n\t\t\tTransport: httpTransport,\n\t\t})\n\t}\n\n\tsess, err := session.NewSession(awsConfig)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to create new session with aws config: %v\", err)\n\t}\n\n\tif params.UserAgent != \"\" {\n\t\tsess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(params.UserAgent))\n\t}\n\n\ts3obj := s3.New(sess)\n\n\t// enable S3 compatible signature v2 signing instead\n\tif !params.V4Auth {\n\t\tsetv2Handlers(s3obj)\n\t}\n\n\t// TODO Currently multipart uploads have no timestamps, so this would be unwise\n\t// if you initiated a new s3driver while another one is running on the same bucket.\n\t// multis, _, err := bucket.ListMulti(\"\", \"\")\n\t// if err != nil {\n\t// \treturn nil, err\n\t// }\n\n\t// for _, multi := range multis {\n\t// \terr := multi.Abort()\n\t// \t//TODO appropriate to do this error checking?\n\t// \tif err != nil {\n\t// \t\treturn nil, err\n\t// \t}\n\t// }\n\n\td := \u0026driver{\n\t\tS3:                          s3obj,\n\t\tBucket:                      params.Bucket,\n\t\tChunkSize:                   params.ChunkSize,\n\t\tEncrypt:                     params.Encrypt,\n\t\tKeyID:                       params.KeyID,\n\t\tMultipartCopyChunkSize:      params.MultipartCopyChunkSize,\n\t\tMultipartCopyMaxConcurrency: params.MultipartCopyMaxConcurrency,\n\t\tMultipartCopyThresholdSize:  params.MultipartCopyThresholdSize,\n\t\tRootDirectory:               params.RootDirectory,\n\t\tStorageClass:                params.StorageClass,\n\t\tObjectACL:                   params.ObjectACL,\n\t\tpool: \u0026sync.Pool{\n\t\t\tNew: func() any { return \u0026bytes.Buffer{} },\n\t\t},\n\t}\n\n\treturn \u0026Driver{\n\t\tbaseEmbed: baseEmbed{\n\t\t\tBase: base.Base{\n\t\t\t\tStorageDriver: d,\n\t\t\t},\n\t\t},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/registry/storage/driver/s3-aws/s3.go",
+        "SourceLineNum": 537,
+        "ParentFunction": "New (ctx context.Context, params github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.Driver, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/registry/storage/driver/s3-aws/s3.go",
+          "SourceLineNum": 537,
+          "ParentFunction": "New (ctx context.Context, params github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.Driver, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

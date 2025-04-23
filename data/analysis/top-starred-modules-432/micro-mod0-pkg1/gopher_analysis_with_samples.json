@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "calcHash",
+    "file_path": "/analysis/repo/internal/buffer/buffer.go",
+    "line_number": 659,
+    "full_implementation": "func calcHash(b *Buffer, out *[md5.Size]byte) {\n\th := md5.New()\n\n\tif len(b.lines) \u003e 0 {\n\t\th.Write(b.lines[0].data)\n\n\t\tfor _, l := range b.lines[1:] {\n\t\t\tif b.Endings == FFDos {\n\t\t\t\th.Write([]byte{'\\r', '\\n'})\n\t\t\t} else {\n\t\t\t\th.Write([]byte{'\\n'})\n\t\t\t}\n\t\t\th.Write(l.data)\n\t\t}\n\t}\n\n\th.Sum((*out)[:0])\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/internal/buffer/buffer.go",
+        "SourceLineNum": 659,
+        "ParentFunction": "calcHash (b *github.com/zyedidia/micro/v2/internal/buffer.Buffer, out *[16]byte)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

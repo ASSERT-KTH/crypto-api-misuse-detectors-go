@@ -1,0 +1,45 @@
+[
+  {
+    "function_name": "NewHTTPClient",
+    "file_path": "/analysis/repo/libgobuster/http.go",
+    "line_number": 74,
+    "full_implementation": "func NewHTTPClient(opt *HTTPOptions) (*HTTPClient, error) {\n\tvar proxyURLFunc func(*http.Request) (*url.URL, error)\n\tvar client HTTPClient\n\tproxyURLFunc = http.ProxyFromEnvironment\n\n\tif opt == nil {\n\t\treturn nil, fmt.Errorf(\"options is nil\")\n\t}\n\n\tif opt.Proxy != \"\" {\n\t\tproxyURL, err := url.Parse(opt.Proxy)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"proxy URL is invalid (%w)\", err)\n\t\t}\n\t\tproxyURLFunc = http.ProxyURL(proxyURL)\n\t}\n\n\tvar redirectFunc func(req *http.Request, via []*http.Request) error\n\tif !opt.FollowRedirect {\n\t\tredirectFunc = func(req *http.Request, via []*http.Request) error {\n\t\t\treturn http.ErrUseLastResponse\n\t\t}\n\t} else {\n\t\tredirectFunc = nil\n\t}\n\n\ttlsConfig := tls.Config{\n\t\tInsecureSkipVerify: opt.NoTLSValidation,\n\t\t// enable TLS1.0 and TLS1.1 support\n\t\tMinVersion: tls.VersionTLS10,\n\t}\n\tif opt.TLSCertificate != nil {\n\t\ttlsConfig.Certificates = []tls.Certificate{*opt.TLSCertificate}\n\t}\n\n\tclient.client = \u0026http.Client{\n\t\tTimeout:       opt.Timeout,\n\t\tCheckRedirect: redirectFunc,\n\t\tTransport: \u0026http.Transport{\n\t\t\tProxy:               proxyURLFunc,\n\t\t\tMaxIdleConns:        100,\n\t\t\tMaxIdleConnsPerHost: 100,\n\t\t\tTLSClientConfig:     \u0026tlsConfig,\n\t\t}}\n\tclient.username = opt.Username\n\tclient.password = opt.Password\n\tclient.userAgent = opt.UserAgent\n\tclient.defaultUserAgent = DefaultUserAgent()\n\tclient.headers = opt.Headers\n\tclient.noCanonicalizeHeaders = opt.NoCanonicalizeHeaders\n\tclient.cookies = opt.Cookies\n\tclient.method = opt.Method\n\tif client.method == \"\" {\n\t\tclient.method = http.MethodGet\n\t}\n\t// Host header needs to be set separately\n\tfor _, h := range opt.Headers {\n\t\tif h.Name == \"Host\" {\n\t\t\tclient.host = h.Value\n\t\t\tbreak\n\t\t}\n\t}\n\treturn \u0026client, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::MinVersion",
+      "Message": "Insecure TLS Version\nWe Found: 769",
+      "Slicing_Criteria": {
+        "SourceCode": "MinVersion: tls.VersionTLS10,",
+        "SourceFilename": "/analysis/repo/libgobuster/http.go",
+        "SourceLineNum": 74,
+        "ParentFunction": "NewHTTPClient (opt *github.com/OJ/gobuster/v3/libgobuster.HTTPOptions) (*github.com/OJ/gobuster/v3/libgobuster.HTTPClient, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "MinVersion: tls.VersionTLS10,",
+          "SourceFilename": "/analysis/repo/libgobuster/http.go",
+          "SourceLineNum": 74,
+          "ParentFunction": "NewHTTPClient (opt *github.com/OJ/gobuster/v3/libgobuster.HTTPOptions) (*github.com/OJ/gobuster/v3/libgobuster.HTTPClient, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "parseBasicHTTPOptions",
+    "file_path": "/analysis/repo/cli/cmd/http.go",
+    "line_number": 130,
+    "full_implementation": "func parseBasicHTTPOptions(cmd *cobra.Command) (libgobuster.BasicHTTPOptions, error) {\n\toptions := libgobuster.BasicHTTPOptions{}\n\tvar err error\n\n\toptions.UserAgent, err = cmd.Flags().GetString(\"useragent\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for useragent: %w\", err)\n\t}\n\trandomUA, err := cmd.Flags().GetBool(\"random-agent\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for random-agent: %w\", err)\n\t}\n\tif randomUA {\n\t\tua, err := libgobuster.GetRandomUserAgent()\n\t\tif err != nil {\n\t\t\treturn options, err\n\t\t}\n\t\toptions.UserAgent = ua\n\t}\n\n\toptions.Proxy, err = cmd.Flags().GetString(\"proxy\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for proxy: %w\", err)\n\t}\n\n\toptions.Timeout, err = cmd.Flags().GetDuration(\"timeout\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for timeout: %w\", err)\n\t}\n\n\toptions.RetryOnTimeout, err = cmd.Flags().GetBool(\"retry\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for retry: %w\", err)\n\t}\n\n\toptions.RetryAttempts, err = cmd.Flags().GetInt(\"retry-attempts\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for retry-attempts: %w\", err)\n\t}\n\n\toptions.NoTLSValidation, err = cmd.Flags().GetBool(\"no-tls-validation\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for no-tls-validation: %w\", err)\n\t}\n\n\tpemFile, err := cmd.Flags().GetString(\"client-cert-pem\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for client-cert-pem: %w\", err)\n\t}\n\tpemKeyFile, err := cmd.Flags().GetString(\"client-cert-pem-key\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for client-cert-pem-key: %w\", err)\n\t}\n\tp12File, err := cmd.Flags().GetString(\"client-cert-p12\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for client-cert-p12: %w\", err)\n\t}\n\tp12Pass, err := cmd.Flags().GetString(\"client-cert-p12-password\")\n\tif err != nil {\n\t\treturn options, fmt.Errorf(\"invalid value for client-cert-p12-password: %w\", err)\n\t}\n\n\tif pemFile != \"\" \u0026\u0026 p12File != \"\" {\n\t\treturn options, fmt.Errorf(\"please supply either a pem or a p12, not both\")\n\t}\n\n\tif pemFile != \"\" {\n\t\tcert, err := tls.LoadX509KeyPair(pemFile, pemKeyFile)\n\t\tif err != nil {\n\t\t\treturn options, fmt.Errorf(\"could not load supplied pem key: %w\", err)\n\t\t}\n\t\toptions.TLSCertificate = \u0026cert\n\t} else if p12File != \"\" {\n\t\tp12Content, err := os.ReadFile(p12File)\n\t\tif err != nil {\n\t\t\treturn options, fmt.Errorf(\"could not read p12 %s: %w\", p12File, err)\n\t\t}\n\t\tblocks, err := pkcs12.ToPEM(p12Content, p12Pass)\n\t\tif err != nil {\n\t\t\treturn options, fmt.Errorf(\"could not load P12: %w\", err)\n\t\t}\n\t\tvar pemData []byte\n\t\tfor _, b := range blocks {\n\t\t\tpemData = append(pemData, pem.EncodeToMemory(b)...)\n\t\t}\n\t\tcert, err := tls.X509KeyPair(pemData, pemData)\n\t\tif err != nil {\n\t\t\treturn options, fmt.Errorf(\"could not load certificate from P12: %w\", err)\n\t\t}\n\t\toptions.TLSCertificate = \u0026cert\n\t}\n\n\treturn options, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pkcs12.ToPEM",
+      "Message": "This package is frozen. If it's missing functionality you need, consider an alternative like software.sslmate.com/src/go-pkcs12.",
+      "Slicing_Criteria": {
+        "SourceCode": "blocks, err := pkcs12.ToPEM(p12Content, p12Pass)",
+        "SourceFilename": "/analysis/repo/cli/cmd/http.go",
+        "SourceLineNum": 130,
+        "ParentFunction": "parseBasicHTTPOptions (cmd *github.com/spf13/cobra.Command) (github.com/OJ/gobuster/v3/libgobuster.BasicHTTPOptions, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

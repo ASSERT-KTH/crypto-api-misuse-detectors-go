@@ -1,0 +1,52 @@
+[
+  {
+    "function_name": "httpClient",
+    "file_path": "/analysis/repo/pkg/getter/httpgetter.go",
+    "line_number": 148,
+    "full_implementation": "func (g *HTTPGetter) httpClient() (*http.Client, error) {\n\tif g.opts.transport != nil {\n\t\treturn \u0026http.Client{\n\t\t\tTransport: g.opts.transport,\n\t\t\tTimeout:   g.opts.timeout,\n\t\t}, nil\n\t}\n\n\tg.once.Do(func() {\n\t\tg.transport = \u0026http.Transport{\n\t\t\tDisableCompression: true,\n\t\t\tProxy:              http.ProxyFromEnvironment,\n\t\t}\n\t})\n\n\tif (g.opts.certFile != \"\" \u0026\u0026 g.opts.keyFile != \"\") || g.opts.caFile != \"\" || g.opts.insecureSkipVerifyTLS {\n\t\ttlsConf, err := tlsutil.NewClientTLS(g.opts.certFile, g.opts.keyFile, g.opts.caFile, g.opts.insecureSkipVerifyTLS)\n\t\tif err != nil {\n\t\t\treturn nil, errors.Wrap(err, \"can't create TLS config for client\")\n\t\t}\n\n\t\tsni, err := urlutil.ExtractHostname(g.opts.url)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\ttlsConf.ServerName = sni\n\n\t\tg.transport.TLSClientConfig = tlsConf\n\t}\n\n\tif g.opts.insecureSkipVerifyTLS {\n\t\tif g.transport.TLSClientConfig == nil {\n\t\t\tg.transport.TLSClientConfig = \u0026tls.Config{\n\t\t\t\tInsecureSkipVerify: true,\n\t\t\t}\n\t\t} else {\n\t\t\tg.transport.TLSClientConfig.InsecureSkipVerify = true\n\t\t}\n\t}\n\n\tclient := \u0026http.Client{\n\t\tTransport: g.transport,\n\t\tTimeout:   g.opts.timeout,\n\t}\n\n\treturn client, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/pkg/getter/httpgetter.go",
+        "SourceLineNum": 148,
+        "ParentFunction": "httpClient () (*net/http.Client, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/pkg/getter/httpgetter.go",
+          "SourceLineNum": 148,
+          "ParentFunction": "httpClient () (*net/http.Client, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "httpClient",
+    "file_path": "/analysis/repo/pkg/getter/httpgetter.go",
+    "line_number": 151,
+    "full_implementation": "func (g *HTTPGetter) httpClient() (*http.Client, error) {\n\tif g.opts.transport != nil {\n\t\treturn \u0026http.Client{\n\t\t\tTransport: g.opts.transport,\n\t\t\tTimeout:   g.opts.timeout,\n\t\t}, nil\n\t}\n\n\tg.once.Do(func() {\n\t\tg.transport = \u0026http.Transport{\n\t\t\tDisableCompression: true,\n\t\t\tProxy:              http.ProxyFromEnvironment,\n\t\t}\n\t})\n\n\tif (g.opts.certFile != \"\" \u0026\u0026 g.opts.keyFile != \"\") || g.opts.caFile != \"\" || g.opts.insecureSkipVerifyTLS {\n\t\ttlsConf, err := tlsutil.NewClientTLS(g.opts.certFile, g.opts.keyFile, g.opts.caFile, g.opts.insecureSkipVerifyTLS)\n\t\tif err != nil {\n\t\t\treturn nil, errors.Wrap(err, \"can't create TLS config for client\")\n\t\t}\n\n\t\tsni, err := urlutil.ExtractHostname(g.opts.url)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\ttlsConf.ServerName = sni\n\n\t\tg.transport.TLSClientConfig = tlsConf\n\t}\n\n\tif g.opts.insecureSkipVerifyTLS {\n\t\tif g.transport.TLSClientConfig == nil {\n\t\t\tg.transport.TLSClientConfig = \u0026tls.Config{\n\t\t\t\tInsecureSkipVerify: true,\n\t\t\t}\n\t\t} else {\n\t\t\tg.transport.TLSClientConfig.InsecureSkipVerify = true\n\t\t}\n\t}\n\n\tclient := \u0026http.Client{\n\t\tTransport: g.transport,\n\t\tTimeout:   g.opts.timeout,\n\t}\n\n\treturn client, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "g.transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/pkg/getter/httpgetter.go",
+        "SourceLineNum": 151,
+        "ParentFunction": "httpClient () (*net/http.Client, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "g.transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/pkg/getter/httpgetter.go",
+          "SourceLineNum": 151,
+          "ParentFunction": "httpClient () (*net/http.Client, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "getCertResponse",
+    "file_path": "/analysis/repo/cli/cmd/identity.go",
+    "line_number": 205,
+    "full_implementation": "func getCertResponse(url string, pod corev1.Pod) ([]*x509.Certificate, error) {\n\tserverName, err := k8s.PodIdentity(\u0026pod)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tconnURL := strings.TrimPrefix(url, \"http://\")\n\tconn, err := tls.Dial(\"tcp\", connURL, \u0026tls.Config{\n\t\t// We want to connect directly to a proxy port to dump its certificate. We don't necessarily\n\t\t// want to verify the server's certificate, since this is purely for diagnostics and may be\n\t\t// used when a proxy's issuer doesn't match the control plane's trust root.\n\t\t//nolint:gosec\n\t\tInsecureSkipVerify: true,\n\t\tServerName:         serverName,\n\t})\n\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tcert := conn.ConnectionState().PeerCertificates\n\treturn cert, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/cli/cmd/identity.go",
+        "SourceLineNum": 205,
+        "ParentFunction": "getCertResponse (url string, pod k8s.io/api/core/v1.Pod) ([]*crypto/x509.Certificate, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/cli/cmd/identity.go",
+          "SourceLineNum": 205,
+          "ParentFunction": "getCertResponse (url string, pod k8s.io/api/core/v1.Pod) ([]*crypto/x509.Certificate, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

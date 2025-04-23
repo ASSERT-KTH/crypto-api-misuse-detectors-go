@@ -1,0 +1,619 @@
+[
+  {
+    "function_name": "GenCertificate",
+    "file_path": "/analysis/repo/internal/crypto/helpers.go",
+    "line_number": 48,
+    "full_implementation": "func GenCertificate(template *x509.Certificate, setLeaf bool) ([]byte, []byte, []byte, tls.Certificate) {\n\tpriv, _ := rsa.GenerateKey(rand.Reader, 2048)\n\n\tserialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)\n\tserialNumber, _ := rand.Int(rand.Reader, serialNumberLimit)\n\ttemplate.SerialNumber = serialNumber\n\ttemplate.BasicConstraintsValid = true\n\tif template.NotBefore.IsZero() {\n\t\ttemplate.NotBefore = time.Now()\n\t}\n\n\tif template.NotAfter.IsZero() {\n\t\ttemplate.NotAfter = template.NotBefore.Add(time.Hour)\n\t}\n\n\tderBytes, _ := x509.CreateCertificate(rand.Reader, template, template, \u0026priv.PublicKey, priv)\n\n\tvar certPem, keyPem bytes.Buffer\n\tpem.Encode(\u0026certPem, \u0026pem.Block{Type: \"CERTIFICATE\", Bytes: derBytes})\n\tpem.Encode(\u0026keyPem, \u0026pem.Block{Type: \"RSA PRIVATE KEY\", Bytes: x509.MarshalPKCS1PrivateKey(priv)})\n\n\tclientCert, _ := tls.X509KeyPair(certPem.Bytes(), keyPem.Bytes())\n\tif setLeaf {\n\t\tclientCert.Leaf = template\n\t}\n\tcombinedPEM := bytes.Join([][]byte{certPem.Bytes(), keyPem.Bytes()}, []byte(\"\\n\"))\n\n\treturn certPem.Bytes(), keyPem.Bytes(), combinedPEM, clientCert\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, _ := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/internal/crypto/helpers.go",
+        "SourceLineNum": 48,
+        "ParentFunction": "GenCertificate (template *crypto/x509.Certificate, setLeaf bool) ([]byte, []byte, []byte, crypto/tls.Certificate)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "priv, _ := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/internal/crypto/helpers.go",
+          "SourceLineNum": 48,
+          "ParentFunction": "GenCertificate (template *crypto/x509.Certificate, setLeaf bool) ([]byte, []byte, []byte, crypto/tls.Certificate)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "ParsePEM",
+    "file_path": "/analysis/repo/certs/manager.go",
+    "line_number": 158,
+    "full_implementation": "func ParsePEM(data []byte, secret string) ([]*pem.Block, error) {\n\tvar pemBlocks []*pem.Block\n\n\tfor {\n\t\tvar block *pem.Block\n\t\tblock, data = pem.Decode(data)\n\n\t\tif block == nil {\n\t\t\tbreak\n\t\t}\n\n\t\tif x509.IsEncryptedPEMBlock(block) {\n\t\t\tvar err error\n\t\t\tblock.Bytes, err = x509.DecryptPEMBlock(block, []byte(secret))\n\t\t\tblock.Headers = nil\n\t\t\tblock.Type = strings.Replace(block.Type, \"ENCRYPTED \", \"\", 1)\n\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\n\t\tpemBlocks = append(pemBlocks, block)\n\t}\n\n\treturn pemBlocks, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.DecryptPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "block.Bytes, err = x509.DecryptPEMBlock(block, []byte(secret))",
+        "SourceFilename": "/analysis/repo/certs/manager.go",
+        "SourceLineNum": 158,
+        "ParentFunction": "ParsePEM (data []byte, secret string) ([]*encoding/pem.Block, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "GetCertIDAndChainPEM",
+    "file_path": "/analysis/repo/certs/manager.go",
+    "line_number": 376,
+    "full_implementation": "func GetCertIDAndChainPEM(certData []byte, secret string) (string, []byte, error) {\n\tvar keyPEM, keyRaw []byte\n\tvar publicKeyPem []byte\n\tvar certBlocks [][]byte\n\tvar certID string\n\tvar certChainPEM []byte\n\n\trest := certData\n\n\tfor {\n\t\tvar block *pem.Block\n\n\t\tblock, rest = pem.Decode(rest)\n\t\tif block == nil {\n\t\t\tbreak\n\t\t}\n\n\t\tif strings.HasSuffix(block.Type, \"PRIVATE KEY\") {\n\t\t\tif len(keyRaw) \u003e 0 {\n\t\t\t\terr := errors.New(\"Found multiple private keys\")\n\t\t\t\treturn certID, certChainPEM, err\n\t\t\t}\n\n\t\t\tkeyRaw = block.Bytes\n\t\t\tkeyPEM = pem.EncodeToMemory(block)\n\t\t} else if block.Type == \"CERTIFICATE\" {\n\n\t\t\tcert, err := x509.ParseCertificate(block.Bytes)\n\t\t\tif err != nil {\n\t\t\t\treturn certID, certChainPEM, err\n\t\t\t}\n\n\t\t\tif cert.NotAfter.Before(time.Now()) {\n\t\t\t\treturn certID, certChainPEM, errors.New(\"certificate is expired\")\n\t\t\t}\n\n\t\t\tcertBlocks = append(certBlocks, pem.EncodeToMemory(block))\n\t\t} else if block.Type == \"PUBLIC KEY\" {\n\t\t\tpublicKeyPem = pem.EncodeToMemory(block)\n\t\t}\n\t}\n\n\tcertChainPEM = bytes.Join(certBlocks, []byte(\"\\n\"))\n\n\tif len(certChainPEM) == 0 {\n\t\tif len(publicKeyPem) == 0 {\n\t\t\terr := errors.New(\"Failed to decode certificate. It should be PEM encoded.\")\n\t\t\treturn certID, certChainPEM, err\n\t\t} else {\n\t\t\tcertChainPEM = publicKeyPem\n\t\t}\n\t} else if len(publicKeyPem) \u003e 0 {\n\t\terr := errors.New(\"Public keys can't be combined with certificates\")\n\t\treturn certID, certChainPEM, err\n\t}\n\n\t// Found private key, check if it match the certificate\n\tif len(keyPEM) \u003e 0 {\n\t\tcert, err := tls.X509KeyPair(certChainPEM, keyPEM)\n\t\tif err != nil {\n\t\t\treturn certID, certChainPEM, err\n\t\t}\n\n\t\t// Encrypt private key and append it to the chain\n\t\tencryptedKeyPEMBlock, err := x509.EncryptPEMBlock(rand.Reader, \"ENCRYPTED PRIVATE KEY\", keyRaw, []byte(secret), x509.PEMCipherAES256)\n\t\tif err != nil {\n\t\t\treturn certID, certChainPEM, err\n\t\t}\n\n\t\tcertChainPEM = append(certChainPEM, []byte(\"\\n\")...)\n\t\tcertChainPEM = append(certChainPEM, pem.EncodeToMemory(encryptedKeyPEMBlock)...)\n\n\t\tcertID = tykcrypto.HexSHA256(cert.Certificate[0])\n\t} else if len(publicKeyPem) \u003e 0 {\n\t\tpublicKey, _ := pem.Decode(publicKeyPem)\n\t\tcertID = tykcrypto.HexSHA256(publicKey.Bytes)\n\t} else {\n\t\t// Get first cert\n\t\tcertRaw, _ := pem.Decode(certChainPEM)\n\t\tcert, err := x509.ParseCertificate(certRaw.Bytes)\n\t\tif err != nil {\n\t\t\terr := errors.New(\"Error while parsing certificate: \" + err.Error())\n\t\t\treturn certID, certChainPEM, err\n\t\t}\n\n\t\tcertID = tykcrypto.HexSHA256(cert.Raw)\n\t}\n\treturn certID, certChainPEM, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.EncryptPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "encryptedKeyPEMBlock, err := x509.EncryptPEMBlock(rand.Reader, \"ENCRYPTED PRIVATE KEY\", keyRaw, []byte(secret), x509.PEMCipherAES256)",
+        "SourceFilename": "/analysis/repo/certs/manager.go",
+        "SourceLineNum": 376,
+        "ParentFunction": "GetCertIDAndChainPEM (certData []byte, secret string) (string, []byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "ParsePEM",
+    "file_path": "/analysis/repo/certs/manager.go",
+    "line_number": 156,
+    "full_implementation": "func ParsePEM(data []byte, secret string) ([]*pem.Block, error) {\n\tvar pemBlocks []*pem.Block\n\n\tfor {\n\t\tvar block *pem.Block\n\t\tblock, data = pem.Decode(data)\n\n\t\tif block == nil {\n\t\t\tbreak\n\t\t}\n\n\t\tif x509.IsEncryptedPEMBlock(block) {\n\t\t\tvar err error\n\t\t\tblock.Bytes, err = x509.DecryptPEMBlock(block, []byte(secret))\n\t\t\tblock.Headers = nil\n\t\t\tblock.Type = strings.Replace(block.Type, \"ENCRYPTED \", \"\", 1)\n\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\n\t\tpemBlocks = append(pemBlocks, block)\n\t}\n\n\treturn pemBlocks, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.IsEncryptedPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "if x509.IsEncryptedPEMBlock(block) {",
+        "SourceFilename": "/analysis/repo/certs/manager.go",
+        "SourceLineNum": 156,
+        "ParentFunction": "ParsePEM (data []byte, secret string) ([]*encoding/pem.Block, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Build",
+    "file_path": "/analysis/repo/cli/bundler/bundler.go",
+    "line_number": 88,
+    "full_implementation": "func (b *Bundler) Build(ctx *kingpin.ParseContext) error {\n\tmanifestPath := *b.manifestPath\n\tbundlePath := *b.bundlePath\n\tskipSigning := *b.skipSigning\n\tkey := *b.keyPath\n\n\tlog.Infof(\"Building bundle using '%s'\", manifestPath)\n\tmanifest, err := b.loadManifest(manifestPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif bundlePath == defaultBundlePath {\n\t\tlog.Warningf(\"Using default bundle path '%s'\", defaultBundlePath)\n\t}\n\n\t// Write the file:\n\tbundleBuf := new(bytes.Buffer)\n\tfor _, file := range manifest.FileList {\n\t\tvar data []byte\n\t\tdata, err = ioutil.ReadFile(file)\n\t\tif err != nil {\n\t\t\tbreak\n\t\t}\n\t\tbundleBuf.Write(data)\n\t}\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Compute the checksum and append it to the manifest data structure:\n\tmanifest.Checksum = fmt.Sprintf(\"%x\", md5.Sum(bundleBuf.Bytes()))\n\n\tif key == \"\" {\n\t\tif skipSigning {\n\t\t\tlog.Warning(\"The bundle will be unsigned\")\n\t\t} else {\n\t\t\tlog.Warning(\"The bundle will be unsigned, type \\\"y\\\" or \\\"yes\\\" to confirm:\")\n\t\t\treader := bufio.NewReader(os.Stdin)\n\t\t\ttext, _ := reader.ReadString('\\n')\n\t\t\tch := text[0:1]\n\t\t\tif ch != \"y\" {\n\t\t\t\tlog.Fatal(\"Aborting\")\n\t\t\t}\n\t\t}\n\t} else {\n\t\terr = b.sign(key, manifest, bundleBuf)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tmanifestData, err := json.Marshal(\u0026manifest)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Write the ZIP contents into a buffer:\n\tbuf := new(bytes.Buffer)\n\tzipWriter := zip.NewWriter(buf)\n\tfor _, file := range manifest.FileList {\n\t\tvar outputFile io.Writer\n\t\toutputFile, err = zipWriter.Create(file)\n\t\tif err != nil {\n\t\t\tbreak\n\t\t}\n\t\tvar data []byte\n\t\tdata, err = ioutil.ReadFile(file)\n\t\tif err != nil {\n\t\t\tbreak\n\t\t}\n\t\tif _, err = outputFile.Write(data); err != nil {\n\t\t\tbreak\n\t\t}\n\t}\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Append the updated manifest file to the ZIP file:\n\tnewManifest, err := zipWriter.Create(defaultManifestPath)\n\t_, err = newManifest.Write(manifestData)\n\tzipWriter.Close()\n\terr = ioutil.WriteFile(bundlePath, buf.Bytes(), defaultBundlePerm)\n\tif err != nil {\n\t\treturn err\n\t}\n\tlog.Infof(\"Wrote '%s' (%d bytes)\", bundlePath, buf.Len())\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "manifest.Checksum = fmt.Sprintf(\"%x\", md5.Sum(bundleBuf.Bytes()))",
+        "SourceFilename": "/analysis/repo/cli/bundler/bundler.go",
+        "SourceLineNum": 88,
+        "ParentFunction": "Build (ctx *github.com/alecthomas/kingpin/v2.ParseContext) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "MD5Hash",
+    "file_path": "/analysis/repo/user/session.go",
+    "line_number": 223,
+    "full_implementation": "func (s *SessionState) MD5Hash() string {\n\treturn fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%+v\", s))))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "return fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%+v\", s))))",
+        "SourceFilename": "/analysis/repo/user/session.go",
+        "SourceLineNum": 223,
+        "ParentFunction": "MD5Hash () string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Hash",
+    "file_path": "/analysis/repo/signature_validator/hash.go",
+    "line_number": 33,
+    "full_implementation": "func (m MasheryMd5sum) Hash(token string, sharedSecret string, timeStamp int64) []byte {\n\tsignature := md5.Sum([]byte(token + sharedSecret + strconv.FormatInt(timeStamp, 10)))\n\n\treturn signature[:]\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "signature := md5.Sum([]byte(token + sharedSecret + strconv.FormatInt(timeStamp, 10)))",
+        "SourceFilename": "/analysis/repo/signature_validator/hash.go",
+        "SourceLineNum": 33,
+        "ParentFunction": "Hash (token string, sharedSecret string, timeStamp int64) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "TcpMock",
+    "file_path": "/analysis/repo/test/tcp.go",
+    "line_number": 100,
+    "full_implementation": "func TcpMock(useSSL bool, cb func(in []byte, err error) (out []byte)) net.Listener {\n\tvar l net.Listener\n\n\tif useSSL {\n\t\ttlsConfig := \u0026tls.Config{\n\t\t\tCertificates:       []tls.Certificate{Cert(\"localhost\")},\n\t\t\tInsecureSkipVerify: true,\n\t\t\tMaxVersion:         tls.VersionTLS12,\n\t\t}\n\t\ttlsConfig.BuildNameToCertificate()\n\t\tl, _ = tls.Listen(\"tcp\", \":0\", tlsConfig)\n\t} else {\n\t\tl, _ = net.Listen(\"tcp\", \":0\")\n\t}\n\n\tgo func() {\n\t\tfor {\n\t\t\t// Listen for an incoming connection.\n\t\t\tconn, err := l.Accept()\n\t\t\tif err != nil {\n\t\t\t\tlog.Println(\"Mock Accept error\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\t\t\tbuf := make([]byte, 65535)\n\t\t\tn, err := conn.Read(buf)\n\n\t\t\tresp := cb(buf[:n], err)\n\n\t\t\tif err != nil {\n\t\t\t\tlog.Println(\"Mock read error\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\tif len(resp) \u003e 0 {\n\t\t\t\tif n, err = conn.Write(resp); err != nil {\n\t\t\t\t\tlog.Println(\"Mock Conn write error\", err.Error())\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}()\n\n\treturn l\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/test/tcp.go",
+        "SourceLineNum": 100,
+        "ParentFunction": "TcpMock (useSSL bool, cb "
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Cert",
+    "file_path": "/analysis/repo/test/tcp.go",
+    "line_number": 137,
+    "full_implementation": "func Cert(domain string) tls.Certificate {\n\tprivate, _ := rsa.GenerateKey(rand.Reader, 512)\n\ttemplate := \u0026x509.Certificate{\n\t\tSerialNumber: big.NewInt(1),\n\t\tSubject: pkix.Name{\n\t\t\tOrganization: []string{\"Test Co\"},\n\t\t\tCommonName:   domain,\n\t\t},\n\t\tNotBefore:             time.Time{},\n\t\tNotAfter:              time.Now().Add(60 * time.Minute),\n\t\tIsCA:                  true,\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t}\n\n\tderBytes, _ := x509.CreateCertificate(rand.Reader, template, template, \u0026private.PublicKey, private)\n\n\tvar cert, key bytes.Buffer\n\tpem.Encode(\u0026cert, \u0026pem.Block{Type: \"CERTIFICATE\", Bytes: derBytes})\n\tpem.Encode(\u0026key, \u0026pem.Block{Type: \"RSA PRIVATE KEY\", Bytes: x509.MarshalPKCS1PrivateKey(private)})\n\n\ttlscert, _ := tls.X509KeyPair(cert.Bytes(), key.Bytes())\n\n\treturn tlscert\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 512",
+      "Slicing_Criteria": {
+        "SourceCode": "private, _ := rsa.GenerateKey(rand.Reader, 512)",
+        "SourceFilename": "/analysis/repo/test/tcp.go",
+        "SourceLineNum": 137,
+        "ParentFunction": "Cert (domain string) crypto/tls.Certificate"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "private, _ := rsa.GenerateKey(rand.Reader, 512)",
+          "SourceFilename": "/analysis/repo/test/tcp.go",
+          "SourceLineNum": 137,
+          "ParentFunction": "Cert (domain string) crypto/tls.Certificate"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "TcpMock",
+    "file_path": "/analysis/repo/test/tcp.go",
+    "line_number": 97,
+    "full_implementation": "func TcpMock(useSSL bool, cb func(in []byte, err error) (out []byte)) net.Listener {\n\tvar l net.Listener\n\n\tif useSSL {\n\t\ttlsConfig := \u0026tls.Config{\n\t\t\tCertificates:       []tls.Certificate{Cert(\"localhost\")},\n\t\t\tInsecureSkipVerify: true,\n\t\t\tMaxVersion:         tls.VersionTLS12,\n\t\t}\n\t\ttlsConfig.BuildNameToCertificate()\n\t\tl, _ = tls.Listen(\"tcp\", \":0\", tlsConfig)\n\t} else {\n\t\tl, _ = net.Listen(\"tcp\", \":0\")\n\t}\n\n\tgo func() {\n\t\tfor {\n\t\t\t// Listen for an incoming connection.\n\t\t\tconn, err := l.Accept()\n\t\t\tif err != nil {\n\t\t\t\tlog.Println(\"Mock Accept error\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\t\t\tbuf := make([]byte, 65535)\n\t\t\tn, err := conn.Read(buf)\n\n\t\t\tresp := cb(buf[:n], err)\n\n\t\t\tif err != nil {\n\t\t\t\tlog.Println(\"Mock read error\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\tif len(resp) \u003e 0 {\n\t\t\t\tif n, err = conn.Write(resp); err != nil {\n\t\t\t\t\tlog.Println(\"Mock Conn write error\", err.Error())\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}()\n\n\treturn l\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/test/tcp.go",
+        "SourceLineNum": 97,
+        "ParentFunction": "TcpMock (useSSL bool, cb "
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/test/tcp.go",
+          "SourceLineNum": 97,
+          "ParentFunction": "TcpMock (useSSL bool, cb "
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Checksum",
+    "file_path": "/analysis/repo/gateway/event_handler_webhooks.go",
+    "line_number": 182,
+    "full_implementation": "func (w *WebHookHandler) Checksum(reqBody string) (string, error) {\n\t// We do this twice because fuck it.\n\tlocalRequest, _ := http.NewRequest(string(w.getRequestMethod(w.conf.Method)), w.conf.TargetPath, strings.NewReader(reqBody))\n\th := md5.New()\n\tlocalRequest.Write(h)\n\treturn hex.EncodeToString(h.Sum(nil)), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/gateway/event_handler_webhooks.go",
+        "SourceLineNum": 182,
+        "ParentFunction": "Checksum (reqBody string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "CreateCheckSum",
+    "file_path": "/analysis/repo/gateway/mw_redis_cache.go",
+    "line_number": 51,
+    "full_implementation": "func (m *RedisCacheMiddleware) CreateCheckSum(req *http.Request, keyName string, regex string, additionalKeyFromHeaders string) (string, error) {\n\th := md5.New()\n\n\t// Compose key into string\n\tkey := req.Method + \"-\" + req.URL.String()\n\tif additionalKeyFromHeaders != \"\" {\n\t\tkey = key + \"-\" + additionalKeyFromHeaders\n\t}\n\n\t_, err := io.WriteString(h, key)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tif e := addBodyHash(req, regex, h); e != nil {\n\t\treturn \"\", e\n\t}\n\n\treqChecksum := hex.EncodeToString(h.Sum(nil))\n\treturn m.Spec.APIID + keyName + reqChecksum, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/gateway/mw_redis_cache.go",
+        "SourceLineNum": 51,
+        "ParentFunction": "CreateCheckSum (req *net/http.Request, keyName string, regex string, additionalKeyFromHeaders string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getHashedBundleName",
+    "file_path": "/analysis/repo/gateway/coprocess_bundle.go",
+    "line_number": 348,
+    "full_implementation": "func (gw *Gateway) getHashedBundleName(bundleName string) (string, error) {\n\tbundleNameHash := md5.New()\n\t_, err := io.WriteString(bundleNameHash, bundleName)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\treturn fmt.Sprintf(\"%x\", bundleNameHash.Sum(nil)), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "bundleNameHash := md5.New()",
+        "SourceFilename": "/analysis/repo/gateway/coprocess_bundle.go",
+        "SourceLineNum": 348,
+        "ParentFunction": "getHashedBundleName (bundleName string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "setBasicAuthSessionPassword",
+    "file_path": "/analysis/repo/gateway/api.go",
+    "line_number": 406,
+    "full_implementation": "func (gw *Gateway) setBasicAuthSessionPassword(session *user.SessionState) {\n\tbasicAuthHashAlgo := gw.basicAuthHashAlgo()\n\n\tif basicAuthHashAlgo == string(user.HashBCrypt) {\n\t\tsession.BasicAuthData.Hash = user.HashBCrypt\n\t\thashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(session.BasicAuthData.Password), 10)\n\t\tif err != nil {\n\t\t\tlog.WithError(err).Error(\"Could not hash password, setting to plaintext\")\n\t\t\tsession.BasicAuthData.Hash = user.HashPlainText\n\t\t\treturn\n\t\t}\n\n\t\tsession.BasicAuthData.Password = string(hashedPassBytes)\n\t\treturn\n\t}\n\n\tsession.BasicAuthData.Password = storage.HashStr(session.BasicAuthData.Password, basicAuthHashAlgo)\n\tsession.BasicAuthData.Hash = user.HashType(basicAuthHashAlgo)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(session.BasicAuthData.Password), 10)",
+        "SourceFilename": "/analysis/repo/gateway/api.go",
+        "SourceLineNum": 406,
+        "ParentFunction": "setBasicAuthSessionPassword (session *github.com/TykTechnologies/tyk/user.SessionState)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(session.BasicAuthData.Password), 10)",
+          "SourceFilename": "/analysis/repo/gateway/api.go",
+          "SourceLineNum": 406,
+          "ParentFunction": "setBasicAuthSessionPassword (session *github.com/TykTechnologies/tyk/user.SessionState)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Verify",
+    "file_path": "/analysis/repo/gateway/coprocess_bundle.go",
+    "line_number": 87,
+    "full_implementation": "func (b *Bundle) Verify() error {\n\tlog.WithFields(logrus.Fields{\n\t\t\"prefix\": \"main\",\n\t}).Info(\"----\u003e Verifying bundle: \", b.Spec.CustomMiddlewareBundle)\n\n\tvar useSignature = b.Gw.GetConfig().PublicKeyPath != \"\"\n\n\tvar (\n\t\tverifier goverify.Verifier\n\t\terr      error\n\t)\n\n\tif useSignature {\n\t\t// Perform signature verification if a public key path is set:\n\t\tif b.Manifest.Signature == \"\" {\n\t\t\t// Error: A public key is set, but the bundle isn't signed.\n\t\t\treturn errors.New(\"Bundle isn't signed\")\n\t\t}\n\t\tverifier, err = b.Gw.SignatureVerifier()\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tvar bundleData bytes.Buffer\n\n\tfor _, f := range b.Manifest.FileList {\n\t\textractedPath := filepath.Join(b.Path, f)\n\n\t\tf, err := os.Open(extractedPath)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\t_, err = io.Copy(\u0026bundleData, f)\n\t\tf.Close()\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tchecksum := fmt.Sprintf(\"%x\", md5.Sum(bundleData.Bytes()))\n\tif checksum != b.Manifest.Checksum {\n\t\treturn errors.New(\"Invalid checksum\")\n\t}\n\n\tif useSignature {\n\t\tsigned, err := base64.StdEncoding.DecodeString(b.Manifest.Signature)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn verifier.Verify(bundleData.Bytes(), signed)\n\t}\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "checksum := fmt.Sprintf(\"%x\", md5.Sum(bundleData.Bytes()))",
+        "SourceFilename": "/analysis/repo/gateway/coprocess_bundle.go",
+        "SourceLineNum": 87,
+        "ParentFunction": "Verify () error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "processCentralisedJWT",
+    "file_path": "/analysis/repo/gateway/mw_jwt.go",
+    "line_number": 370,
+    "full_implementation": "func (k *JWTMiddleware) processCentralisedJWT(r *http.Request, token *jwt.Token) (error, int) {\n\tk.Logger().Debug(\"JWT authority is centralised\")\n\n\tclaims := token.Claims.(jwt.MapClaims)\n\tbaseFieldData, err := k.getUserIdFromClaim(claims)\n\tif err != nil {\n\t\tk.reportLoginFailure(\"[NOT FOUND]\", r)\n\t\treturn err, http.StatusForbidden\n\t}\n\n\t// Generate a virtual token\n\tdata := []byte(baseFieldData)\n\tkeyID := fmt.Sprintf(\"%x\", md5.Sum(data))\n\tsessionID := k.Gw.generateToken(k.Spec.OrgID, keyID)\n\tupdateSession := false\n\n\tk.Logger().Debug(\"JWT Temporary session ID is: \", sessionID)\n\n\t// CheckSessionAndIdentityForValidKey returns a session with keyID populated\n\tsession, exists := k.CheckSessionAndIdentityForValidKey(sessionID, r)\n\n\tsessionID = session.KeyID\n\tisDefaultPol := false\n\tbasePolicyID := \"\"\n\tfoundPolicy := false\n\tif !exists {\n\t\t// Create it\n\t\tk.Logger().Debug(\"Key does not exist, creating\")\n\n\t\t// We need a base policy as a template, either get it from the token itself OR a proxy client ID within Tyk\n\t\tbasePolicyID, foundPolicy = k.getBasePolicyID(r, claims)\n\t\tif !foundPolicy {\n\t\t\tif len(k.Spec.JWTDefaultPolicies) == 0 {\n\t\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\t\treturn errors.New(\"key not authorized: no matching policy found\"), http.StatusForbidden\n\t\t\t} else {\n\t\t\t\tisDefaultPol = true\n\t\t\t\tbasePolicyID = k.Spec.JWTDefaultPolicies[0]\n\t\t\t}\n\t\t}\n\n\t\tsession, err = k.Gw.generateSessionFromPolicy(basePolicyID,\n\t\t\tk.Spec.OrgID,\n\t\t\ttrue)\n\n\t\t// If base policy is one of the defaults, apply other ones as well\n\t\tif isDefaultPol {\n\t\t\tfor _, pol := range k.Spec.JWTDefaultPolicies {\n\t\t\t\tif !contains(session.ApplyPolicies, pol) {\n\t\t\t\t\tsession.ApplyPolicies = append(session.ApplyPolicies, pol)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif err := k.ApplyPolicies(\u0026session); err != nil {\n\t\t\treturn errors.New(\"failed to create key: \" + err.Error()), http.StatusInternalServerError\n\t\t}\n\n\t\tif err != nil {\n\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\tk.Logger().Error(\"Could not find a valid policy to apply to this token!\")\n\t\t\treturn errors.New(\"key not authorized: no matching policy\"), http.StatusForbidden\n\t\t}\n\n\t\t//override session expiry with JWT if longer lived\n\t\tif f, ok := claims[\"exp\"].(float64); ok {\n\t\t\tif int64(f)-session.Expires \u003e 0 {\n\t\t\t\tsession.Expires = int64(f)\n\t\t\t}\n\t\t}\n\n\t\tsession.MetaData = map[string]interface{}{\"TykJWTSessionID\": sessionID}\n\t\tsession.Alias = baseFieldData\n\n\t\t// Update the session in the session manager in case it gets called again\n\t\tupdateSession = true\n\t\tk.Logger().Debug(\"Policy applied to key\")\n\t} else {\n\t\t// extract policy ID from JWT token\n\t\tbasePolicyID, foundPolicy = k.getBasePolicyID(r, claims)\n\t\tif !foundPolicy {\n\t\t\tif len(k.Spec.JWTDefaultPolicies) == 0 {\n\t\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\t\treturn errors.New(\"key not authorized: no matching policy found\"), http.StatusForbidden\n\t\t\t} else {\n\t\t\t\tisDefaultPol = true\n\t\t\t\tbasePolicyID = k.Spec.JWTDefaultPolicies[0]\n\t\t\t}\n\t\t}\n\t\t// check if we received a valid policy ID in claim\n\t\tk.Gw.policiesMu.RLock()\n\t\tpolicy, ok := k.Gw.policiesByID[basePolicyID]\n\t\tk.Gw.policiesMu.RUnlock()\n\t\tif !ok {\n\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\tk.Logger().Error(\"Policy ID found is invalid!\")\n\t\t\treturn errors.New(\"key not authorized: no matching policy\"), http.StatusForbidden\n\t\t}\n\t\t// check if token for this session was switched to another valid policy\n\t\tpols := session.PolicyIDs()\n\t\tif len(pols) == 0 {\n\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\tk.Logger().Error(\"No policies for the found session. Failing Request.\")\n\t\t\treturn errors.New(\"key not authorized: no matching policy found\"), http.StatusForbidden\n\t\t}\n\n\t\tdefaultPolicyListChanged := false\n\n\t\tif isDefaultPol {\n\t\t\t// check a policy is removed/added from/to default policies\n\n\t\t\tfor _, pol := range session.PolicyIDs() {\n\t\t\t\tif !contains(k.Spec.JWTDefaultPolicies, pol) \u0026\u0026 basePolicyID != pol {\n\t\t\t\t\tdefaultPolicyListChanged = true\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tfor _, defPol := range k.Spec.JWTDefaultPolicies {\n\t\t\t\tif !contains(session.PolicyIDs(), defPol) {\n\t\t\t\t\tdefaultPolicyListChanged = true\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif !contains(pols, basePolicyID) || defaultPolicyListChanged {\n\t\t\tif policy.OrgID != k.Spec.OrgID {\n\t\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\t\tk.Logger().Error(\"Policy ID found is invalid (wrong ownership)!\")\n\t\t\t\treturn errors.New(\"key not authorized: no matching policy\"), http.StatusForbidden\n\t\t\t}\n\t\t\t// apply new policy to session and update session\n\t\t\tupdateSession = true\n\t\t\tsession.SetPolicies(basePolicyID)\n\n\t\t\tif isDefaultPol {\n\t\t\t\tfor _, pol := range k.Spec.JWTDefaultPolicies {\n\t\t\t\t\tif !contains(session.ApplyPolicies, pol) {\n\t\t\t\t\t\tsession.ApplyPolicies = append(session.ApplyPolicies, pol)\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tif err := k.ApplyPolicies(\u0026session); err != nil {\n\t\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\t\tk.Logger().WithError(err).Error(\"Could not apply new policy to session\")\n\t\t\t\treturn errors.New(\"key not authorized: could not apply new policy\"), http.StatusForbidden\n\t\t\t}\n\t\t}\n\n\t\t//override session expiry with JWT if longer lived\n\t\tif f, ok := claims[\"exp\"].(float64); ok {\n\t\t\tif int64(f)-session.Expires \u003e 0 {\n\t\t\t\tsession.Expires = int64(f)\n\t\t\t\tupdateSession = true\n\t\t\t}\n\t\t}\n\t}\n\n\t// apply policies from scope if scope-to-policy mapping is specified for this API\n\tif len(k.Spec.GetScopeToPolicyMapping()) != 0 {\n\t\tscopeClaimName := k.Spec.GetScopeClaimName()\n\t\tif scopeClaimName == \"\" {\n\t\t\tscopeClaimName = \"scope\"\n\t\t}\n\n\t\tif scope := getScopeFromClaim(claims, scopeClaimName); len(scope) \u003e 0 {\n\t\t\tpolIDs := []string{\n\t\t\t\tbasePolicyID, // add base policy as a first one\n\t\t\t}\n\n\t\t\t// // If specified, scopes should not use default policy\n\t\t\tif isDefaultPol {\n\t\t\t\tpolIDs = []string{}\n\t\t\t}\n\n\t\t\t// add all policies matched from scope-policy mapping\n\t\t\tmappedPolIDs := mapScopeToPolicies(k.Spec.GetScopeToPolicyMapping(), scope)\n\t\t\tif len(mappedPolIDs) \u003e 0 {\n\t\t\t\tk.Logger().Debugf(\"Identified policy(s) to apply to this token from scope claim: %s\", scopeClaimName)\n\t\t\t} else {\n\t\t\t\tk.Logger().Errorf(\"Couldn't identify policy(s) to apply to this token from scope claim: %s\", scopeClaimName)\n\t\t\t}\n\n\t\t\tpolIDs = append(polIDs, mappedPolIDs...)\n\t\t\tif len(polIDs) == 0 {\n\t\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\t\tk.Logger().Error(\"no matching policy found in scope claim\")\n\t\t\t\treturn errors.New(\"key not authorized: no matching policy found in scope claim\"), http.StatusForbidden\n\t\t\t}\n\n\t\t\t// check if we need to update session\n\t\t\tif !updateSession {\n\t\t\t\tupdateSession = !session.PoliciesEqualTo(polIDs)\n\t\t\t}\n\n\t\t\tsession.SetPolicies(polIDs...)\n\n\t\t\t// multiple policies assigned to a key, check if it is applicable\n\t\t\tif err := k.ApplyPolicies(\u0026session); err != nil {\n\t\t\t\tk.reportLoginFailure(baseFieldData, r)\n\t\t\t\tk.Logger().WithError(err).Error(\"Could not several policies from scope-claim mapping to JWT to session\")\n\t\t\t\treturn errors.New(\"key not authorized: could not apply several policies\"), http.StatusForbidden\n\t\t\t}\n\n\t\t}\n\t}\n\n\toauthClientID := \"\"\n\t// Get the OAuth client ID if available:\n\tif !k.Spec.IDPClientIDMappingDisabled {\n\t\toauthClientID = k.getOAuthClientIDFromClaim(claims)\n\t}\n\n\tif session.OauthClientID != oauthClientID {\n\t\tsession.OauthClientID = oauthClientID\n\t\tupdateSession = true\n\t}\n\n\tif !k.Spec.IDPClientIDMappingDisabled \u0026\u0026 oauthClientID != \"\" {\n\t\t// Initialize the OAuthManager if empty:\n\t\tif k.Spec.OAuthManager == nil {\n\t\t\tprefix := generateOAuthPrefix(k.Spec.APIID)\n\t\t\tstorageManager := k.Gw.getGlobalMDCBStorageHandler(prefix, false)\n\t\t\tstorageManager.Connect()\n\t\t\tk.Spec.OAuthManager = \u0026OAuthManager{\n\t\t\t\tOsinServer: k.Gw.TykOsinNewServer(\u0026osin.ServerConfig{},\n\t\t\t\t\t\u0026RedisOsinStorageInterface{\n\t\t\t\t\t\tstorageManager,\n\t\t\t\t\t\tk.Gw.GlobalSessionManager,\n\t\t\t\t\t\t\u0026storage.RedisCluster{KeyPrefix: prefix, HashKeys: false, ConnectionHandler: k.Gw.StorageConnectionHandler},\n\t\t\t\t\t\tk.Spec.OrgID,\n\t\t\t\t\t\tk.Gw,\n\t\t\t\t\t}),\n\t\t\t}\n\t\t}\n\n\t\t// Retrieve OAuth client data from storage and inject developer ID into the session object:\n\t\tclient, err := k.Spec.OAuthManager.OsinServer.Storage.GetClient(oauthClientID)\n\t\tif err == nil {\n\t\t\tuserData := client.GetUserData()\n\t\t\tif userData != nil {\n\t\t\t\tdata, ok := userData.(map[string]interface{})\n\t\t\t\tif ok {\n\t\t\t\t\tupdateSession = session.TagsFromMetadata(data)\n\n\t\t\t\t\tif err := k.ApplyPolicies(\u0026session); err != nil {\n\t\t\t\t\t\treturn errors.New(\"failed to apply policies in session metadata: \" + err.Error()), http.StatusInternalServerError\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t} else {\n\t\t\tk.Logger().WithError(err).Debug(\"Couldn't get OAuth client\")\n\t\t}\n\t}\n\n\t// ensure to set the sessionID\n\tsession.KeyID = sessionID\n\tk.Logger().Debug(\"Key found\")\n\tswitch k.Spec.BaseIdentityProvidedBy {\n\tcase apidef.JWTClaim, apidef.UnsetAuth:\n\t\tctxSetSession(r, \u0026session, updateSession, k.Gw.GetConfig().HashKeys)\n\t\tif updateSession {\n\t\t\tk.Gw.SessionCache.Set(session.KeyHash(), session.Clone(), cache.DefaultExpiration)\n\t\t}\n\t}\n\tctxSetJWTContextVars(k.Spec, r, token)\n\n\treturn nil, http.StatusOK\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "keyID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+        "SourceFilename": "/analysis/repo/gateway/mw_jwt.go",
+        "SourceLineNum": 370,
+        "ParentFunction": "processCentralisedJWT (r *net/http.Request, token *github.com/golang-jwt/jwt/v4.Token) (error, int)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "verifyPeerCertificatePinnedCheck",
+    "file_path": "/analysis/repo/gateway/cert.go",
+    "line_number": 122,
+    "full_implementation": "func (gw *Gateway) verifyPeerCertificatePinnedCheck(spec *APISpec, tlsConfig *tls.Config) func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {\n\tif (spec == nil || spec.CertificatePinningDisabled || len(spec.PinnedPublicKeys) == 0) \u0026\u0026\n\t\tlen(gw.GetConfig().Security.PinnedPublicKeys) == 0 {\n\t\treturn nil\n\t}\n\n\ttlsConfig.InsecureSkipVerify = true\n\n\twhitelist := gw.getPinnedPublicKeys(\"*\", spec, gw.GetConfig())\n\tif len(whitelist) == 0 {\n\t\treturn nil\n\t}\n\n\treturn func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {\n\t\tcertLog.Debug(\"Checking certificate public key\")\n\n\t\tfor _, rawCert := range rawCerts {\n\t\t\tcert, _ := x509.ParseCertificate(rawCert)\n\t\t\tpub, err := x509.MarshalPKIXPublicKey(cert.PublicKey)\n\t\t\tif err != nil {\n\t\t\t\tcontinue\n\t\t\t}\n\n\t\t\tfingerprint := crypto.HexSHA256(pub)\n\n\t\t\tfor _, w := range whitelist {\n\t\t\t\tif w == fingerprint {\n\t\t\t\t\treturn nil\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\treturn errors.New(\"Certificate public key pinning error. Public keys do not match.\")\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/cert.go",
+        "SourceLineNum": 122,
+        "ParentFunction": "verifyPeerCertificatePinnedCheck (spec *github.com/TykTechnologies/tyk/gateway.APISpec, tlsConfig *crypto/tls.Config) "
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/cert.go",
+          "SourceLineNum": 122,
+          "ParentFunction": "verifyPeerCertificatePinnedCheck (spec *github.com/TykTechnologies/tyk/gateway.APISpec, tlsConfig *crypto/tls.Config) "
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "generateSessionID",
+    "file_path": "/analysis/repo/gateway/middleware.go",
+    "line_number": 945,
+    "full_implementation": "func (t *BaseMiddleware) generateSessionID(id string) string {\n\t// generate a virtual token\n\tdata := []byte(id)\n\tkeyID := fmt.Sprintf(\"%x\", md5.Sum(data))\n\treturn t.Gw.generateToken(t.Spec.OrgID, keyID)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "keyID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+        "SourceFilename": "/analysis/repo/gateway/middleware.go",
+        "SourceLineNum": 945,
+        "ParentFunction": "generateSessionID (id string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ProcessRequest",
+    "file_path": "/analysis/repo/gateway/mw_openid.go",
+    "line_number": 174,
+    "full_implementation": "func (k *OpenIDMW) ProcessRequest(w http.ResponseWriter, r *http.Request, _ interface{}) (error, int) {\n\tif ctxGetRequestStatus(r) == StatusOkAndIgnore {\n\t\treturn nil, http.StatusOK\n\t}\n\n\tk.providerConfiguration.IDTokenGetter = func(r *http.Request) (token string, err error) {\n\t\ttoken, _ = k.getAuthToken(k.getAuthType(), r)\n\t\treturn openid.CheckAndSplitHeader(token)\n\t}\n\n\tlogger := k.Logger()\n\t// 1. Validate the JWT\n\touser, token, halt := openid.AuthenticateOIDWithUser(k.providerConfiguration, w, r)\n\n\t// 2. Generate the internal representation for the key\n\tif halt {\n\t\t// Fire Authfailed Event\n\t\tk.reportLoginFailure(\"[JWT]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\t// 3. Create or set the session to match\n\tiss, found := token.Claims.(jwt.MapClaims)[\"iss\"]\n\tclients, cfound := token.Claims.(jwt.MapClaims)[\"aud\"]\n\n\tif !found \u0026\u0026 !cfound {\n\t\tlogger.Error(\"No issuer or audiences found!\")\n\t\tk.reportLoginFailure(\"[NOT GENERATED]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\t// decide if we use policy ID from provider client settings or list of policies from scope-policy mapping\n\tuseScope := len(k.Spec.GetScopeToPolicyMapping()) != 0\n\n\tk.lock.RLock()\n\tclientSet, foundIssuer := k.provider_client_policymap[iss.(string)]\n\tk.lock.RUnlock()\n\tif !foundIssuer {\n\t\tlogger.Error(\"No issuer or audiences found!\")\n\t\tk.reportLoginFailure(\"[NOT GENERATED]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\tpolicyID := \"\"\n\tclientID := \"\"\n\tswitch v := clients.(type) {\n\tcase string:\n\t\tk.lock.RLock()\n\t\tpolicyID = clientSet[v]\n\t\tk.lock.RUnlock()\n\t\tclientID = v\n\tcase []interface{}:\n\t\tfor _, audVal := range v {\n\t\t\tk.lock.RLock()\n\t\t\tpolicy, foundPolicy := clientSet[audVal.(string)]\n\t\t\tk.lock.RUnlock()\n\t\t\tif foundPolicy {\n\t\t\t\tclientID = audVal.(string)\n\t\t\t\tpolicyID = policy\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n\n\tif !useScope \u0026\u0026 policyID == \"\" {\n\t\tlogger.Error(\"No matching policy found!\")\n\t\tk.reportLoginFailure(\"[NOT GENERATED]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\tdata := []byte(ouser.ID)\n\tkeyID := fmt.Sprintf(\"%x\", md5.Sum(data))\n\tsessionID := k.Gw.generateToken(k.Spec.OrgID, keyID)\n\n\tif k.Spec.OpenIDOptions.SegregateByClient {\n\t\t// We are segregating by client, so use it as part of the internal token\n\t\tlogger.Debug(\"Client ID:\", clientID)\n\t\tsessionID = k.Gw.generateToken(k.Spec.OrgID, fmt.Sprintf(\"%x\", md5.Sum([]byte(clientID)))+keyID)\n\t}\n\n\tlogger.Debug(\"Generated Session ID: \", sessionID)\n\n\tvar policiesToApply []string\n\tif !useScope {\n\t\tpoliciesToApply = append(policiesToApply, policyID)\n\t} else {\n\t\tscopeClaimName := k.Spec.GetScopeClaimName()\n\t\tif scopeClaimName == \"\" {\n\t\t\tscopeClaimName = \"scope\"\n\t\t}\n\n\t\tif scope := getScopeFromClaim(token.Claims.(jwt.MapClaims), scopeClaimName); scope != nil {\n\t\t\t// add all policies matched from scope-policy mapping\n\t\t\tpoliciesToApply = mapScopeToPolicies(k.Spec.GetScopeToPolicyMapping(), scope)\n\t\t}\n\t}\n\n\tsession, exists := k.CheckSessionAndIdentityForValidKey(sessionID, r)\n\tsessionID = session.KeyID\n\tif !exists {\n\t\t// Create it\n\t\tlogger.Debug(\"Key does not exist, creating\")\n\t\tsession = user.SessionState{}\n\n\t\tif !useScope {\n\t\t\t// We need a base policy as a template, either get it from the token itself OR a proxy client ID within Tyk\n\t\t\tnewSession, err := k.Gw.generateSessionFromPolicy(policyID,\n\t\t\t\tk.Spec.OrgID,\n\t\t\t\ttrue)\n\n\t\t\tif err != nil {\n\t\t\t\tk.reportLoginFailure(sessionID, r)\n\t\t\t\tlogger.Error(\"Could not find a valid policy to apply to this token!\")\n\t\t\t\treturn errors.New(\"Key not authorized: no matching policy\"), http.StatusForbidden\n\t\t\t}\n\n\t\t\tsession = newSession.Clone()\n\t\t}\n\n\t\tsession.OrgID = k.Spec.OrgID\n\t\tsession.MetaData = map[string]interface{}{\"TykJWTSessionID\": sessionID, \"ClientID\": clientID}\n\t\tsession.Alias = clientID + \":\" + ouser.ID\n\t\tsession.KeyID = sessionID\n\n\t\t// Update the session in the session manager in case it gets called again\n\t\tlogger.Debug(\"Policy applied to key\")\n\t}\n\t// apply new policy to session if any and update session\n\tsession.SetPolicies(policiesToApply...)\n\tif err := k.ApplyPolicies(\u0026session); err != nil {\n\t\tk.Logger().WithError(err).Error(\"Could not apply new policy from OIDC client to session\")\n\t\treturn errors.New(\"Key not authorized: could not apply new policy\"), http.StatusForbidden\n\t}\n\n\t// 4. Set session state on context, we will need it later\n\tswitch k.Spec.BaseIdentityProvidedBy {\n\tcase apidef.OIDCUser, apidef.UnsetAuth:\n\t\tctxSetSession(r, \u0026session, true, k.Gw.GetConfig().HashKeys)\n\t}\n\tctxSetJWTContextVars(k.Spec, r, token)\n\n\treturn nil, http.StatusOK\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "keyID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+        "SourceFilename": "/analysis/repo/gateway/mw_openid.go",
+        "SourceLineNum": 174,
+        "ParentFunction": "ProcessRequest (w net/http.ResponseWriter, r *net/http.Request, _ interface{}) (error, int)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ProcessRequest",
+    "file_path": "/analysis/repo/gateway/mw_openid.go",
+    "line_number": 180,
+    "full_implementation": "func (k *OpenIDMW) ProcessRequest(w http.ResponseWriter, r *http.Request, _ interface{}) (error, int) {\n\tif ctxGetRequestStatus(r) == StatusOkAndIgnore {\n\t\treturn nil, http.StatusOK\n\t}\n\n\tk.providerConfiguration.IDTokenGetter = func(r *http.Request) (token string, err error) {\n\t\ttoken, _ = k.getAuthToken(k.getAuthType(), r)\n\t\treturn openid.CheckAndSplitHeader(token)\n\t}\n\n\tlogger := k.Logger()\n\t// 1. Validate the JWT\n\touser, token, halt := openid.AuthenticateOIDWithUser(k.providerConfiguration, w, r)\n\n\t// 2. Generate the internal representation for the key\n\tif halt {\n\t\t// Fire Authfailed Event\n\t\tk.reportLoginFailure(\"[JWT]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\t// 3. Create or set the session to match\n\tiss, found := token.Claims.(jwt.MapClaims)[\"iss\"]\n\tclients, cfound := token.Claims.(jwt.MapClaims)[\"aud\"]\n\n\tif !found \u0026\u0026 !cfound {\n\t\tlogger.Error(\"No issuer or audiences found!\")\n\t\tk.reportLoginFailure(\"[NOT GENERATED]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\t// decide if we use policy ID from provider client settings or list of policies from scope-policy mapping\n\tuseScope := len(k.Spec.GetScopeToPolicyMapping()) != 0\n\n\tk.lock.RLock()\n\tclientSet, foundIssuer := k.provider_client_policymap[iss.(string)]\n\tk.lock.RUnlock()\n\tif !foundIssuer {\n\t\tlogger.Error(\"No issuer or audiences found!\")\n\t\tk.reportLoginFailure(\"[NOT GENERATED]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\tpolicyID := \"\"\n\tclientID := \"\"\n\tswitch v := clients.(type) {\n\tcase string:\n\t\tk.lock.RLock()\n\t\tpolicyID = clientSet[v]\n\t\tk.lock.RUnlock()\n\t\tclientID = v\n\tcase []interface{}:\n\t\tfor _, audVal := range v {\n\t\t\tk.lock.RLock()\n\t\t\tpolicy, foundPolicy := clientSet[audVal.(string)]\n\t\t\tk.lock.RUnlock()\n\t\t\tif foundPolicy {\n\t\t\t\tclientID = audVal.(string)\n\t\t\t\tpolicyID = policy\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\t}\n\n\tif !useScope \u0026\u0026 policyID == \"\" {\n\t\tlogger.Error(\"No matching policy found!\")\n\t\tk.reportLoginFailure(\"[NOT GENERATED]\", r)\n\t\treturn errors.New(\"Key not authorised\"), http.StatusUnauthorized\n\t}\n\n\tdata := []byte(ouser.ID)\n\tkeyID := fmt.Sprintf(\"%x\", md5.Sum(data))\n\tsessionID := k.Gw.generateToken(k.Spec.OrgID, keyID)\n\n\tif k.Spec.OpenIDOptions.SegregateByClient {\n\t\t// We are segregating by client, so use it as part of the internal token\n\t\tlogger.Debug(\"Client ID:\", clientID)\n\t\tsessionID = k.Gw.generateToken(k.Spec.OrgID, fmt.Sprintf(\"%x\", md5.Sum([]byte(clientID)))+keyID)\n\t}\n\n\tlogger.Debug(\"Generated Session ID: \", sessionID)\n\n\tvar policiesToApply []string\n\tif !useScope {\n\t\tpoliciesToApply = append(policiesToApply, policyID)\n\t} else {\n\t\tscopeClaimName := k.Spec.GetScopeClaimName()\n\t\tif scopeClaimName == \"\" {\n\t\t\tscopeClaimName = \"scope\"\n\t\t}\n\n\t\tif scope := getScopeFromClaim(token.Claims.(jwt.MapClaims), scopeClaimName); scope != nil {\n\t\t\t// add all policies matched from scope-policy mapping\n\t\t\tpoliciesToApply = mapScopeToPolicies(k.Spec.GetScopeToPolicyMapping(), scope)\n\t\t}\n\t}\n\n\tsession, exists := k.CheckSessionAndIdentityForValidKey(sessionID, r)\n\tsessionID = session.KeyID\n\tif !exists {\n\t\t// Create it\n\t\tlogger.Debug(\"Key does not exist, creating\")\n\t\tsession = user.SessionState{}\n\n\t\tif !useScope {\n\t\t\t// We need a base policy as a template, either get it from the token itself OR a proxy client ID within Tyk\n\t\t\tnewSession, err := k.Gw.generateSessionFromPolicy(policyID,\n\t\t\t\tk.Spec.OrgID,\n\t\t\t\ttrue)\n\n\t\t\tif err != nil {\n\t\t\t\tk.reportLoginFailure(sessionID, r)\n\t\t\t\tlogger.Error(\"Could not find a valid policy to apply to this token!\")\n\t\t\t\treturn errors.New(\"Key not authorized: no matching policy\"), http.StatusForbidden\n\t\t\t}\n\n\t\t\tsession = newSession.Clone()\n\t\t}\n\n\t\tsession.OrgID = k.Spec.OrgID\n\t\tsession.MetaData = map[string]interface{}{\"TykJWTSessionID\": sessionID, \"ClientID\": clientID}\n\t\tsession.Alias = clientID + \":\" + ouser.ID\n\t\tsession.KeyID = sessionID\n\n\t\t// Update the session in the session manager in case it gets called again\n\t\tlogger.Debug(\"Policy applied to key\")\n\t}\n\t// apply new policy to session if any and update session\n\tsession.SetPolicies(policiesToApply...)\n\tif err := k.ApplyPolicies(\u0026session); err != nil {\n\t\tk.Logger().WithError(err).Error(\"Could not apply new policy from OIDC client to session\")\n\t\treturn errors.New(\"Key not authorized: could not apply new policy\"), http.StatusForbidden\n\t}\n\n\t// 4. Set session state on context, we will need it later\n\tswitch k.Spec.BaseIdentityProvidedBy {\n\tcase apidef.OIDCUser, apidef.UnsetAuth:\n\t\tctxSetSession(r, \u0026session, true, k.Gw.GetConfig().HashKeys)\n\t}\n\tctxSetJWTContextVars(k.Spec, r, token)\n\n\treturn nil, http.StatusOK\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sessionID = k.Gw.generateToken(k.Spec.OrgID, fmt.Sprintf(\"%x\", md5.Sum([]byte(clientID)))+keyID)",
+        "SourceFilename": "/analysis/repo/gateway/mw_openid.go",
+        "SourceLineNum": 180,
+        "ParentFunction": "ProcessRequest (w net/http.ResponseWriter, r *net/http.Request, _ interface{}) (error, int)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GenerateSessionID",
+    "file_path": "/analysis/repo/gateway/coprocess_id_extractor.go",
+    "line_number": 92,
+    "full_implementation": "func (e *BaseExtractor) GenerateSessionID(input string, mw *BaseMiddleware) (sessionID string) {\n\tdata := []byte(input)\n\ttokenID := fmt.Sprintf(\"%x\", md5.Sum(data))\n\tsessionID = e.Gw.generateToken(mw.Spec.OrgID, tokenID)\n\treturn sessionID\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "tokenID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+        "SourceFilename": "/analysis/repo/gateway/coprocess_id_extractor.go",
+        "SourceLineNum": 92,
+        "ParentFunction": "GenerateSessionID (input string, mw *github.com/TykTechnologies/tyk/gateway.BaseMiddleware) (sessionID string)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "setCommonNameVerifyPeerCertificate",
+    "file_path": "/analysis/repo/gateway/reverse_proxy.go",
+    "line_number": 760,
+    "full_implementation": "func (p *ReverseProxy) setCommonNameVerifyPeerCertificate(tlsConfig *tls.Config, hostName string) {\n\ttlsConfig.InsecureSkipVerify = true\n\n\t// if verifyPeerCertificate was set previously, make sure it is also executed\n\tprevFunc := tlsConfig.VerifyPeerCertificate\n\ttlsConfig.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {\n\t\tif prevFunc != nil {\n\t\t\terr := prevFunc(rawCerts, verifiedChains)\n\t\t\tif err != nil {\n\t\t\t\tp.logger.Error(\"Failed to verify server certificate: \" + err.Error())\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\t// followed https://github.com/golang/go/issues/21971#issuecomment-332693931\n\t\tcerts := make([]*x509.Certificate, len(rawCerts))\n\t\tfor i, asn1Data := range rawCerts {\n\t\t\tcert, err := x509.ParseCertificate(asn1Data)\n\t\t\tif err != nil {\n\t\t\t\treturn errors.New(\"failed to parse certificate from server: \" + err.Error())\n\t\t\t}\n\t\t\tcerts[i] = cert\n\t\t}\n\n\t\tif !p.TykAPISpec.Proxy.Transport.SSLInsecureSkipVerify \u0026\u0026 !p.Gw.GetConfig().ProxySSLInsecureSkipVerify {\n\t\t\topts := x509.VerifyOptions{\n\t\t\t\tRoots:         tlsConfig.RootCAs,\n\t\t\t\tCurrentTime:   time.Now(),\n\t\t\t\tDNSName:       \"\", // \u003c- skip hostname verification\n\t\t\t\tIntermediates: x509.NewCertPool(),\n\t\t\t}\n\n\t\t\tfor i, cert := range certs {\n\t\t\t\tif i == 0 {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\topts.Intermediates.AddCert(cert)\n\t\t\t}\n\t\t\t_, err := certs[0].Verify(opts)\n\t\t\tif err != nil {\n\t\t\t\tp.logger.Error(\"Failed to verify server certificate: \" + err.Error())\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\treturn validateCommonName(hostName, certs[0])\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+        "SourceLineNum": 760,
+        "ParentFunction": "setCommonNameVerifyPeerCertificate (tlsConfig *crypto/tls.Config, hostName string)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+          "SourceLineNum": 760,
+          "ParentFunction": "setCommonNameVerifyPeerCertificate (tlsConfig *crypto/tls.Config, hostName string)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "generateRSAEncodedSignature",
+    "file_path": "/analysis/repo/gateway/mw_request_signing.go",
+    "line_number": 198,
+    "full_implementation": "func generateRSAEncodedSignature(signatureString string, privateKey *rsa.PrivateKey, algorithm string) (string, error) {\n\tvar hashFunction hash.Hash\n\tvar hashType crypto.Hash\n\n\tswitch algorithm {\n\tcase \"rsa-sha256\":\n\t\thashFunction = sha256.New()\n\t\thashType = crypto.SHA256\n\tdefault:\n\t\thashFunction = sha256.New()\n\t\thashType = crypto.SHA256\n\t}\n\thashFunction.Write([]byte(signatureString))\n\thashed := hashFunction.Sum(nil)\n\n\trawsignature, err := rsa.SignPKCS1v15(cryptorand.Reader, privateKey, hashType, hashed)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tencodedSignature := base64.StdEncoding.EncodeToString(rawsignature)\n\n\treturn encodedSignature, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.SignPKCS1v15",
+      "Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+      "Slicing_Criteria": {
+        "SourceCode": "rawsignature, err := rsa.SignPKCS1v15(cryptorand.Reader, privateKey, hashType, hashed)",
+        "SourceFilename": "/analysis/repo/gateway/mw_request_signing.go",
+        "SourceLineNum": 198,
+        "ParentFunction": "generateRSAEncodedSignature (signatureString string, privateKey *crypto/rsa.PrivateKey, algorithm string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "GetTLSConfig",
+    "file_path": "/analysis/repo/gateway/testutil.go",
+    "line_number": 1337,
+    "full_implementation": "func GetTLSConfig(cert *tls.Certificate, caCert []byte) *tls.Config {\n\ttlsConfig := \u0026tls.Config{}\n\n\tif cert != nil {\n\t\ttlsConfig.Certificates = []tls.Certificate{*cert}\n\t}\n\n\tif len(caCert) \u003e 0 {\n\t\tcaCertPool := x509.NewCertPool()\n\t\tcaCertPool.AppendCertsFromPEM(caCert)\n\t\ttlsConfig.RootCAs = caCertPool\n\t\ttlsConfig.BuildNameToCertificate()\n\t} else {\n\t\ttlsConfig.InsecureSkipVerify = true\n\t}\n\n\treturn tlsConfig\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/gateway/testutil.go",
+        "SourceLineNum": 1337,
+        "ParentFunction": "GetTLSConfig (cert *crypto/tls.Certificate, caCert []byte) *crypto/tls.Config"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "GetTLSConfig",
+    "file_path": "/analysis/repo/gateway/testutil.go",
+    "line_number": 1339,
+    "full_implementation": "func GetTLSConfig(cert *tls.Certificate, caCert []byte) *tls.Config {\n\ttlsConfig := \u0026tls.Config{}\n\n\tif cert != nil {\n\t\ttlsConfig.Certificates = []tls.Certificate{*cert}\n\t}\n\n\tif len(caCert) \u003e 0 {\n\t\tcaCertPool := x509.NewCertPool()\n\t\tcaCertPool.AppendCertsFromPEM(caCert)\n\t\ttlsConfig.RootCAs = caCertPool\n\t\ttlsConfig.BuildNameToCertificate()\n\t} else {\n\t\ttlsConfig.InsecureSkipVerify = true\n\t}\n\n\treturn tlsConfig\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/testutil.go",
+        "SourceLineNum": 1339,
+        "ParentFunction": "GetTLSConfig (cert *crypto/tls.Certificate, caCert []byte) *crypto/tls.Config"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/testutil.go",
+          "SourceLineNum": 1339,
+          "ParentFunction": "GetTLSConfig (cert *crypto/tls.Certificate, caCert []byte) *crypto/tls.Config"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "getTLSConfigForClient",
+    "file_path": "/analysis/repo/gateway/cert.go",
+    "line_number": 347,
+    "full_implementation": "func (gw *Gateway) getTLSConfigForClient(baseConfig *tls.Config, listenPort int) func(hello *tls.ClientHelloInfo) (*tls.Config, error) {\n\tgwConfig := gw.GetConfig()\n\t// Supporting legacy certificate configuration\n\tserverCerts := []tls.Certificate{}\n\tcertNameMap := map[string]*tls.Certificate{}\n\n\tfor _, certData := range gwConfig.HttpServerOptions.Certificates {\n\t\tcert, err := tls.LoadX509KeyPair(certData.CertFile, certData.KeyFile)\n\t\tif err != nil {\n\t\t\tlog.Errorf(\"Server error: loadkeys: %s\", err)\n\t\t\tcontinue\n\t\t}\n\t\tserverCerts = append(serverCerts, cert)\n\t\tcertNameMap[certData.Name] = \u0026cert\n\t}\n\n\tif len(gwConfig.HttpServerOptions.SSLCertificates) \u003e 0 {\n\t\tvar waitingRedisLog sync.Once\n\t\t// ensure that we are connected to redis\n\t\tfor {\n\t\t\tif gw.StorageConnectionHandler.Connected() {\n\t\t\t\tbreak\n\t\t\t}\n\n\t\t\twaitingRedisLog.Do(func() {\n\t\t\t\tlog.Warning(\"Redis is not ready. Waiting for a living connection\")\n\t\t\t})\n\t\t\ttime.Sleep(10 * time.Millisecond)\n\t\t}\n\t}\n\tfor _, cert := range gw.CertificateManager.List(gwConfig.HttpServerOptions.SSLCertificates, certs.CertificatePrivate) {\n\t\tif cert != nil {\n\t\t\tserverCerts = append(serverCerts, *cert)\n\t\t}\n\t}\n\n\tbaseConfig.Certificates = serverCerts\n\tbaseConfig.BuildNameToCertificate()\n\n\tfor name, cert := range certNameMap {\n\t\tbaseConfig.NameToCertificate[name] = cert\n\t}\n\n\tlistenPortStr := strconv.Itoa(listenPort)\n\n\treturn func(hello *tls.ClientHelloInfo) (*tls.Config, error) {\n\t\tif config, found := tlsConfigCache.Get(hello.ServerName + listenPortStr); found {\n\t\t\treturn config.(*tls.Config).Clone(), nil\n\t\t}\n\n\t\tnewConfig := baseConfig.Clone()\n\n\t\t// Avoiding Race\n\t\tnewConfig.Certificates = []tls.Certificate{}\n\t\tfor _, cert := range baseConfig.Certificates {\n\t\t\tnewConfig.Certificates = append(newConfig.Certificates, cert)\n\t\t}\n\t\tnewConfig.BuildNameToCertificate()\n\t\tfor name, cert := range certNameMap {\n\t\t\tnewConfig.NameToCertificate[name] = cert\n\t\t}\n\n\t\t// not ControlAPIHostname has been configured or the hostName is the same in the hello handshake\n\t\tisControlHostName := gwConfig.ControlAPIHostname == \"\" || (gwConfig.ControlAPIHostname == hello.ServerName)\n\t\t// target port is the same where control api lives\n\t\tisControlPort := (gwConfig.ControlAPIPort == 0 \u0026\u0026 listenPort == gwConfig.ListenPort) || (gwConfig.ControlAPIPort == listenPort \u0026\u0026 listenPort != 0)\n\t\tisControlAPI := isControlHostName \u0026\u0026 isControlPort\n\n\t\tif isControlAPI \u0026\u0026 gwConfig.Security.ControlAPIUseMutualTLS {\n\t\t\tnewConfig.ClientAuth = tls.RequireAndVerifyClientCert\n\t\t\tnewConfig.ClientCAs = gw.CertificateManager.CertPool(gwConfig.Security.Certificates.ControlAPI)\n\n\t\t\ttlsConfigCache.Set(hello.ServerName, newConfig, cache.DefaultExpiration)\n\t\t\treturn newConfig, nil\n\t\t}\n\n\t\tgw.apisMu.RLock()\n\t\tdefer gw.apisMu.RUnlock()\n\n\t\tnewConfig.ClientCAs = x509.NewCertPool()\n\t\tdomainRequireCert := map[string]tls.ClientAuthType{}\n\n\t\tdirectMTLSDomainMatch := false\n\t\tfor _, spec := range gw.apiSpecs {\n\t\t\tif spec.UseMutualTLSAuth \u0026\u0026 spec.Domain == hello.ServerName {\n\t\t\t\tdirectMTLSDomainMatch = true\n\t\t\t\tbreak\n\t\t\t}\n\t\t}\n\n\t\tfor _, spec := range gw.apiSpecs {\n\t\t\t// eliminate APIs which are not in the current port\n\t\t\tif !spec.isListeningOnPort(listenPort, \u0026gwConfig) {\n\t\t\t\tcontinue\n\t\t\t}\n\n\t\t\tswitch {\n\t\t\tcase spec.UseMutualTLSAuth:\n\t\t\t\tif domainRequireCert[spec.Domain] == 0 {\n\t\t\t\t\t// Require verification only if there is a single known domain for TLS auth, otherwise use previous value\n\t\t\t\t\tdomainRequireCert[spec.Domain] = tls.RequireAndVerifyClientCert\n\t\t\t\t} else if domainRequireCert[spec.Domain] != tls.RequireAndVerifyClientCert {\n\t\t\t\t\t// If we have another API on this domain, which is not mutual tls enabled, just ask for cert\n\t\t\t\t\tdomainRequireCert[spec.Domain] = tls.RequestClientCert\n\t\t\t\t}\n\n\t\t\t\t// If current domain match or empty, whitelist client certificates\n\t\t\t\tif (!directMTLSDomainMatch \u0026\u0026 spec.Domain == \"\") || spec.Domain == hello.ServerName {\n\t\t\t\t\tcertIDs := append(spec.ClientCertificates, gwConfig.Security.Certificates.API...)\n\n\t\t\t\t\tfor _, cert := range gw.CertificateManager.List(certIDs, certs.CertificatePublic) {\n\t\t\t\t\t\tif cert != nil \u0026\u0026 !crypto.IsPublicKey(cert) {\n\t\t\t\t\t\t\tnewConfig.ClientCAs.AddCert(cert.Leaf)\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\tcase spec.Auth.UseCertificate, spec.AuthConfigs[apidef.AuthTokenType].UseCertificate:\n\t\t\t\t// Dynamic certificate check required, falling back to HTTP level check\n\t\t\t\t// TODO: Change to VerifyPeerCertificate hook instead, when possible\n\t\t\t\tif domainRequireCert[spec.Domain] \u003c tls.RequestClientCert {\n\t\t\t\t\tdomainRequireCert[spec.Domain] = tls.RequestClientCert\n\t\t\t\t}\n\t\t\tdefault:\n\t\t\t\t// For APIs which do not use certificates, indicate that there is API for such domain already\n\t\t\t\tif domainRequireCert[spec.Domain] \u003c= 0 {\n\t\t\t\t\tdomainRequireCert[spec.Domain] = -1\n\t\t\t\t} else {\n\t\t\t\t\tdomainRequireCert[spec.Domain] = tls.RequestClientCert\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// Dynamically add API specific certificates\n\t\t\tif len(spec.Certificates) != 0 \u0026\u0026 !spec.DomainDisabled {\n\t\t\t\tfor _, cert := range gw.CertificateManager.List(spec.Certificates, certs.CertificatePrivate) {\n\t\t\t\t\tif cert == nil {\n\t\t\t\t\t\tcontinue\n\t\t\t\t\t}\n\t\t\t\t\tnewConfig.Certificates = append(newConfig.Certificates, *cert)\n\n\t\t\t\t\tif len(cert.Leaf.Subject.CommonName) \u003e 0 {\n\t\t\t\t\t\tnewConfig.NameToCertificate[cert.Leaf.Subject.CommonName] = cert\n\t\t\t\t\t}\n\t\t\t\t\tfor _, san := range cert.Leaf.DNSNames {\n\t\t\t\t\t\tnewConfig.NameToCertificate[san] = cert\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif clientAuth, found := domainRequireCert[hello.ServerName]; found {\n\t\t\tnewConfig.ClientAuth = clientAuth\n\t\t} else {\n\t\t\tnewConfig.ClientAuth = tls.NoClientCert\n\n\t\t\tfor domain, clientAuth := range domainRequireCert {\n\t\t\t\tisRegex := false\n\t\t\t\tfor _, c := range domain {\n\t\t\t\t\tif c == '{' {\n\t\t\t\t\t\tisRegex = true\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\treq := http.Request{Host: hello.ServerName, URL: \u0026url.URL{}}\n\t\t\t\tif isRegex \u0026\u0026 mux.NewRouter().Host(domain).Match(\u0026req, \u0026mux.RouteMatch{}) {\n\t\t\t\t\tif clientAuth \u003e newConfig.ClientAuth {\n\t\t\t\t\t\tnewConfig.ClientAuth = clientAuth\n\t\t\t\t\t}\n\n\t\t\t\t\tif newConfig.ClientAuth == tls.RequireAndVerifyClientCert {\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif newConfig.ClientAuth == tls.NoClientCert {\n\t\t\tnewConfig.ClientAuth = domainRequireCert[\"\"]\n\t\t}\n\n\t\tif gwConfig.HttpServerOptions.SkipClientCAAnnouncement {\n\t\t\tif newConfig.ClientAuth == tls.RequireAndVerifyClientCert {\n\t\t\t\tnewConfig.VerifyPeerCertificate = getClientValidator(hello, newConfig.ClientCAs)\n\t\t\t}\n\t\t\tnewConfig.ClientCAs = x509.NewCertPool()\n\t\t\tnewConfig.ClientAuth = tls.RequestClientCert\n\t\t}\n\n\t\tif newConfig.ClientAuth == tls.RequireAndVerifyClientCert \u0026\u0026 isControlAPI \u0026\u0026 !gwConfig.Security.ControlAPIUseMutualTLS {\n\n\t\t\tnewConfig.ClientAuth = tls.RequestClientCert\n\t\t}\n\n\t\t// Cache the config\n\t\ttlsConfigCache.Set(hello.ServerName+listenPortStr, newConfig, cache.DefaultExpiration)\n\n\t\treturn newConfig, nil\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "baseConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/gateway/cert.go",
+        "SourceLineNum": 347,
+        "ParentFunction": "getTLSConfigForClient (baseConfig *crypto/tls.Config, listenPort int) "
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "httpTransport",
+    "file_path": "/analysis/repo/gateway/reverse_proxy.go",
+    "line_number": 688,
+    "full_implementation": "func (p *ReverseProxy) httpTransport(timeOut float64, rw http.ResponseWriter, req *http.Request, outReq *http.Request) *TykRoundTripper {\n\tp.logger.Debug(\"Creating new transport\")\n\ttransport := p.defaultTransport(timeOut) // modifies a newly created transport\n\ttransport.TLSClientConfig = \u0026tls.Config{}\n\ttransport.Proxy = proxyFromAPI(p.TykAPISpec)\n\n\tif p.Gw.GetConfig().ProxySSLInsecureSkipVerify {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t}\n\n\tif p.TykAPISpec.Proxy.Transport.SSLInsecureSkipVerify {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t}\n\n\t// When request routed through the proxy `DialTLS` is not used, and only VerifyPeerCertificate is supported\n\t// The reason behind two separate checks is that `DialTLS` supports specifying public keys per hostname, and `VerifyPeerCertificate` only global ones, e.g. `*`\n\tif proxyURL, _ := transport.Proxy(req); proxyURL != nil {\n\t\tp.logger.Debug(\"Detected proxy: \" + proxyURL.String())\n\t\ttransport.TLSClientConfig.VerifyPeerCertificate = p.Gw.verifyPeerCertificatePinnedCheck(p.TykAPISpec, transport.TLSClientConfig)\n\n\t\tif transport.TLSClientConfig.VerifyPeerCertificate != nil {\n\t\t\tp.logger.Debug(\"Certificate pinning check is enabled\")\n\t\t}\n\t} else {\n\t\ttransport.DialTLS = p.Gw.customDialTLSCheck(p.TykAPISpec, transport.TLSClientConfig)\n\t}\n\n\tif p.TykAPISpec.GlobalConfig.ProxySSLMinVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MinVersion = p.TykAPISpec.GlobalConfig.ProxySSLMinVersion\n\t}\n\n\tif p.TykAPISpec.Proxy.Transport.SSLMinVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MinVersion = p.TykAPISpec.Proxy.Transport.SSLMinVersion\n\t}\n\n\tif p.TykAPISpec.GlobalConfig.ProxySSLMaxVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MaxVersion = p.TykAPISpec.GlobalConfig.ProxySSLMaxVersion\n\t}\n\n\tif p.TykAPISpec.Proxy.Transport.SSLMaxVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MaxVersion = p.TykAPISpec.Proxy.Transport.SSLMaxVersion\n\t}\n\n\tif len(p.TykAPISpec.GlobalConfig.ProxySSLCipherSuites) \u003e 0 {\n\t\ttransport.TLSClientConfig.CipherSuites = getCipherAliases(p.TykAPISpec.GlobalConfig.ProxySSLCipherSuites)\n\t}\n\n\tif len(p.TykAPISpec.Proxy.Transport.SSLCipherSuites) \u003e 0 {\n\t\ttransport.TLSClientConfig.CipherSuites = getCipherAliases(p.TykAPISpec.Proxy.Transport.SSLCipherSuites)\n\t}\n\n\tif !p.Gw.GetConfig().ProxySSLDisableRenegotiation {\n\t\ttransport.TLSClientConfig.Renegotiation = tls.RenegotiateFreelyAsClient\n\t}\n\n\ttransport.DisableKeepAlives = p.TykAPISpec.GlobalConfig.ProxyCloseConnections\n\n\tif p.Gw.GetConfig().ProxyEnableHttp2 {\n\t\thttp2.ConfigureTransport(transport)\n\t}\n\n\tp.logger.Debug(\"Out request url: \", outReq.URL.String())\n\n\tif outReq.URL.Scheme == \"h2c\" {\n\t\tp.logger.Info(\"Enabling h2c mode\")\n\t\th2t := \u0026http2.Transport{\n\t\t\t// kind of a hack, but for plaintext/H2C requests, pretend to dial TLS\n\t\t\tDialTLS: func(network, addr string, _ *tls.Config) (net.Conn, error) {\n\t\t\t\treturn net.Dial(network, addr)\n\t\t\t},\n\t\t\tAllowHTTP: true,\n\t\t}\n\t\treturn \u0026TykRoundTripper{transport, h2t, p.logger, p.Gw}\n\t}\n\n\treturn \u0026TykRoundTripper{transport, nil, p.logger, p.Gw}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+        "SourceLineNum": 688,
+        "ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+          "SourceLineNum": 688,
+          "ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "httpTransport",
+    "file_path": "/analysis/repo/gateway/reverse_proxy.go",
+    "line_number": 692,
+    "full_implementation": "func (p *ReverseProxy) httpTransport(timeOut float64, rw http.ResponseWriter, req *http.Request, outReq *http.Request) *TykRoundTripper {\n\tp.logger.Debug(\"Creating new transport\")\n\ttransport := p.defaultTransport(timeOut) // modifies a newly created transport\n\ttransport.TLSClientConfig = \u0026tls.Config{}\n\ttransport.Proxy = proxyFromAPI(p.TykAPISpec)\n\n\tif p.Gw.GetConfig().ProxySSLInsecureSkipVerify {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t}\n\n\tif p.TykAPISpec.Proxy.Transport.SSLInsecureSkipVerify {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t}\n\n\t// When request routed through the proxy `DialTLS` is not used, and only VerifyPeerCertificate is supported\n\t// The reason behind two separate checks is that `DialTLS` supports specifying public keys per hostname, and `VerifyPeerCertificate` only global ones, e.g. `*`\n\tif proxyURL, _ := transport.Proxy(req); proxyURL != nil {\n\t\tp.logger.Debug(\"Detected proxy: \" + proxyURL.String())\n\t\ttransport.TLSClientConfig.VerifyPeerCertificate = p.Gw.verifyPeerCertificatePinnedCheck(p.TykAPISpec, transport.TLSClientConfig)\n\n\t\tif transport.TLSClientConfig.VerifyPeerCertificate != nil {\n\t\t\tp.logger.Debug(\"Certificate pinning check is enabled\")\n\t\t}\n\t} else {\n\t\ttransport.DialTLS = p.Gw.customDialTLSCheck(p.TykAPISpec, transport.TLSClientConfig)\n\t}\n\n\tif p.TykAPISpec.GlobalConfig.ProxySSLMinVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MinVersion = p.TykAPISpec.GlobalConfig.ProxySSLMinVersion\n\t}\n\n\tif p.TykAPISpec.Proxy.Transport.SSLMinVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MinVersion = p.TykAPISpec.Proxy.Transport.SSLMinVersion\n\t}\n\n\tif p.TykAPISpec.GlobalConfig.ProxySSLMaxVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MaxVersion = p.TykAPISpec.GlobalConfig.ProxySSLMaxVersion\n\t}\n\n\tif p.TykAPISpec.Proxy.Transport.SSLMaxVersion \u003e 0 {\n\t\ttransport.TLSClientConfig.MaxVersion = p.TykAPISpec.Proxy.Transport.SSLMaxVersion\n\t}\n\n\tif len(p.TykAPISpec.GlobalConfig.ProxySSLCipherSuites) \u003e 0 {\n\t\ttransport.TLSClientConfig.CipherSuites = getCipherAliases(p.TykAPISpec.GlobalConfig.ProxySSLCipherSuites)\n\t}\n\n\tif len(p.TykAPISpec.Proxy.Transport.SSLCipherSuites) \u003e 0 {\n\t\ttransport.TLSClientConfig.CipherSuites = getCipherAliases(p.TykAPISpec.Proxy.Transport.SSLCipherSuites)\n\t}\n\n\tif !p.Gw.GetConfig().ProxySSLDisableRenegotiation {\n\t\ttransport.TLSClientConfig.Renegotiation = tls.RenegotiateFreelyAsClient\n\t}\n\n\ttransport.DisableKeepAlives = p.TykAPISpec.GlobalConfig.ProxyCloseConnections\n\n\tif p.Gw.GetConfig().ProxyEnableHttp2 {\n\t\thttp2.ConfigureTransport(transport)\n\t}\n\n\tp.logger.Debug(\"Out request url: \", outReq.URL.String())\n\n\tif outReq.URL.Scheme == \"h2c\" {\n\t\tp.logger.Info(\"Enabling h2c mode\")\n\t\th2t := \u0026http2.Transport{\n\t\t\t// kind of a hack, but for plaintext/H2C requests, pretend to dial TLS\n\t\t\tDialTLS: func(network, addr string, _ *tls.Config) (net.Conn, error) {\n\t\t\t\treturn net.Dial(network, addr)\n\t\t\t},\n\t\t\tAllowHTTP: true,\n\t\t}\n\t\treturn \u0026TykRoundTripper{transport, h2t, p.logger, p.Gw}\n\t}\n\n\treturn \u0026TykRoundTripper{transport, nil, p.logger, p.Gw}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+        "SourceLineNum": 692,
+        "ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+          "SourceLineNum": 692,
+          "ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "tlsClientConfig",
+    "file_path": "/analysis/repo/gateway/reverse_proxy.go",
+    "line_number": 643,
+    "full_implementation": "func tlsClientConfig(s *APISpec, gw *Gateway) *tls.Config {\n\tconfig := \u0026tls.Config{}\n\n\tif s.Protocol == \"tls\" || s.Protocol == \"tcp\" {\n\t\ttargetURL, err := url.Parse(s.Proxy.TargetURL)\n\t\tif err != nil {\n\t\t\ttargetURL, err = url.Parse(\"tcp://\" + s.Proxy.TargetURL)\n\t\t\tif err != nil {\n\t\t\t\tmainLog.WithError(err).Error(\"Error parsing target URL\")\n\t\t\t}\n\t\t}\n\n\t\tif targetURL != nil {\n\t\t\tvar tlsCertificates []tls.Certificate\n\t\t\tif cert := gw.getUpstreamCertificate(targetURL.Host, s); cert != nil {\n\t\t\t\tmainLog.Debug(\"Found upstream mutual TLS certificate\")\n\t\t\t\ttlsCertificates = []tls.Certificate{*cert}\n\t\t\t}\n\n\t\t\tconfig.Certificates = tlsCertificates\n\t\t}\n\t}\n\n\tif s.GlobalConfig.ProxySSLInsecureSkipVerify {\n\t\tconfig.InsecureSkipVerify = true\n\t}\n\n\tif s.Proxy.Transport.SSLInsecureSkipVerify {\n\t\tconfig.InsecureSkipVerify = true\n\t}\n\n\tif s.GlobalConfig.ProxySSLMinVersion \u003e 0 {\n\t\tconfig.MinVersion = s.GlobalConfig.ProxySSLMinVersion\n\t}\n\n\tif s.Proxy.Transport.SSLMinVersion \u003e 0 {\n\t\tconfig.MinVersion = s.Proxy.Transport.SSLMinVersion\n\t}\n\n\tif s.GlobalConfig.ProxySSLMaxVersion \u003e 0 {\n\t\tconfig.MaxVersion = s.GlobalConfig.ProxySSLMaxVersion\n\t}\n\n\tif s.Proxy.Transport.SSLMaxVersion \u003e 0 {\n\t\tconfig.MaxVersion = s.Proxy.Transport.SSLMaxVersion\n\t}\n\n\tif len(s.GlobalConfig.ProxySSLCipherSuites) \u003e 0 {\n\t\tconfig.CipherSuites = getCipherAliases(s.GlobalConfig.ProxySSLCipherSuites)\n\t}\n\n\tif len(s.Proxy.Transport.SSLCipherSuites) \u003e 0 {\n\t\tconfig.CipherSuites = getCipherAliases(s.Proxy.Transport.SSLCipherSuites)\n\t}\n\n\tif !s.GlobalConfig.ProxySSLDisableRenegotiation {\n\t\tconfig.Renegotiation = tls.RenegotiateFreelyAsClient\n\t}\n\n\treturn config\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+        "SourceLineNum": 643,
+        "ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+          "SourceLineNum": 643,
+          "ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "tlsClientConfig",
+    "file_path": "/analysis/repo/gateway/reverse_proxy.go",
+    "line_number": 647,
+    "full_implementation": "func tlsClientConfig(s *APISpec, gw *Gateway) *tls.Config {\n\tconfig := \u0026tls.Config{}\n\n\tif s.Protocol == \"tls\" || s.Protocol == \"tcp\" {\n\t\ttargetURL, err := url.Parse(s.Proxy.TargetURL)\n\t\tif err != nil {\n\t\t\ttargetURL, err = url.Parse(\"tcp://\" + s.Proxy.TargetURL)\n\t\t\tif err != nil {\n\t\t\t\tmainLog.WithError(err).Error(\"Error parsing target URL\")\n\t\t\t}\n\t\t}\n\n\t\tif targetURL != nil {\n\t\t\tvar tlsCertificates []tls.Certificate\n\t\t\tif cert := gw.getUpstreamCertificate(targetURL.Host, s); cert != nil {\n\t\t\t\tmainLog.Debug(\"Found upstream mutual TLS certificate\")\n\t\t\t\ttlsCertificates = []tls.Certificate{*cert}\n\t\t\t}\n\n\t\t\tconfig.Certificates = tlsCertificates\n\t\t}\n\t}\n\n\tif s.GlobalConfig.ProxySSLInsecureSkipVerify {\n\t\tconfig.InsecureSkipVerify = true\n\t}\n\n\tif s.Proxy.Transport.SSLInsecureSkipVerify {\n\t\tconfig.InsecureSkipVerify = true\n\t}\n\n\tif s.GlobalConfig.ProxySSLMinVersion \u003e 0 {\n\t\tconfig.MinVersion = s.GlobalConfig.ProxySSLMinVersion\n\t}\n\n\tif s.Proxy.Transport.SSLMinVersion \u003e 0 {\n\t\tconfig.MinVersion = s.Proxy.Transport.SSLMinVersion\n\t}\n\n\tif s.GlobalConfig.ProxySSLMaxVersion \u003e 0 {\n\t\tconfig.MaxVersion = s.GlobalConfig.ProxySSLMaxVersion\n\t}\n\n\tif s.Proxy.Transport.SSLMaxVersion \u003e 0 {\n\t\tconfig.MaxVersion = s.Proxy.Transport.SSLMaxVersion\n\t}\n\n\tif len(s.GlobalConfig.ProxySSLCipherSuites) \u003e 0 {\n\t\tconfig.CipherSuites = getCipherAliases(s.GlobalConfig.ProxySSLCipherSuites)\n\t}\n\n\tif len(s.Proxy.Transport.SSLCipherSuites) \u003e 0 {\n\t\tconfig.CipherSuites = getCipherAliases(s.Proxy.Transport.SSLCipherSuites)\n\t}\n\n\tif !s.GlobalConfig.ProxySSLDisableRenegotiation {\n\t\tconfig.Renegotiation = tls.RenegotiateFreelyAsClient\n\t}\n\n\treturn config\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+        "SourceLineNum": 647,
+        "ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+          "SourceLineNum": 647,
+          "ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

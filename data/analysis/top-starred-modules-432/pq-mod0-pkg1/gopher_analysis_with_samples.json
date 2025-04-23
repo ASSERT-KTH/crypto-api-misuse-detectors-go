@@ -1,0 +1,70 @@
+[
+  {
+    "function_name": "ssl",
+    "file_path": "/analysis/repo/ssl.go",
+    "line_number": 24,
+    "full_implementation": "func ssl(o values) (func(net.Conn) (net.Conn, error), error) {\n\tverifyCaOnly := false\n\ttlsConf := tls.Config{}\n\tswitch mode := o[\"sslmode\"]; mode {\n\t// \"require\" is the default.\n\tcase \"\", \"require\":\n\t\t// We must skip TLS's own verification since it requires full\n\t\t// verification since Go 1.3.\n\t\ttlsConf.InsecureSkipVerify = true\n\n\t\t// From http://www.postgresql.org/docs/current/static/libpq-ssl.html:\n\t\t//\n\t\t// Note: For backwards compatibility with earlier versions of\n\t\t// PostgreSQL, if a root CA file exists, the behavior of\n\t\t// sslmode=require will be the same as that of verify-ca, meaning the\n\t\t// server certificate is validated against the CA. Relying on this\n\t\t// behavior is discouraged, and applications that need certificate\n\t\t// validation should always use verify-ca or verify-full.\n\t\tif sslrootcert, ok := o[\"sslrootcert\"]; ok {\n\t\t\tif _, err := os.Stat(sslrootcert); err == nil {\n\t\t\t\tverifyCaOnly = true\n\t\t\t} else {\n\t\t\t\tdelete(o, \"sslrootcert\")\n\t\t\t}\n\t\t}\n\tcase \"verify-ca\":\n\t\t// We must skip TLS's own verification since it requires full\n\t\t// verification since Go 1.3.\n\t\ttlsConf.InsecureSkipVerify = true\n\t\tverifyCaOnly = true\n\tcase \"verify-full\":\n\t\ttlsConf.ServerName = o[\"host\"]\n\tcase \"disable\":\n\t\treturn nil, nil\n\tdefault:\n\t\treturn nil, fmterrorf(`unsupported sslmode %q; only \"require\" (default), \"verify-full\", \"verify-ca\", and \"disable\" supported`, mode)\n\t}\n\n\t// Set Server Name Indication (SNI), if enabled by connection parameters.\n\t// By default SNI is on, any value which is not starting with \"1\" disables\n\t// SNI -- that is the same check vanilla libpq uses.\n\tif sslsni := o[\"sslsni\"]; sslsni == \"\" || strings.HasPrefix(sslsni, \"1\") {\n\t\t// RFC 6066 asks to not set SNI if the host is a literal IP address (IPv4\n\t\t// or IPv6). This check is coded already crypto.tls.hostnameInSNI, so\n\t\t// just always set ServerName here and let crypto/tls do the filtering.\n\t\ttlsConf.ServerName = o[\"host\"]\n\t}\n\n\terr := sslClientCertificates(\u0026tlsConf, o)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\terr = sslCertificateAuthority(\u0026tlsConf, o)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Accept renegotiation requests initiated by the backend.\n\t//\n\t// Renegotiation was deprecated then removed from PostgreSQL 9.5, but\n\t// the default configuration of older versions has it enabled. Redshift\n\t// also initiates renegotiations and cannot be reconfigured.\n\ttlsConf.Renegotiation = tls.RenegotiateFreelyAsClient\n\n\treturn func(conn net.Conn) (net.Conn, error) {\n\t\tclient := tls.Client(conn, \u0026tlsConf)\n\t\tif verifyCaOnly {\n\t\t\terr := sslVerifyCertificateAuthority(client, \u0026tlsConf)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\t\treturn client, nil\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConf.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/ssl.go",
+        "SourceLineNum": 24,
+        "ParentFunction": "ssl (o github.com/lib/pq.values) ("
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConf.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/ssl.go",
+          "SourceLineNum": 24,
+          "ParentFunction": "ssl (o github.com/lib/pq.values) ("
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "ssl",
+    "file_path": "/analysis/repo/ssl.go",
+    "line_number": 44,
+    "full_implementation": "func ssl(o values) (func(net.Conn) (net.Conn, error), error) {\n\tverifyCaOnly := false\n\ttlsConf := tls.Config{}\n\tswitch mode := o[\"sslmode\"]; mode {\n\t// \"require\" is the default.\n\tcase \"\", \"require\":\n\t\t// We must skip TLS's own verification since it requires full\n\t\t// verification since Go 1.3.\n\t\ttlsConf.InsecureSkipVerify = true\n\n\t\t// From http://www.postgresql.org/docs/current/static/libpq-ssl.html:\n\t\t//\n\t\t// Note: For backwards compatibility with earlier versions of\n\t\t// PostgreSQL, if a root CA file exists, the behavior of\n\t\t// sslmode=require will be the same as that of verify-ca, meaning the\n\t\t// server certificate is validated against the CA. Relying on this\n\t\t// behavior is discouraged, and applications that need certificate\n\t\t// validation should always use verify-ca or verify-full.\n\t\tif sslrootcert, ok := o[\"sslrootcert\"]; ok {\n\t\t\tif _, err := os.Stat(sslrootcert); err == nil {\n\t\t\t\tverifyCaOnly = true\n\t\t\t} else {\n\t\t\t\tdelete(o, \"sslrootcert\")\n\t\t\t}\n\t\t}\n\tcase \"verify-ca\":\n\t\t// We must skip TLS's own verification since it requires full\n\t\t// verification since Go 1.3.\n\t\ttlsConf.InsecureSkipVerify = true\n\t\tverifyCaOnly = true\n\tcase \"verify-full\":\n\t\ttlsConf.ServerName = o[\"host\"]\n\tcase \"disable\":\n\t\treturn nil, nil\n\tdefault:\n\t\treturn nil, fmterrorf(`unsupported sslmode %q; only \"require\" (default), \"verify-full\", \"verify-ca\", and \"disable\" supported`, mode)\n\t}\n\n\t// Set Server Name Indication (SNI), if enabled by connection parameters.\n\t// By default SNI is on, any value which is not starting with \"1\" disables\n\t// SNI -- that is the same check vanilla libpq uses.\n\tif sslsni := o[\"sslsni\"]; sslsni == \"\" || strings.HasPrefix(sslsni, \"1\") {\n\t\t// RFC 6066 asks to not set SNI if the host is a literal IP address (IPv4\n\t\t// or IPv6). This check is coded already crypto.tls.hostnameInSNI, so\n\t\t// just always set ServerName here and let crypto/tls do the filtering.\n\t\ttlsConf.ServerName = o[\"host\"]\n\t}\n\n\terr := sslClientCertificates(\u0026tlsConf, o)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\terr = sslCertificateAuthority(\u0026tlsConf, o)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Accept renegotiation requests initiated by the backend.\n\t//\n\t// Renegotiation was deprecated then removed from PostgreSQL 9.5, but\n\t// the default configuration of older versions has it enabled. Redshift\n\t// also initiates renegotiations and cannot be reconfigured.\n\ttlsConf.Renegotiation = tls.RenegotiateFreelyAsClient\n\n\treturn func(conn net.Conn) (net.Conn, error) {\n\t\tclient := tls.Client(conn, \u0026tlsConf)\n\t\tif verifyCaOnly {\n\t\t\terr := sslVerifyCertificateAuthority(client, \u0026tlsConf)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\t\treturn client, nil\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConf.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/ssl.go",
+        "SourceLineNum": 44,
+        "ParentFunction": "ssl (o github.com/lib/pq.values) ("
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConf.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/ssl.go",
+          "SourceLineNum": 44,
+          "ParentFunction": "ssl (o github.com/lib/pq.values) ("
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "md5s",
+    "file_path": "/analysis/repo/conn.go",
+    "line_number": 1710,
+    "full_implementation": "func md5s(s string) string {\n\th := md5.New()\n\th.Write([]byte(s))\n\treturn fmt.Sprintf(\"%x\", h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/conn.go",
+        "SourceLineNum": 1710,
+        "ParentFunction": "md5s (s string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

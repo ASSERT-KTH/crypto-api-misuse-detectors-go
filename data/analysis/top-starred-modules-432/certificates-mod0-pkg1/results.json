@@ -1,0 +1,133 @@
+[
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sum := sha1.Sum([]byte(p.GetID()))",
+			"SourceFilename": "/analysis/repo/authority/provisioner/collection.go",
+			"SourceLineNum": 325,
+			"ParentFunction": "provisionerSum (p github.com/smallstep/certificates/authority/provisioner.Interface) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true, // lgtm[go/disabled-certificate-check]",
+			"SourceFilename": "/analysis/repo/authority/linkedca.go",
+			"SourceLineNum": 484,
+			"ParentFunction": "getRootCertificate (endpoint string, fingerprint string) (*crypto/x509.Certificate, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true, // lgtm[go/disabled-certificate-check]",
+				"SourceFilename": "/analysis/repo/authority/linkedca.go",
+				"SourceLineNum": 484,
+				"ParentFunction": "getRootCertificate (endpoint string, fingerprint string) (*crypto/x509.Certificate, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true, //nolint:gosec // we expect a self-signed challenge certificate",
+			"SourceFilename": "/analysis/repo/acme/challenge.go",
+			"SourceLineNum": 247,
+			"ParentFunction": "tlsalpn01Validate (ctx context.Context, ch *github.com/smallstep/certificates/acme.Challenge, db github.com/smallstep/certificates/acme.DB, jwk *github.com/go-jose/go-jose/v3.JSONWebKey) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true, //nolint:gosec // we expect a self-signed challenge certificate",
+				"SourceFilename": "/analysis/repo/acme/challenge.go",
+				"SourceLineNum": 247,
+				"ParentFunction": "tlsalpn01Validate (ctx context.Context, ch *github.com/smallstep/certificates/acme.Challenge, db github.com/smallstep/certificates/acme.DB, jwk *github.com/go-jose/go-jose/v3.JSONWebKey) error"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true, // lgtm[go/disabled-certificate-check]",
+			"SourceFilename": "/analysis/repo/acme/client.go",
+			"SourceLineNum": 61,
+			"ParentFunction": "NewClient () github.com/smallstep/certificates/acme.Client"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true, // lgtm[go/disabled-certificate-check]",
+				"SourceFilename": "/analysis/repo/acme/client.go",
+				"SourceLineNum": 61,
+				"ParentFunction": "NewClient () github.com/smallstep/certificates/acme.Client"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "Transport: getDefaultTransport(\u0026tls.Config{InsecureSkipVerify: true}),",
+			"SourceFilename": "/analysis/repo/ca/client.go",
+			"SourceLineNum": 68,
+			"ParentFunction": "newInsecureClient () *github.com/smallstep/certificates/ca.uaClient"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "Transport: getDefaultTransport(\u0026tls.Config{InsecureSkipVerify: true}),",
+				"SourceFilename": "/analysis/repo/ca/client.go",
+				"SourceLineNum": 68,
+				"ParentFunction": "newInsecureClient () *github.com/smallstep/certificates/ca.uaClient"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/ca/client.go",
+			"SourceLineNum": 291,
+			"ParentFunction": "WithInsecure$1 (o *github.com/smallstep/certificates/ca.clientOptions) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/ca/client.go",
+				"SourceLineNum": 291,
+				"ParentFunction": "WithInsecure$1 (o *github.com/smallstep/certificates/ca.clientOptions) error"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/elliptic.P224",
+		"Message": "P224 is Acceptable but not recommended.",
+		"Slicing_Criteria": {
+			"SourceCode": "return elliptic.P224()",
+			"SourceFilename": "/analysis/repo/test/integration/scep/internal/x509/x509.go",
+			"SourceLineNum": 358,
+			"ParentFunction": "namedCurveFromOID (oid encoding/asn1.ObjectIdentifier) crypto/elliptic.Curve"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Unmarshal",
+		"Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+		"Slicing_Criteria": {
+			"SourceCode": "x, y := elliptic.Unmarshal(namedCurve, der)",
+			"SourceFilename": "/analysis/repo/test/integration/scep/internal/x509/parser.go",
+			"SourceLineNum": 279,
+			"ParentFunction": "parsePublicKey (keyData *github.com/smallstep/certificates/test/integration/scep/internal/x509.publicKeyInfo) (interface{}, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	}
+]

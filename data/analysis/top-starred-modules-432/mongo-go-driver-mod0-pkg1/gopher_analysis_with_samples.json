@@ -1,0 +1,242 @@
+[
+  {
+    "function_name": "RetrieveWithContext",
+    "file_path": "/analysis/repo/internal/credproviders/imds_provider.go",
+    "line_number": 47,
+    "full_implementation": "func (a *AzureProvider) RetrieveWithContext(ctx context.Context) (credentials.Value, error) {\n\tv := credentials.Value{ProviderName: AzureProviderName}\n\treq, err := http.NewRequest(http.MethodGet, azureURI, nil)\n\tif err != nil {\n\t\treturn v, fmt.Errorf(\"unable to retrieve Azure credentials: %w\", err)\n\t}\n\tq := make(url.Values)\n\tq.Set(\"api-version\", \"2018-02-01\")\n\tq.Set(\"resource\", \"https://vault.azure.net\")\n\treq.URL.RawQuery = q.Encode()\n\treq.Header.Set(\"Metadata\", \"true\")\n\treq.Header.Set(\"Accept\", \"application/json\")\n\n\tresp, err := a.httpClient.Do(req.WithContext(ctx))\n\tif err != nil {\n\t\treturn v, fmt.Errorf(\"unable to retrieve Azure credentials: %w\", err)\n\t}\n\tdefer resp.Body.Close()\n\tbody, err := ioutil.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn v, fmt.Errorf(\"unable to retrieve Azure credentials: error reading response body: %w\", err)\n\t}\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn v, fmt.Errorf(\"unable to retrieve Azure credentials: expected StatusCode 200, got StatusCode: %v. Response body: %s\", resp.StatusCode, body)\n\t}\n\tvar tokenResponse struct {\n\t\tAccessToken string `json:\"access_token\"`\n\t\tExpiresIn   string `json:\"expires_in\"`\n\t}\n\t// Attempt to read body as JSON\n\terr = json.Unmarshal(body, \u0026tokenResponse)\n\tif err != nil {\n\t\treturn v, fmt.Errorf(\"unable to retrieve Azure credentials: error reading body JSON: %w (response body: %s)\", err, body)\n\t}\n\tif tokenResponse.AccessToken == \"\" {\n\t\treturn v, fmt.Errorf(\"unable to retrieve Azure credentials: got unexpected empty accessToken from Azure Metadata Server. Response body: %s\", body)\n\t}\n\tv.SessionToken = tokenResponse.AccessToken\n\n\texpiresIn, err := time.ParseDuration(tokenResponse.ExpiresIn + \"s\")\n\tif err != nil {\n\t\treturn v, err\n\t}\n\tif expiration := expiresIn - a.expiryWindow; expiration \u003e 0 {\n\t\ta.expiration = time.Now().Add(expiration)\n\t}\n\n\treturn v, err\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodGet, azureURI, nil)",
+        "SourceFilename": "/analysis/repo/internal/credproviders/imds_provider.go",
+        "SourceLineNum": 47,
+        "ParentFunction": "RetrieveWithContext (ctx context.Context) (go.mongodb.org/mongo-driver/v2/internal/aws/credentials.Value, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(http.MethodGet, azureURI, nil)",
+          "SourceFilename": "/analysis/repo/internal/credproviders/imds_provider.go",
+          "SourceLineNum": 47,
+          "ParentFunction": "RetrieveWithContext (ctx context.Context) (go.mongodb.org/mongo-driver/v2/internal/aws/credentials.Value, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "getRoleName",
+    "file_path": "/analysis/repo/internal/credproviders/ec2_provider.go",
+    "line_number": 83,
+    "full_implementation": "func (e *EC2Provider) getRoleName(ctx context.Context, token string) (string, error) {\n\treq, err := http.NewRequest(http.MethodGet, awsEC2URI+awsEC2RolePath, nil)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\treq.Header.Set(\"X-aws-ec2-metadata-token\", token)\n\n\tctx, cancel := context.WithTimeout(ctx, defaultHTTPTimeout)\n\tdefer cancel()\n\tresp, err := e.httpClient.Do(req.WithContext(ctx))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tdefer resp.Body.Close()\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn \"\", fmt.Errorf(\"%s %s failed: %s\", req.Method, req.URL.String(), resp.Status)\n\t}\n\n\trole, err := ioutil.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tif len(role) == 0 {\n\t\treturn \"\", errors.New(\"unable to retrieve role_name from EC2 metadata\")\n\t}\n\treturn string(role), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodGet, awsEC2URI+awsEC2RolePath, nil)",
+        "SourceFilename": "/analysis/repo/internal/credproviders/ec2_provider.go",
+        "SourceLineNum": 83,
+        "ParentFunction": "getRoleName (ctx context.Context, token string) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(http.MethodGet, awsEC2URI+awsEC2RolePath, nil)",
+          "SourceFilename": "/analysis/repo/internal/credproviders/ec2_provider.go",
+          "SourceLineNum": 83,
+          "ParentFunction": "getRoleName (ctx context.Context, token string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "getCredentials",
+    "file_path": "/analysis/repo/internal/credproviders/ec2_provider.go",
+    "line_number": 114,
+    "full_implementation": "func (e *EC2Provider) getCredentials(ctx context.Context, token string, role string) (credentials.Value, time.Time, error) {\n\tv := credentials.Value{ProviderName: ec2ProviderName}\n\n\tpathWithRole := awsEC2URI + awsEC2RolePath + role\n\treq, err := http.NewRequest(http.MethodGet, pathWithRole, nil)\n\tif err != nil {\n\t\treturn v, time.Time{}, err\n\t}\n\treq.Header.Set(\"X-aws-ec2-metadata-token\", token)\n\tctx, cancel := context.WithTimeout(ctx, defaultHTTPTimeout)\n\tdefer cancel()\n\tresp, err := e.httpClient.Do(req.WithContext(ctx))\n\tif err != nil {\n\t\treturn v, time.Time{}, err\n\t}\n\tdefer resp.Body.Close()\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn v, time.Time{}, fmt.Errorf(\"%s %s failed: %s\", req.Method, req.URL.String(), resp.Status)\n\t}\n\n\tvar ec2Resp struct {\n\t\tAccessKeyID     string    `json:\"AccessKeyId\"`\n\t\tSecretAccessKey string    `json:\"SecretAccessKey\"`\n\t\tToken           string    `json:\"Token\"`\n\t\tExpiration      time.Time `json:\"Expiration\"`\n\t}\n\n\terr = json.NewDecoder(resp.Body).Decode(\u0026ec2Resp)\n\tif err != nil {\n\t\treturn v, time.Time{}, err\n\t}\n\n\tv.AccessKeyID = ec2Resp.AccessKeyID\n\tv.SecretAccessKey = ec2Resp.SecretAccessKey\n\tv.SessionToken = ec2Resp.Token\n\n\treturn v, ec2Resp.Expiration, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodGet, pathWithRole, nil)",
+        "SourceFilename": "/analysis/repo/internal/credproviders/ec2_provider.go",
+        "SourceLineNum": 114,
+        "ParentFunction": "getCredentials (ctx context.Context, token string, role string) (go.mongodb.org/mongo-driver/v2/internal/aws/credentials.Value, time.Time, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pathWithRole := awsEC2URI + awsEC2RolePath + role",
+          "SourceFilename": "/analysis/repo/internal/credproviders/ec2_provider.go",
+          "SourceLineNum": 113,
+          "ParentFunction": "getCredentials (ctx context.Context, token string, role string) (go.mongodb.org/mongo-driver/v2/internal/aws/credentials.Value, time.Time, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "RetrieveWithContext",
+    "file_path": "/analysis/repo/internal/credproviders/ecs_provider.go",
+    "line_number": 64,
+    "full_implementation": "func (e *ECSProvider) RetrieveWithContext(ctx context.Context) (credentials.Value, error) {\n\tconst defaultHTTPTimeout = 10 * time.Second\n\n\tv := credentials.Value{ProviderName: ecsProviderName}\n\n\trelativeEcsURI := e.AwsContainerCredentialsRelativeURIEnv.Get()\n\tif len(relativeEcsURI) == 0 {\n\t\treturn v, errors.New(\"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is missing\")\n\t}\n\tfullURI := awsRelativeURI + relativeEcsURI\n\n\treq, err := http.NewRequest(http.MethodGet, fullURI, nil)\n\tif err != nil {\n\t\treturn v, err\n\t}\n\treq.Header.Set(\"Accept\", \"application/json\")\n\n\tctx, cancel := context.WithTimeout(ctx, defaultHTTPTimeout)\n\tdefer cancel()\n\tresp, err := e.httpClient.Do(req.WithContext(ctx))\n\tif err != nil {\n\t\treturn v, err\n\t}\n\tdefer resp.Body.Close()\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn v, fmt.Errorf(\"response failure: %s\", resp.Status)\n\t}\n\n\tvar ecsResp struct {\n\t\tAccessKeyID     string    `json:\"AccessKeyId\"`\n\t\tSecretAccessKey string    `json:\"SecretAccessKey\"`\n\t\tToken           string    `json:\"Token\"`\n\t\tExpiration      time.Time `json:\"Expiration\"`\n\t}\n\n\terr = json.NewDecoder(resp.Body).Decode(\u0026ecsResp)\n\tif err != nil {\n\t\treturn v, err\n\t}\n\n\tv.AccessKeyID = ecsResp.AccessKeyID\n\tv.SecretAccessKey = ecsResp.SecretAccessKey\n\tv.SessionToken = ecsResp.Token\n\tif !v.HasKeys() {\n\t\treturn v, errors.New(\"failed to retrieve ECS keys\")\n\t}\n\te.expiration = ecsResp.Expiration.Add(-e.expiryWindow)\n\n\treturn v, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodGet, fullURI, nil)",
+        "SourceFilename": "/analysis/repo/internal/credproviders/ecs_provider.go",
+        "SourceLineNum": 64,
+        "ParentFunction": "RetrieveWithContext (ctx context.Context) (go.mongodb.org/mongo-driver/v2/internal/aws/credentials.Value, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "fullURI := awsRelativeURI + relativeEcsURI",
+          "SourceFilename": "/analysis/repo/internal/credproviders/ecs_provider.go",
+          "SourceLineNum": 62,
+          "ParentFunction": "RetrieveWithContext (ctx context.Context) (go.mongodb.org/mongo-driver/v2/internal/aws/credentials.Value, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "getToken",
+    "file_path": "/analysis/repo/internal/credproviders/ec2_provider.go",
+    "line_number": 54,
+    "full_implementation": "func (e *EC2Provider) getToken(ctx context.Context) (string, error) {\n\treq, err := http.NewRequest(http.MethodPut, awsEC2URI+awsEC2TokenPath, nil)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tconst defaultEC2TTLSeconds = \"30\"\n\treq.Header.Set(\"X-aws-ec2-metadata-token-ttl-seconds\", defaultEC2TTLSeconds)\n\n\tctx, cancel := context.WithTimeout(ctx, defaultHTTPTimeout)\n\tdefer cancel()\n\tresp, err := e.httpClient.Do(req.WithContext(ctx))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tdefer resp.Body.Close()\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn \"\", fmt.Errorf(\"%s %s failed: %s\", req.Method, req.URL.String(), resp.Status)\n\t}\n\n\ttoken, err := ioutil.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tif len(token) == 0 {\n\t\treturn \"\", errors.New(\"unable to retrieve token from EC2 metadata\")\n\t}\n\treturn string(token), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodPut, awsEC2URI+awsEC2TokenPath, nil)",
+        "SourceFilename": "/analysis/repo/internal/credproviders/ec2_provider.go",
+        "SourceLineNum": 54,
+        "ParentFunction": "getToken (ctx context.Context) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(http.MethodPut, awsEC2URI+awsEC2TokenPath, nil)",
+          "SourceFilename": "/analysis/repo/internal/credproviders/ec2_provider.go",
+          "SourceLineNum": 54,
+          "ParentFunction": "getToken (ctx context.Context) (string, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "createKey",
+    "file_path": "/analysis/repo/x/mongo/driver/auth/mongodbcr.go",
+    "line_number": 114,
+    "full_implementation": "func (a *MongoDBCRAuthenticator) createKey(nonce string) string {\n\t// Ignore gosec warning \"Use of weak cryptographic primitive\". We need to use MD5 here to\n\t// implement the MONGODB-CR specification.\n\t/* #nosec G401 */\n\th := md5.New()\n\n\t_, _ = io.WriteString(h, nonce)\n\t_, _ = io.WriteString(h, a.Username)\n\t_, _ = io.WriteString(h, mongoPasswordDigest(a.Username, a.Password))\n\treturn fmt.Sprintf(\"%x\", h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/x/mongo/driver/auth/mongodbcr.go",
+        "SourceLineNum": 114,
+        "ParentFunction": "createKey (nonce string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "mongoPasswordDigest",
+    "file_path": "/analysis/repo/x/mongo/driver/auth/util.go",
+    "line_number": 25,
+    "full_implementation": "func mongoPasswordDigest(username, password string) string {\n\t// Ignore gosec warning \"Use of weak cryptographic primitive\". We need to use MD5 here to\n\t// implement the SCRAM specification.\n\t/* #nosec G401 */\n\th := md5.New()\n\t_, _ = io.WriteString(h, username)\n\t_, _ = io.WriteString(h, \":mongo:\")\n\t_, _ = io.WriteString(h, password)\n\treturn fmt.Sprintf(\"%x\", h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/x/mongo/driver/auth/util.go",
+        "SourceLineNum": 25,
+        "ParentFunction": "mongoPasswordDigest (username string, password string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "setURIOpts",
+    "file_path": "/analysis/repo/mongo/options/clientoptions.go",
+    "line_number": 451,
+    "full_implementation": "func setURIOpts(uri string, opts *ClientOptions) error {\n\tconnString, err := connstring.ParseAndValidate(uri)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\topts.connString = connString\n\n\tif connString.AppName != \"\" {\n\t\topts.AppName = \u0026connString.AppName\n\t}\n\n\t// Only create a Credential if there is a request for authentication via\n\t// non-empty credentials in the URI.\n\tif connString.HasAuthParameters() {\n\t\topts.Auth = \u0026Credential{\n\t\t\tAuthMechanism:           connString.AuthMechanism,\n\t\t\tAuthMechanismProperties: connString.AuthMechanismProperties,\n\t\t\tAuthSource:              connString.AuthSource,\n\t\t\tUsername:                connString.Username,\n\t\t\tPassword:                connString.Password,\n\t\t\tPasswordSet:             connString.PasswordSet,\n\t\t}\n\t}\n\n\tif connString.ConnectSet {\n\t\tdirect := connString.Connect == connstring.SingleConnect\n\t\topts.Direct = \u0026direct\n\t}\n\n\tif connString.DirectConnectionSet {\n\t\topts.Direct = \u0026connString.DirectConnection\n\t}\n\n\tif connString.ConnectTimeoutSet {\n\t\topts.ConnectTimeout = \u0026connString.ConnectTimeout\n\t}\n\n\tif len(connString.Compressors) \u003e 0 {\n\t\topts.Compressors = connString.Compressors\n\t\tif stringSliceContains(opts.Compressors, \"zlib\") {\n\t\t\tdefaultLevel := wiremessage.DefaultZlibLevel\n\t\t\topts.ZlibLevel = \u0026defaultLevel\n\t\t}\n\t\tif stringSliceContains(opts.Compressors, \"zstd\") {\n\t\t\tdefaultLevel := wiremessage.DefaultZstdLevel\n\t\t\topts.ZstdLevel = \u0026defaultLevel\n\t\t}\n\t}\n\n\tif connString.HeartbeatIntervalSet {\n\t\topts.HeartbeatInterval = \u0026connString.HeartbeatInterval\n\t}\n\n\topts.Hosts = connString.Hosts\n\n\tif connString.LoadBalancedSet {\n\t\topts.LoadBalanced = \u0026connString.LoadBalanced\n\t}\n\n\tif connString.LocalThresholdSet {\n\t\topts.LocalThreshold = \u0026connString.LocalThreshold\n\t}\n\n\tif connString.MaxConnIdleTimeSet {\n\t\topts.MaxConnIdleTime = \u0026connString.MaxConnIdleTime\n\t}\n\n\tif connString.MaxPoolSizeSet {\n\t\topts.MaxPoolSize = \u0026connString.MaxPoolSize\n\t}\n\n\tif connString.MinPoolSizeSet {\n\t\topts.MinPoolSize = \u0026connString.MinPoolSize\n\t}\n\n\tif connString.MaxConnectingSet {\n\t\topts.MaxConnecting = \u0026connString.MaxConnecting\n\t}\n\n\tif connString.ReadConcernLevel != \"\" {\n\t\topts.ReadConcern = \u0026readconcern.ReadConcern{Level: connString.ReadConcernLevel}\n\t}\n\n\tif connString.ReadPreference != \"\" || len(connString.ReadPreferenceTagSets) \u003e 0 || connString.MaxStalenessSet {\n\t\treadPrefOpts := make([]readpref.Option, 0, 1)\n\n\t\ttagSets := tag.NewTagSetsFromMaps(connString.ReadPreferenceTagSets)\n\t\tif len(tagSets) \u003e 0 {\n\t\t\treadPrefOpts = append(readPrefOpts, readpref.WithTagSets(tagSets...))\n\t\t}\n\n\t\tif connString.MaxStaleness != 0 {\n\t\t\treadPrefOpts = append(readPrefOpts, readpref.WithMaxStaleness(connString.MaxStaleness))\n\t\t}\n\n\t\tmode, err := readpref.ModeFromString(connString.ReadPreference)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\n\t\topts.ReadPreference, err = readpref.New(mode, readPrefOpts...)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\tif connString.RetryWritesSet {\n\t\topts.RetryWrites = \u0026connString.RetryWrites\n\t}\n\n\tif connString.RetryReadsSet {\n\t\topts.RetryReads = \u0026connString.RetryReads\n\t}\n\n\tif connString.ReplicaSet != \"\" {\n\t\topts.ReplicaSet = \u0026connString.ReplicaSet\n\t}\n\n\tif connString.ServerSelectionTimeoutSet {\n\t\topts.ServerSelectionTimeout = \u0026connString.ServerSelectionTimeout\n\t}\n\n\tif connString.SRVMaxHosts != 0 {\n\t\topts.SRVMaxHosts = \u0026connString.SRVMaxHosts\n\t}\n\n\tif connString.SRVServiceName != \"\" {\n\t\topts.SRVServiceName = \u0026connString.SRVServiceName\n\t}\n\n\tif connString.SSL {\n\t\ttlsConfig := new(tls.Config)\n\n\t\tif connString.SSLCaFileSet {\n\t\t\tif err := addCACertFromFile(tlsConfig, connString.SSLCaFile); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\tif connString.SSLInsecure {\n\t\t\ttlsConfig.InsecureSkipVerify = true\n\t\t}\n\n\t\tvar x509Subject string\n\t\tvar keyPasswd string\n\t\tif connString.SSLClientCertificateKeyPasswordSet \u0026\u0026 connString.SSLClientCertificateKeyPassword != nil {\n\t\t\tkeyPasswd = connString.SSLClientCertificateKeyPassword()\n\t\t}\n\n\t\tvar err error\n\t\tif connString.SSLClientCertificateKeyFileSet {\n\t\t\tx509Subject, err = addClientCertFromConcatenatedFile(tlsConfig, connString.SSLClientCertificateKeyFile, keyPasswd)\n\t\t} else if connString.SSLCertificateFileSet || connString.SSLPrivateKeyFileSet {\n\t\t\tx509Subject, err = addClientCertFromSeparateFiles(tlsConfig, connString.SSLCertificateFile,\n\t\t\t\tconnString.SSLPrivateKeyFile, keyPasswd)\n\t\t}\n\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\n\t\t// If a username wasn't specified fork x509, add one from the certificate.\n\t\tif opts.Auth != nil \u0026\u0026 strings.ToLower(opts.Auth.AuthMechanism) == \"mongodb-x509\" \u0026\u0026 opts.Auth.Username == \"\" {\n\t\t\t// The Go x509 package gives the subject with the pairs in reverse order that we want.\n\t\t\topts.Auth.Username = extractX509UsernameFromSubject(x509Subject)\n\t\t}\n\n\t\topts.TLSConfig = tlsConfig\n\t}\n\n\tif connString.JSet || connString.WString != \"\" || connString.WNumberSet {\n\t\topts.WriteConcern = \u0026writeconcern.WriteConcern{}\n\n\t\tif len(connString.WString) \u003e 0 {\n\t\t\topts.WriteConcern.W = connString.WString\n\t\t} else if connString.WNumberSet {\n\t\t\topts.WriteConcern.W = connString.WNumber\n\t\t}\n\n\t\tif connString.JSet {\n\t\t\topts.WriteConcern.Journal = \u0026connString.J\n\t\t}\n\t}\n\n\tif connString.ZlibLevelSet {\n\t\topts.ZlibLevel = \u0026connString.ZlibLevel\n\t}\n\tif connString.ZstdLevelSet {\n\t\topts.ZstdLevel = \u0026connString.ZstdLevel\n\t}\n\n\tif connString.SSLDisableOCSPEndpointCheckSet {\n\t\topts.DisableOCSPEndpointCheck = \u0026connString.SSLDisableOCSPEndpointCheck\n\t}\n\n\tif connString.TimeoutSet {\n\t\topts.Timeout = \u0026connString.Timeout\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/mongo/options/clientoptions.go",
+        "SourceLineNum": 451,
+        "ParentFunction": "setURIOpts (uri string, opts *go.mongodb.org/mongo-driver/v2/mongo/options.ClientOptions) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/mongo/options/clientoptions.go",
+          "SourceLineNum": 451,
+          "ParentFunction": "setURIOpts (uri string, opts *go.mongodb.org/mongo-driver/v2/mongo/options.ClientOptions) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "addClientCertFromBytes",
+    "file_path": "/analysis/repo/mongo/options/clientoptions.go",
+    "line_number": 1211,
+    "full_implementation": "func addClientCertFromBytes(cfg *tls.Config, data []byte, keyPasswd string) (string, error) {\n\tvar currentBlock *pem.Block\n\tvar certDecodedBlock []byte\n\tvar certBlocks, keyBlocks [][]byte\n\n\tremaining := data\n\tstart := 0\n\tfor {\n\t\tcurrentBlock, remaining = pem.Decode(remaining)\n\t\tif currentBlock == nil {\n\t\t\tbreak\n\t\t}\n\n\t\tif currentBlock.Type == \"CERTIFICATE\" {\n\t\t\tcertBlock := data[start : len(data)-len(remaining)]\n\t\t\tcertBlocks = append(certBlocks, certBlock)\n\t\t\t// Assign the certDecodedBlock when it is never set,\n\t\t\t// so only the first certificate is honored in a file with multiple certs.\n\t\t\tif certDecodedBlock == nil {\n\t\t\t\tcertDecodedBlock = currentBlock.Bytes\n\t\t\t}\n\t\t\tstart += len(certBlock)\n\t\t} else if strings.HasSuffix(currentBlock.Type, \"PRIVATE KEY\") {\n\t\t\tisEncrypted := x509.IsEncryptedPEMBlock(currentBlock) || strings.Contains(currentBlock.Type, \"ENCRYPTED PRIVATE KEY\")\n\t\t\tif isEncrypted {\n\t\t\t\tif keyPasswd == \"\" {\n\t\t\t\t\treturn \"\", fmt.Errorf(\"no password provided to decrypt private key\")\n\t\t\t\t}\n\n\t\t\t\tvar keyBytes []byte\n\t\t\t\tvar err error\n\t\t\t\t// Process the X.509-encrypted or PKCS-encrypted PEM block.\n\t\t\t\tif x509.IsEncryptedPEMBlock(currentBlock) {\n\t\t\t\t\t// Only covers encrypted PEM data with a DEK-Info header.\n\t\t\t\t\tkeyBytes, err = x509.DecryptPEMBlock(currentBlock, []byte(keyPasswd))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t} else if strings.Contains(currentBlock.Type, \"ENCRYPTED\") {\n\t\t\t\t\t// The pkcs8 package only handles the PKCS #5 v2.0 scheme.\n\t\t\t\t\tdecrypted, err := pkcs8.ParsePKCS8PrivateKey(currentBlock.Bytes, []byte(keyPasswd))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t\tkeyBytes, err = x509.MarshalPKCS8PrivateKey(decrypted)\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tvar encoded bytes.Buffer\n\t\t\t\terr = pem.Encode(\u0026encoded, \u0026pem.Block{Type: currentBlock.Type, Bytes: keyBytes})\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn \"\", fmt.Errorf(\"error encoding private key as PEM: %w\", err)\n\t\t\t\t}\n\t\t\t\tkeyBlock := encoded.Bytes()\n\t\t\t\tkeyBlocks = append(keyBlocks, keyBlock)\n\t\t\t\tstart = len(data) - len(remaining)\n\t\t\t} else {\n\t\t\t\tkeyBlock := data[start : len(data)-len(remaining)]\n\t\t\t\tkeyBlocks = append(keyBlocks, keyBlock)\n\t\t\t\tstart += len(keyBlock)\n\t\t\t}\n\t\t}\n\t}\n\tif len(certBlocks) == 0 {\n\t\treturn \"\", fmt.Errorf(\"failed to find CERTIFICATE\")\n\t}\n\tif len(keyBlocks) == 0 {\n\t\treturn \"\", fmt.Errorf(\"failed to find PRIVATE KEY\")\n\t}\n\n\tcert, err := tls.X509KeyPair(bytes.Join(certBlocks, []byte(\"\\n\")), bytes.Join(keyBlocks, []byte(\"\\n\")))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tcfg.Certificates = append(cfg.Certificates, cert)\n\n\t// The documentation for the tls.X509KeyPair indicates that the Leaf certificate is not\n\t// retained.\n\tcrt, err := x509.ParseCertificate(certDecodedBlock)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn crt.Subject.String(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.DecryptPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "keyBytes, err = x509.DecryptPEMBlock(currentBlock, []byte(keyPasswd))",
+        "SourceFilename": "/analysis/repo/mongo/options/clientoptions.go",
+        "SourceLineNum": 1211,
+        "ParentFunction": "addClientCertFromBytes (cfg *crypto/tls.Config, data []byte, keyPasswd string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "addClientCertFromBytes",
+    "file_path": "/analysis/repo/mongo/options/clientoptions.go",
+    "line_number": 1200,
+    "full_implementation": "func addClientCertFromBytes(cfg *tls.Config, data []byte, keyPasswd string) (string, error) {\n\tvar currentBlock *pem.Block\n\tvar certDecodedBlock []byte\n\tvar certBlocks, keyBlocks [][]byte\n\n\tremaining := data\n\tstart := 0\n\tfor {\n\t\tcurrentBlock, remaining = pem.Decode(remaining)\n\t\tif currentBlock == nil {\n\t\t\tbreak\n\t\t}\n\n\t\tif currentBlock.Type == \"CERTIFICATE\" {\n\t\t\tcertBlock := data[start : len(data)-len(remaining)]\n\t\t\tcertBlocks = append(certBlocks, certBlock)\n\t\t\t// Assign the certDecodedBlock when it is never set,\n\t\t\t// so only the first certificate is honored in a file with multiple certs.\n\t\t\tif certDecodedBlock == nil {\n\t\t\t\tcertDecodedBlock = currentBlock.Bytes\n\t\t\t}\n\t\t\tstart += len(certBlock)\n\t\t} else if strings.HasSuffix(currentBlock.Type, \"PRIVATE KEY\") {\n\t\t\tisEncrypted := x509.IsEncryptedPEMBlock(currentBlock) || strings.Contains(currentBlock.Type, \"ENCRYPTED PRIVATE KEY\")\n\t\t\tif isEncrypted {\n\t\t\t\tif keyPasswd == \"\" {\n\t\t\t\t\treturn \"\", fmt.Errorf(\"no password provided to decrypt private key\")\n\t\t\t\t}\n\n\t\t\t\tvar keyBytes []byte\n\t\t\t\tvar err error\n\t\t\t\t// Process the X.509-encrypted or PKCS-encrypted PEM block.\n\t\t\t\tif x509.IsEncryptedPEMBlock(currentBlock) {\n\t\t\t\t\t// Only covers encrypted PEM data with a DEK-Info header.\n\t\t\t\t\tkeyBytes, err = x509.DecryptPEMBlock(currentBlock, []byte(keyPasswd))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t} else if strings.Contains(currentBlock.Type, \"ENCRYPTED\") {\n\t\t\t\t\t// The pkcs8 package only handles the PKCS #5 v2.0 scheme.\n\t\t\t\t\tdecrypted, err := pkcs8.ParsePKCS8PrivateKey(currentBlock.Bytes, []byte(keyPasswd))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t\tkeyBytes, err = x509.MarshalPKCS8PrivateKey(decrypted)\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tvar encoded bytes.Buffer\n\t\t\t\terr = pem.Encode(\u0026encoded, \u0026pem.Block{Type: currentBlock.Type, Bytes: keyBytes})\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn \"\", fmt.Errorf(\"error encoding private key as PEM: %w\", err)\n\t\t\t\t}\n\t\t\t\tkeyBlock := encoded.Bytes()\n\t\t\t\tkeyBlocks = append(keyBlocks, keyBlock)\n\t\t\t\tstart = len(data) - len(remaining)\n\t\t\t} else {\n\t\t\t\tkeyBlock := data[start : len(data)-len(remaining)]\n\t\t\t\tkeyBlocks = append(keyBlocks, keyBlock)\n\t\t\t\tstart += len(keyBlock)\n\t\t\t}\n\t\t}\n\t}\n\tif len(certBlocks) == 0 {\n\t\treturn \"\", fmt.Errorf(\"failed to find CERTIFICATE\")\n\t}\n\tif len(keyBlocks) == 0 {\n\t\treturn \"\", fmt.Errorf(\"failed to find PRIVATE KEY\")\n\t}\n\n\tcert, err := tls.X509KeyPair(bytes.Join(certBlocks, []byte(\"\\n\")), bytes.Join(keyBlocks, []byte(\"\\n\")))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tcfg.Certificates = append(cfg.Certificates, cert)\n\n\t// The documentation for the tls.X509KeyPair indicates that the Leaf certificate is not\n\t// retained.\n\tcrt, err := x509.ParseCertificate(certDecodedBlock)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn crt.Subject.String(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.IsEncryptedPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "isEncrypted := x509.IsEncryptedPEMBlock(currentBlock) || strings.Contains(currentBlock.Type, \"ENCRYPTED PRIVATE KEY\")",
+        "SourceFilename": "/analysis/repo/mongo/options/clientoptions.go",
+        "SourceLineNum": 1200,
+        "ParentFunction": "addClientCertFromBytes (cfg *crypto/tls.Config, data []byte, keyPasswd string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "addClientCertFromBytes",
+    "file_path": "/analysis/repo/mongo/options/clientoptions.go",
+    "line_number": 1209,
+    "full_implementation": "func addClientCertFromBytes(cfg *tls.Config, data []byte, keyPasswd string) (string, error) {\n\tvar currentBlock *pem.Block\n\tvar certDecodedBlock []byte\n\tvar certBlocks, keyBlocks [][]byte\n\n\tremaining := data\n\tstart := 0\n\tfor {\n\t\tcurrentBlock, remaining = pem.Decode(remaining)\n\t\tif currentBlock == nil {\n\t\t\tbreak\n\t\t}\n\n\t\tif currentBlock.Type == \"CERTIFICATE\" {\n\t\t\tcertBlock := data[start : len(data)-len(remaining)]\n\t\t\tcertBlocks = append(certBlocks, certBlock)\n\t\t\t// Assign the certDecodedBlock when it is never set,\n\t\t\t// so only the first certificate is honored in a file with multiple certs.\n\t\t\tif certDecodedBlock == nil {\n\t\t\t\tcertDecodedBlock = currentBlock.Bytes\n\t\t\t}\n\t\t\tstart += len(certBlock)\n\t\t} else if strings.HasSuffix(currentBlock.Type, \"PRIVATE KEY\") {\n\t\t\tisEncrypted := x509.IsEncryptedPEMBlock(currentBlock) || strings.Contains(currentBlock.Type, \"ENCRYPTED PRIVATE KEY\")\n\t\t\tif isEncrypted {\n\t\t\t\tif keyPasswd == \"\" {\n\t\t\t\t\treturn \"\", fmt.Errorf(\"no password provided to decrypt private key\")\n\t\t\t\t}\n\n\t\t\t\tvar keyBytes []byte\n\t\t\t\tvar err error\n\t\t\t\t// Process the X.509-encrypted or PKCS-encrypted PEM block.\n\t\t\t\tif x509.IsEncryptedPEMBlock(currentBlock) {\n\t\t\t\t\t// Only covers encrypted PEM data with a DEK-Info header.\n\t\t\t\t\tkeyBytes, err = x509.DecryptPEMBlock(currentBlock, []byte(keyPasswd))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t} else if strings.Contains(currentBlock.Type, \"ENCRYPTED\") {\n\t\t\t\t\t// The pkcs8 package only handles the PKCS #5 v2.0 scheme.\n\t\t\t\t\tdecrypted, err := pkcs8.ParsePKCS8PrivateKey(currentBlock.Bytes, []byte(keyPasswd))\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t\tkeyBytes, err = x509.MarshalPKCS8PrivateKey(decrypted)\n\t\t\t\t\tif err != nil {\n\t\t\t\t\t\treturn \"\", err\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tvar encoded bytes.Buffer\n\t\t\t\terr = pem.Encode(\u0026encoded, \u0026pem.Block{Type: currentBlock.Type, Bytes: keyBytes})\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn \"\", fmt.Errorf(\"error encoding private key as PEM: %w\", err)\n\t\t\t\t}\n\t\t\t\tkeyBlock := encoded.Bytes()\n\t\t\t\tkeyBlocks = append(keyBlocks, keyBlock)\n\t\t\t\tstart = len(data) - len(remaining)\n\t\t\t} else {\n\t\t\t\tkeyBlock := data[start : len(data)-len(remaining)]\n\t\t\t\tkeyBlocks = append(keyBlocks, keyBlock)\n\t\t\t\tstart += len(keyBlock)\n\t\t\t}\n\t\t}\n\t}\n\tif len(certBlocks) == 0 {\n\t\treturn \"\", fmt.Errorf(\"failed to find CERTIFICATE\")\n\t}\n\tif len(keyBlocks) == 0 {\n\t\treturn \"\", fmt.Errorf(\"failed to find PRIVATE KEY\")\n\t}\n\n\tcert, err := tls.X509KeyPair(bytes.Join(certBlocks, []byte(\"\\n\")), bytes.Join(keyBlocks, []byte(\"\\n\")))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tcfg.Certificates = append(cfg.Certificates, cert)\n\n\t// The documentation for the tls.X509KeyPair indicates that the Leaf certificate is not\n\t// retained.\n\tcrt, err := x509.ParseCertificate(certDecodedBlock)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn crt.Subject.String(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.IsEncryptedPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "if x509.IsEncryptedPEMBlock(currentBlock) {",
+        "SourceFilename": "/analysis/repo/mongo/options/clientoptions.go",
+        "SourceLineNum": 1209,
+        "ParentFunction": "addClientCertFromBytes (cfg *crypto/tls.Config, data []byte, keyPasswd string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

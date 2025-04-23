@@ -1,0 +1,437 @@
+[
+  {
+    "function_name": "FromECDSAPub",
+    "file_path": "/analysis/repo/crypto/crypto.go",
+    "line_number": 180,
+    "full_implementation": "func FromECDSAPub(pub *ecdsa.PublicKey) []byte {\n\tif pub == nil || pub.X == nil || pub.Y == nil {\n\t\treturn nil\n\t}\n\treturn elliptic.Marshal(S256(), pub.X, pub.Y)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "return elliptic.Marshal(S256(), pub.X, pub.Y)",
+        "SourceFilename": "/analysis/repo/crypto/crypto.go",
+        "SourceLineNum": 180,
+        "ParentFunction": "FromECDSAPub (pub *crypto/ecdsa.PublicKey) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "SigToPub",
+    "file_path": "/analysis/repo/crypto/signature_cgo.go",
+    "line_number": 43,
+    "full_implementation": "func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {\n\ts, err := Ecrecover(hash, sig)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tx, y := elliptic.Unmarshal(S256(), s)\n\treturn \u0026ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Unmarshal",
+      "Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+      "Slicing_Criteria": {
+        "SourceCode": "x, y := elliptic.Unmarshal(S256(), s)",
+        "SourceFilename": "/analysis/repo/crypto/signature_cgo.go",
+        "SourceLineNum": 43,
+        "ParentFunction": "SigToPub (hash []byte, sig []byte) (*crypto/ecdsa.PublicKey, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "UnmarshalPubkey",
+    "file_path": "/analysis/repo/crypto/crypto.go",
+    "line_number": 169,
+    "full_implementation": "func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {\n\tx, y := elliptic.Unmarshal(S256(), pub)\n\tif x == nil {\n\t\treturn nil, errInvalidPubkey\n\t}\n\treturn \u0026ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Unmarshal",
+      "Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+      "Slicing_Criteria": {
+        "SourceCode": "x, y := elliptic.Unmarshal(S256(), pub)",
+        "SourceFilename": "/analysis/repo/crypto/crypto.go",
+        "SourceLineNum": 169,
+        "ParentFunction": "UnmarshalPubkey (pub []byte) (*crypto/ecdsa.PublicKey, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "transform",
+    "file_path": "/analysis/repo/plugin/security/gateway.go",
+    "line_number": 64,
+    "full_implementation": "func transform(tlsData *proto.TLSConfiguration_Data) (*tls.Config, error) {\n\ttlsConfig := \u0026tls.Config{\n\t\t// prioritize curve preferences from crypto/tls/common.go#defaultCurvePreferences\n\t\tCurvePreferences: []tls.CurveID{\n\t\t\ttls.CurveP521,\n\t\t\ttls.CurveP384,\n\t\t\ttls.CurveP256,\n\t\t\ttls.X25519,\n\t\t},\n\t\t// Support only TLS1.2 \u0026 Above\n\t\tMinVersion: tls.VersionTLS12,\n\t}\n\treceivedCipherSuites := tlsData.GetCipherSuites()\n\tcipherSuites := make([]uint16, len(receivedCipherSuites))\n\tif len(receivedCipherSuites) \u003e 0 {\n\t\tfor i, cs := range receivedCipherSuites {\n\t\t\tif cs \u003e math.MaxUint16 {\n\t\t\t\treturn nil, errors.New(\"cipher suite value overflow\")\n\t\t\t}\n\t\t\tcipherSuites[i] = uint16(cs)\n\t\t}\n\t} else {\n\t\tcipherSuites = defaultCipherSuites\n\t}\n\ttlsConfig.CipherSuites = cipherSuites\n\n\tcer, err := tls.X509KeyPair(tlsData.GetCertPem(), tlsData.GetKeyPem())\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\ttlsConfig.Certificates = []tls.Certificate{cer}\n\n\treturn tlsConfig, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::CipherSuites",
+      "Message": "The TLS suite can be customized based on https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml -Recommended choices for parameters-4",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.CipherSuites = cipherSuites",
+        "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+        "SourceLineNum": 64,
+        "ParentFunction": "transform (tlsData *github.com/jpmorganchase/quorum-security-plugin-sdk-go/proto.TLSConfiguration_Data) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cipherSuites := make([]uint16, len(receivedCipherSuites))",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 53,
+          "ParentFunction": "transform (tlsData *github.com/jpmorganchase/quorum-security-plugin-sdk-go/proto.TLSConfiguration_Data) (*crypto/tls.Config, error)"
+        },
+        {
+          "SourceCode": "cipherSuites = defaultCipherSuites",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 62,
+          "ParentFunction": "transform (tlsData *github.com/jpmorganchase/quorum-security-plugin-sdk-go/proto.TLSConfiguration_Data) (*crypto/tls.Config, error)"
+        },
+        {
+          "SourceCode": "defaultCipherSuites = []uint16{",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 14,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 18,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "SECURE_TLS_SUITE"
+    }
+  },
+  {
+    "function_name": "transform",
+    "file_path": "/analysis/repo/plugin/security/gateway.go",
+    "line_number": 64,
+    "full_implementation": "func transform(tlsData *proto.TLSConfiguration_Data) (*tls.Config, error) {\n\ttlsConfig := \u0026tls.Config{\n\t\t// prioritize curve preferences from crypto/tls/common.go#defaultCurvePreferences\n\t\tCurvePreferences: []tls.CurveID{\n\t\t\ttls.CurveP521,\n\t\t\ttls.CurveP384,\n\t\t\ttls.CurveP256,\n\t\t\ttls.X25519,\n\t\t},\n\t\t// Support only TLS1.2 \u0026 Above\n\t\tMinVersion: tls.VersionTLS12,\n\t}\n\treceivedCipherSuites := tlsData.GetCipherSuites()\n\tcipherSuites := make([]uint16, len(receivedCipherSuites))\n\tif len(receivedCipherSuites) \u003e 0 {\n\t\tfor i, cs := range receivedCipherSuites {\n\t\t\tif cs \u003e math.MaxUint16 {\n\t\t\t\treturn nil, errors.New(\"cipher suite value overflow\")\n\t\t\t}\n\t\t\tcipherSuites[i] = uint16(cs)\n\t\t}\n\t} else {\n\t\tcipherSuites = defaultCipherSuites\n\t}\n\ttlsConfig.CipherSuites = cipherSuites\n\n\tcer, err := tls.X509KeyPair(tlsData.GetCertPem(), tlsData.GetKeyPem())\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\ttlsConfig.Certificates = []tls.Certificate{cer}\n\n\treturn tlsConfig, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::CipherSuites",
+      "Message": "The TLS suite can be customized based on https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml -Recommended choices for parameters-4",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.CipherSuites = cipherSuites",
+        "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+        "SourceLineNum": 64,
+        "ParentFunction": "transform (tlsData *github.com/jpmorganchase/quorum-security-plugin-sdk-go/proto.TLSConfiguration_Data) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cipherSuites := make([]uint16, len(receivedCipherSuites))",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 53,
+          "ParentFunction": "transform (tlsData *github.com/jpmorganchase/quorum-security-plugin-sdk-go/proto.TLSConfiguration_Data) (*crypto/tls.Config, error)"
+        },
+        {
+          "SourceCode": "cipherSuites = defaultCipherSuites",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 62,
+          "ParentFunction": "transform (tlsData *github.com/jpmorganchase/quorum-security-plugin-sdk-go/proto.TLSConfiguration_Data) (*crypto/tls.Config, error)"
+        },
+        {
+          "SourceCode": "defaultCipherSuites = []uint16{",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 14,
+          "ParentFunction": "init ()"
+        },
+        {
+          "SourceCode": "tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,",
+          "SourceFilename": "/analysis/repo/plugin/security/gateway.go",
+          "SourceLineNum": 17,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "SECURE_TLS_SUITE"
+    }
+  },
+  {
+    "function_name": "decryptPreSaleKey",
+    "file_path": "/analysis/repo/accounts/keystore/presale.go",
+    "line_number": 83,
+    "full_implementation": "func decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error) {\n\tpreSaleKeyStruct := struct {\n\t\tEncSeed string\n\t\tEthAddr string\n\t\tEmail   string\n\t\tBtcAddr string\n\t}{}\n\terr = json.Unmarshal(fileContent, \u0026preSaleKeyStruct)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tencSeedBytes, err := hex.DecodeString(preSaleKeyStruct.EncSeed)\n\tif err != nil {\n\t\treturn nil, errors.New(\"invalid hex in encSeed\")\n\t}\n\tif len(encSeedBytes) \u003c 16 {\n\t\treturn nil, errors.New(\"invalid encSeed, too short\")\n\t}\n\tiv := encSeedBytes[:16]\n\tcipherText := encSeedBytes[16:]\n\t/*\n\t\tSee https://github.com/ethereum/pyethsaletool\n\n\t\tpyethsaletool generates the encryption key from password by\n\t\t2000 rounds of PBKDF2 with HMAC-SHA-256 using password as salt (:().\n\t\t16 byte key length within PBKDF2 and resulting key is used as AES key\n\t*/\n\tpassBytes := []byte(password)\n\tderivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)\n\tplainText, err := aesCBCDecrypt(derivedKey, cipherText, iv)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tethPriv := crypto.Keccak256(plainText)\n\tecKey := crypto.ToECDSAUnsafe(ethPriv)\n\n\tkey = \u0026Key{\n\t\tId:         uuid.UUID{},\n\t\tAddress:    crypto.PubkeyToAddress(ecKey.PublicKey),\n\t\tPrivateKey: ecKey,\n\t}\n\tderivedAddr := hex.EncodeToString(key.Address.Bytes()) // needed because .Hex() gives leading \"0x\"\n\texpectedAddr := preSaleKeyStruct.EthAddr\n\tif derivedAddr != expectedAddr {\n\t\terr = fmt.Errorf(\"decrypted addr '%s' not equal to expected addr '%s'\", derivedAddr, expectedAddr)\n\t}\n\treturn key, err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 2000",
+      "Slicing_Criteria": {
+        "SourceCode": "derivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)",
+        "SourceFilename": "/analysis/repo/accounts/keystore/presale.go",
+        "SourceLineNum": 83,
+        "ParentFunction": "decryptPreSaleKey (fileContent []byte, password string) (key *github.com/ethereum/go-ethereum/accounts/keystore.Key, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "derivedKey := pbkdf2.Key(passBytes, passBytes, 2000, 16, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/keystore/presale.go",
+          "SourceLineNum": 83,
+          "ParentFunction": "decryptPreSaleKey (fileContent []byte, password string) (key *github.com/ethereum/go-ethereum/accounts/keystore.Key, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "NewSecureChannelSession",
+    "file_path": "/analysis/repo/accounts/scwallet/securechannel.go",
+    "line_number": 78,
+    "full_implementation": "func NewSecureChannelSession(card *pcsc.Card, keyData []byte) (*SecureChannelSession, error) {\n\t// Generate an ECDSA keypair for ourselves\n\tkey, err := crypto.GenerateKey()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tcardPublic, err := crypto.UnmarshalPubkey(keyData)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"could not unmarshal public key from card: %v\", err)\n\t}\n\tsecret, _ := key.Curve.ScalarMult(cardPublic.X, cardPublic.Y, key.D.Bytes())\n\treturn \u0026SecureChannelSession{\n\t\tcard:      card,\n\t\tsecret:    secret.Bytes(),\n\t\tpublicKey: elliptic.Marshal(crypto.S256(), key.PublicKey.X, key.PublicKey.Y),\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "publicKey: elliptic.Marshal(crypto.S256(), key.PublicKey.X, key.PublicKey.Y),",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+        "SourceLineNum": 78,
+        "ParentFunction": "NewSecureChannelSession (card *github.com/gballet/go-libpcsclite.Card, keyData []byte) (*github.com/ethereum/go-ethereum/accounts/scwallet.SecureChannelSession, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Pair",
+    "file_path": "/analysis/repo/accounts/scwallet/securechannel.go",
+    "line_number": 84,
+    "full_implementation": "func (s *SecureChannelSession) Pair(pairingPassword []byte) error {\n\tsecretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)\n\n\tchallenge := make([]byte, 32)\n\tif _, err := rand.Read(challenge); err != nil {\n\t\treturn err\n\t}\n\n\tresponse, err := s.pair(pairP1FirstStep, challenge)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd := sha256.New()\n\tmd.Write(secretHash[:])\n\tmd.Write(challenge)\n\n\texpectedCryptogram := md.Sum(nil)\n\tcardCryptogram := response.Data[:32]\n\tcardChallenge := response.Data[32:64]\n\n\tif !bytes.Equal(expectedCryptogram, cardCryptogram) {\n\t\treturn fmt.Errorf(\"invalid card cryptogram %v != %v\", expectedCryptogram, cardCryptogram)\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(cardChallenge)\n\tresponse, err = s.pair(pairP1LastStep, md.Sum(nil))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(response.Data[1:])\n\ts.PairingKey = md.Sum(nil)\n\ts.PairingIndex = response.Data[0]\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 50000",
+      "Slicing_Criteria": {
+        "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+        "SourceLineNum": 84,
+        "ParentFunction": "Pair (pairingPassword []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+          "SourceLineNum": 84,
+          "ParentFunction": "Pair (pairingPassword []byte) error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "initialize",
+    "file_path": "/analysis/repo/accounts/scwallet/wallet.go",
+    "line_number": 917,
+    "full_implementation": "func (s *Session) initialize(seed []byte) error {\n\t// Check that the wallet isn't currently initialized,\n\t// otherwise the key would be overwritten.\n\tstatus, err := s.Wallet.Status()\n\tif err != nil {\n\t\treturn err\n\t}\n\tif status == \"Online\" {\n\t\treturn fmt.Errorf(\"card is already initialized, cowardly refusing to proceed\")\n\t}\n\n\ts.Wallet.lock.Lock()\n\tdefer s.Wallet.lock.Unlock()\n\n\t// HMAC the seed to produce the private key and chain code\n\tmac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))\n\tmac.Write(seed)\n\tseed = mac.Sum(nil)\n\n\tkey, err := crypto.ToECDSA(seed[:32])\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tid := initializeData{}\n\tid.PublicKey = crypto.FromECDSAPub(\u0026key.PublicKey)\n\tid.PrivateKey = seed[:32]\n\tid.ChainCode = seed[32:]\n\tdata, err := asn1.Marshal(id)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Nasty hack to force the top-level struct tag to be context-specific\n\tdata[0] = 0xA1\n\n\t_, err = s.Channel.transmitEncrypted(claSCWallet, insLoadKey, 0x02, 0, data)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\nWe Found: 12",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+        "SourceLineNum": 917,
+        "ParentFunction": "initialize (seed []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+          "SourceLineNum": 917,
+          "ParentFunction": "initialize (seed []byte) error"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "initialize",
+    "file_path": "/analysis/repo/accounts/scwallet/wallet.go",
+    "line_number": 917,
+    "full_implementation": "func (s *Session) initialize(seed []byte) error {\n\t// Check that the wallet isn't currently initialized,\n\t// otherwise the key would be overwritten.\n\tstatus, err := s.Wallet.Status()\n\tif err != nil {\n\t\treturn err\n\t}\n\tif status == \"Online\" {\n\t\treturn fmt.Errorf(\"card is already initialized, cowardly refusing to proceed\")\n\t}\n\n\ts.Wallet.lock.Lock()\n\tdefer s.Wallet.lock.Unlock()\n\n\t// HMAC the seed to produce the private key and chain code\n\tmac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))\n\tmac.Write(seed)\n\tseed = mac.Sum(nil)\n\n\tkey, err := crypto.ToECDSA(seed[:32])\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tid := initializeData{}\n\tid.PublicKey = crypto.FromECDSAPub(\u0026key.PublicKey)\n\tid.PrivateKey = seed[:32]\n\tid.ChainCode = seed[32:]\n\tdata, err := asn1.Marshal(id)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\t// Nasty hack to force the top-level struct tag to be context-specific\n\tdata[0] = 0xA1\n\n\t_, err = s.Channel.transmitEncrypted(claSCWallet, insLoadKey, 0x02, 0, data)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+        "SourceLineNum": 917,
+        "ParentFunction": "initialize (seed []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "mac := hmac.New(sha512.New, []byte(\"Bitcoin seed\"))",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/wallet.go",
+          "SourceLineNum": 917,
+          "ParentFunction": "initialize (seed []byte) error"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "Pair",
+    "file_path": "/analysis/repo/accounts/scwallet/securechannel.go",
+    "line_number": 84,
+    "full_implementation": "func (s *SecureChannelSession) Pair(pairingPassword []byte) error {\n\tsecretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)\n\n\tchallenge := make([]byte, 32)\n\tif _, err := rand.Read(challenge); err != nil {\n\t\treturn err\n\t}\n\n\tresponse, err := s.pair(pairP1FirstStep, challenge)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd := sha256.New()\n\tmd.Write(secretHash[:])\n\tmd.Write(challenge)\n\n\texpectedCryptogram := md.Sum(nil)\n\tcardCryptogram := response.Data[:32]\n\tcardChallenge := response.Data[32:64]\n\n\tif !bytes.Equal(expectedCryptogram, cardCryptogram) {\n\t\treturn fmt.Errorf(\"invalid card cryptogram %v != %v\", expectedCryptogram, cardCryptogram)\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(cardChallenge)\n\tresponse, err = s.pair(pairP1LastStep, md.Sum(nil))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tmd.Reset()\n\tmd.Write(secretHash[:])\n\tmd.Write(response.Data[1:])\n\ts.PairingKey = md.Sum(nil)\n\ts.PairingIndex = response.Data[0]\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "Salt should be random",
+      "Slicing_Criteria": {
+        "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+        "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+        "SourceLineNum": 84,
+        "ParentFunction": "Pair (pairingPassword []byte) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+          "SourceLineNum": 84,
+          "ParentFunction": "Pair (pairingPassword []byte) error"
+        },
+        {
+          "SourceCode": "secretHash := pbkdf2.Key(norm.NFKD.Bytes(pairingPassword), norm.NFKD.Bytes([]byte(pairingSalt)), 50000, 32, sha256.New)",
+          "SourceFilename": "/analysis/repo/accounts/scwallet/securechannel.go",
+          "SourceLineNum": 84,
+          "ParentFunction": "Pair (pairingPassword []byte) error"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "GenerateKey",
+    "file_path": "/analysis/repo/crypto/ecies/ecies.go",
+    "line_number": 98,
+    "full_implementation": "func GenerateKey(rand io.Reader, curve elliptic.Curve, params *ECIESParams) (prv *PrivateKey, err error) {\n\tpb, x, y, err := elliptic.GenerateKey(curve, rand)\n\tif err != nil {\n\t\treturn\n\t}\n\tprv = new(PrivateKey)\n\tprv.PublicKey.X = x\n\tprv.PublicKey.Y = y\n\tprv.PublicKey.Curve = curve\n\tprv.D = new(big.Int).SetBytes(pb)\n\tif params == nil {\n\t\tparams = ParamsFromCurve(curve)\n\t}\n\tprv.PublicKey.Params = params\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.GenerateKey",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "pb, x, y, err := elliptic.GenerateKey(curve, rand)",
+        "SourceFilename": "/analysis/repo/crypto/ecies/ecies.go",
+        "SourceLineNum": 98,
+        "ParentFunction": "GenerateKey (rand io.Reader, curve crypto/elliptic.Curve, params *github.com/ethereum/go-ethereum/crypto/ecies.ECIESParams) (prv *github.com/ethereum/go-ethereum/crypto/ecies.PrivateKey, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Encrypt",
+    "file_path": "/analysis/repo/crypto/ecies/ecies.go",
+    "line_number": 258,
+    "full_implementation": "func Encrypt(rand io.Reader, pub *PublicKey, m, s1, s2 []byte) (ct []byte, err error) {\n\tparams, err := pubkeyParams(pub)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tR, err := GenerateKey(rand, pub.Curve, params)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tz, err := R.GenerateShared(pub, params.KeyLen, params.KeyLen)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\thash := params.Hash()\n\tKe, Km := deriveKeys(hash, z, s1, params.KeyLen)\n\n\tem, err := symEncrypt(rand, params, Ke, m)\n\tif err != nil || len(em) \u003c= params.BlockSize {\n\t\treturn nil, err\n\t}\n\n\td := messageTag(params.Hash, Km, em, s2)\n\n\tRb := elliptic.Marshal(pub.Curve, R.PublicKey.X, R.PublicKey.Y)\n\tct = make([]byte, len(Rb)+len(em)+len(d))\n\tcopy(ct, Rb)\n\tcopy(ct[len(Rb):], em)\n\tcopy(ct[len(Rb)+len(em):], d)\n\treturn ct, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "Rb := elliptic.Marshal(pub.Curve, R.PublicKey.X, R.PublicKey.Y)",
+        "SourceFilename": "/analysis/repo/crypto/ecies/ecies.go",
+        "SourceLineNum": 258,
+        "ParentFunction": "Encrypt (rand io.Reader, pub *github.com/ethereum/go-ethereum/crypto/ecies.PublicKey, m []byte, s1 []byte, s2 []byte) (ct []byte, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Decrypt",
+    "file_path": "/analysis/repo/crypto/ecies/ecies.go",
+    "line_number": 300,
+    "full_implementation": "func (prv *PrivateKey) Decrypt(c, s1, s2 []byte) (m []byte, err error) {\n\tif len(c) == 0 {\n\t\treturn nil, ErrInvalidMessage\n\t}\n\tparams, err := pubkeyParams(\u0026prv.PublicKey)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\thash := params.Hash()\n\n\tvar (\n\t\trLen   int\n\t\thLen   int = hash.Size()\n\t\tmStart int\n\t\tmEnd   int\n\t)\n\n\tswitch c[0] {\n\tcase 2, 3, 4:\n\t\trLen = (prv.PublicKey.Curve.Params().BitSize + 7) / 4\n\t\tif len(c) \u003c (rLen + hLen + 1) {\n\t\t\treturn nil, ErrInvalidMessage\n\t\t}\n\tdefault:\n\t\treturn nil, ErrInvalidPublicKey\n\t}\n\n\tmStart = rLen\n\tmEnd = len(c) - hLen\n\n\tR := new(PublicKey)\n\tR.Curve = prv.PublicKey.Curve\n\tR.X, R.Y = elliptic.Unmarshal(R.Curve, c[:rLen])\n\tif R.X == nil {\n\t\treturn nil, ErrInvalidPublicKey\n\t}\n\n\tz, err := prv.GenerateShared(R, params.KeyLen, params.KeyLen)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tKe, Km := deriveKeys(hash, z, s1, params.KeyLen)\n\n\td := messageTag(params.Hash, Km, c[mStart:mEnd], s2)\n\tif subtle.ConstantTimeCompare(c[mEnd:], d) != 1 {\n\t\treturn nil, ErrInvalidMessage\n\t}\n\n\treturn symDecrypt(params, Ke, c[mStart:mEnd])\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Unmarshal",
+      "Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+      "Slicing_Criteria": {
+        "SourceCode": "R.X, R.Y = elliptic.Unmarshal(R.Curve, c[:rLen])",
+        "SourceFilename": "/analysis/repo/crypto/ecies/ecies.go",
+        "SourceLineNum": 300,
+        "ParentFunction": "Decrypt (c []byte, s1 []byte, s2 []byte) (m []byte, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "exportPubkey",
+    "file_path": "/analysis/repo/p2p/rlpx/rlpx.go",
+    "line_number": 660,
+    "full_implementation": "func exportPubkey(pub *ecies.PublicKey) []byte {\n\tif pub == nil {\n\t\tpanic(\"nil pubkey\")\n\t}\n\treturn elliptic.Marshal(pub.Curve, pub.X, pub.Y)[1:]\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "return elliptic.Marshal(pub.Curve, pub.X, pub.Y)[1:]",
+        "SourceFilename": "/analysis/repo/p2p/rlpx/rlpx.go",
+        "SourceLineNum": 660,
+        "ParentFunction": "exportPubkey (pub *github.com/ethereum/go-ethereum/crypto/ecies.PublicKey) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Run",
+    "file_path": "/analysis/repo/core/vm/contracts.go",
+    "line_number": 227,
+    "full_implementation": "func (c *ripemd160hash) Run(input []byte) ([]byte, error) {\n\tripemd := ripemd160.New()\n\tripemd.Write(input)\n\treturn common.LeftPadBytes(ripemd.Sum(nil), 32), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ripemd160.New",
+      "Message": "Mendel et al. On the Collision Resistance of RIPEMD-160. \nDeprecated: RIPEMD-160 is a legacy hash and should not be used for new applications. Also, this package does not and will not provide an optimized implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).",
+      "Slicing_Criteria": {
+        "SourceCode": "ripemd := ripemd160.New()",
+        "SourceFilename": "/analysis/repo/core/vm/contracts.go",
+        "SourceLineNum": 227,
+        "ParentFunction": "Run (input []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewTLSConfig",
+    "file_path": "/analysis/repo/qlight/config.go",
+    "line_number": 27,
+    "full_implementation": "func NewTLSConfig(config *TLSConfig) (*tls.Config, error) {\n\tif config.InsecureSkipVerify {\n\t\treturn \u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t}, nil\n\t}\n\tvar (\n\t\tCA_Pool *x509.CertPool\n\t\terr     error\n\t)\n\tif len(config.CACertFileName) \u003e 0 {\n\t\tCA_Pool, err = x509.SystemCertPool()\n\t\tif err != nil {\n\t\t\tCA_Pool = x509.NewCertPool()\n\t\t}\n\t\tcert, err := os.ReadFile(config.CACertFileName)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tCA_Pool.AppendCertsFromPEM(cert)\n\t}\n\n\tvar (\n\t\tClientCA_Pool *x509.CertPool\n\t\tClientAuth    tls.ClientAuthType\n\t)\n\tif len(config.ClientCACertFileName) \u003e 0 {\n\t\tClientCA_Pool, err = x509.SystemCertPool()\n\t\tif err != nil {\n\t\t\tClientCA_Pool = x509.NewCertPool()\n\t\t}\n\t\tcert, err := os.ReadFile(config.ClientCACertFileName)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tClientCA_Pool.AppendCertsFromPEM(cert)\n\t\tif config.ClientAuth \u003c 0 || config.ClientAuth \u003e 4 {\n\t\t\treturn nil, fmt.Errorf(\"Invalid ClientAuth value: %d\", config.ClientAuth)\n\t\t}\n\t\tClientAuth = tls.ClientAuthType(config.ClientAuth)\n\t}\n\n\tvar certificates []tls.Certificate\n\n\tif len(config.CertFileName) \u003e 0 \u0026\u0026 len(config.KeyFileName) \u003e 0 {\n\t\tcert, err := tls.LoadX509KeyPair(config.CertFileName, config.KeyFileName)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tcertificates = []tls.Certificate{cert}\n\t}\n\n\tvar CipherSuites []uint16\n\tif len(config.CipherSuites) \u003e 0 {\n\t\tcipherSuitesStrings := strings.FieldsFunc(config.CipherSuites, func(r rune) bool {\n\t\t\treturn r == ','\n\t\t})\n\t\tif len(cipherSuitesStrings) \u003e 0 {\n\t\t\tcipherSuiteList := make(security.CipherSuiteList, len(cipherSuitesStrings))\n\t\t\tfor i, s := range cipherSuitesStrings {\n\t\t\t\tcipherSuiteList[i] = security.CipherSuite(strings.TrimSpace(s))\n\t\t\t}\n\t\t\tCipherSuites, err = cipherSuiteList.ToUint16Array()\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\t}\n\n\treturn \u0026tls.Config{\n\t\tRootCAs:      CA_Pool,\n\t\tCertificates: certificates,\n\t\tServerName:   config.ServerName,\n\t\tClientCAs:    ClientCA_Pool,\n\t\tClientAuth:   ClientAuth,\n\t\tCipherSuites: CipherSuites,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/qlight/config.go",
+        "SourceLineNum": 27,
+        "ParentFunction": "NewTLSConfig (config *github.com/ethereum/go-ethereum/qlight.TLSConfig) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/qlight/config.go",
+          "SourceLineNum": 27,
+          "ParentFunction": "NewTLSConfig (config *github.com/ethereum/go-ethereum/qlight.TLSConfig) (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "encryptSeed",
+    "file_path": "/analysis/repo/cmd/clef/main.go",
+    "line_number": 1052,
+    "full_implementation": "func encryptSeed(seed []byte, auth []byte, scryptN, scryptP int) ([]byte, error) {\n\tcryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn json.Marshal(\u0026encryptedSeedStorage{\"Clef seed\", 1, cryptoStruct})\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/ethereum/go-ethereum/accounts/keystore.EncryptDataV3",
+      "Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\n\u003e\u003e/analysis/repo/accounts/keystore/passphrase.go\nEncryptDataV3 (data []byte, auth []byte, scryptN int, scryptP int) (github.com/ethereum/go-ethereum/accounts/keystore.CryptoJSON, error)\n\t146:\tderivedKey, err := scrypt.Key(auth, salt, scryptN, scryptR, scryptP, scryptDKLen)\n\t141:\tfunc EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) {\nWe Found: 4096",
+      "Slicing_Criteria": {
+        "SourceCode": "cryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP)",
+        "SourceFilename": "/analysis/repo/cmd/clef/main.go",
+        "SourceLineNum": 1052,
+        "ParentFunction": "encryptSeed (seed []byte, auth []byte, scryptN int, scryptP int) ([]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func encryptSeed(seed []byte, auth []byte, scryptN, scryptP int) ([]byte, error) {",
+          "SourceFilename": "/analysis/repo/cmd/clef/main.go",
+          "SourceLineNum": 1051,
+          "ParentFunction": "encryptSeed (seed []byte, auth []byte, scryptN int, scryptP int) ([]byte, error)"
+        },
+        {
+          "SourceCode": "n, p := keystore.StandardScryptN, keystore.StandardScryptP",
+          "SourceFilename": "/analysis/repo/cmd/clef/main.go",
+          "SourceLineNum": 372,
+          "ParentFunction": "initializeSecrets (c *gopkg.in/urfave/cli.v1.Context) error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

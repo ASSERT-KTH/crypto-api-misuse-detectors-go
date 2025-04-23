@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "Cache",
+    "file_path": "/analysis/repo/http_backend.go",
+    "line_number": 135,
+    "full_implementation": "func (h *httpBackend) Cache(request *http.Request, bodySize int, checkHeadersFunc checkHeadersFunc, cacheDir string) (*Response, error) {\n\tif cacheDir == \"\" || request.Method != \"GET\" || request.Header.Get(\"Cache-Control\") == \"no-cache\" {\n\t\treturn h.Do(request, bodySize, checkHeadersFunc)\n\t}\n\tsum := sha1.Sum([]byte(request.URL.String()))\n\thash := hex.EncodeToString(sum[:])\n\tdir := path.Join(cacheDir, hash[:2])\n\tfilename := path.Join(dir, hash)\n\tif file, err := os.Open(filename); err == nil {\n\t\tresp := new(Response)\n\t\terr := gob.NewDecoder(file).Decode(resp)\n\t\tfile.Close()\n\t\tcheckHeadersFunc(request, resp.StatusCode, *resp.Headers)\n\t\tif resp.StatusCode \u003c 500 {\n\t\t\treturn resp, err\n\t\t}\n\t}\n\tresp, err := h.Do(request, bodySize, checkHeadersFunc)\n\tif err != nil || resp.StatusCode \u003e= 500 {\n\t\treturn resp, err\n\t}\n\tif _, err := os.Stat(dir); err != nil {\n\t\tif err := os.MkdirAll(dir, 0750); err != nil {\n\t\t\treturn resp, err\n\t\t}\n\t}\n\tfile, err := os.Create(filename + \"~\")\n\tif err != nil {\n\t\treturn resp, err\n\t}\n\tif err := gob.NewEncoder(file).Encode(resp); err != nil {\n\t\tfile.Close()\n\t\treturn resp, err\n\t}\n\tfile.Close()\n\treturn resp, os.Rename(filename+\"~\", filename)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := sha1.Sum([]byte(request.URL.String()))",
+        "SourceFilename": "/analysis/repo/http_backend.go",
+        "SourceLineNum": 135,
+        "ParentFunction": "Cache (request *net/http.Request, bodySize int, checkHeadersFunc github.com/gocolly/colly/v2.checkHeadersFunc, cacheDir string) (*github.com/gocolly/colly/v2.Response, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

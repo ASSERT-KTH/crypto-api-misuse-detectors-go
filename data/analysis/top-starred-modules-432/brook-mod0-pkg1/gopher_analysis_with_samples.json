@@ -1,0 +1,45 @@
+[
+  {
+    "function_name": "NewBrookLink",
+    "file_path": "/analysis/repo/brooklink.go",
+    "line_number": 93,
+    "full_implementation": "func NewBrookLink(link string) (*BrookLink, error) {\n\tvar address, host, path string\n\tkind, server, v, err := ParseLink(link)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tp := []byte(v.Get(\"password\"))\n\tif kind == \"server\" {\n\t\taddress = server\n\t}\n\tvar tc *tls.Config\n\tvar tlsfingerprint utls.ClientHelloID\n\tvar fragmentMinLength int64\n\tvar fragmentMaxLength int64\n\tvar fragmentMinDelay int64\n\tvar fragmentMaxDelay int64\n\tif kind == \"socks5\" || kind == \"wsserver\" || kind == \"wssserver\" || kind == \"quicserver\" {\n\t\tu, err := url.Parse(server)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\thost = u.Host\n\t\tpath = u.Path\n\t\tif path == \"\" {\n\t\t\tpath = \"/ws\"\n\t\t}\n\t\taddress = host\n\t\tif kind == \"wsserver\" || kind == \"wssserver\" || kind == \"quicserver\" {\n\t\t\tif v.Get(\"address\") != \"\" {\n\t\t\t\taddress = v.Get(\"address\")\n\t\t\t}\n\t\t}\n\t\tif kind == \"wssserver\" || kind == \"quicserver\" {\n\t\t\th, _, err := net.SplitHostPort(u.Host)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\ttc = \u0026tls.Config{ServerName: h}\n\t\t\tif v.Get(\"insecure\") == \"true\" {\n\t\t\t\ttc.InsecureSkipVerify = true\n\t\t\t}\n\t\t\tif v.Get(\"ca\") != \"\" {\n\t\t\t\troots := x509.NewCertPool()\n\t\t\t\tok := roots.AppendCertsFromPEM([]byte(v.Get(\"ca\")))\n\t\t\t\tif !ok {\n\t\t\t\t\treturn nil, errors.New(\"failed to parse root certificate\")\n\t\t\t\t}\n\t\t\t\ttc.RootCAs = roots\n\t\t\t}\n\t\t\tif kind == \"wssserver\" {\n\t\t\t\ttc.NextProtos = []string{\"http/1.1\"}\n\t\t\t}\n\t\t\tif kind == \"quicserver\" {\n\t\t\t\ttc.NextProtos = []string{\"h3\"}\n\t\t\t}\n\t\t}\n\t\tif kind == \"wsserver\" || kind == \"wssserver\" || kind == \"quicserver\" {\n\t\t\tif v.Get(\"withoutBrookProtocol\") == \"true\" {\n\t\t\t\tp, err = SHA256Bytes([]byte(v.Get(\"password\")))\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tif kind == \"wssserver\" {\n\t\t\tif v.Get(\"tlsfingerprint\") == \"chrome\" {\n\t\t\t\ttlsfingerprint = utls.HelloChrome_Auto\n\t\t\t}\n\t\t\tif v.Get(\"fragment\") != \"\" {\n\t\t\t\tl := strings.Split(v.Get(\"fragment\"), \":\")\n\t\t\t\tif len(l) == 4 {\n\t\t\t\t\tfragmentMinLength, _ = strconv.ParseInt(l[0], 10, 64)\n\t\t\t\t\tfragmentMaxLength, _ = strconv.ParseInt(l[1], 10, 64)\n\t\t\t\t\tfragmentMinDelay, _ = strconv.ParseInt(l[2], 10, 64)\n\t\t\t\t\tfragmentMaxDelay, _ = strconv.ParseInt(l[3], 10, 64)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\treturn \u0026BrookLink{\n\t\tKind:              kind,\n\t\tAddress:           address,\n\t\tHost:              host,\n\t\tPath:              path,\n\t\tPassword:          p,\n\t\tV:                 v,\n\t\tTc:                tc,\n\t\tTLSFingerprint:    tlsfingerprint,\n\t\tFragmentMinLength: fragmentMinLength,\n\t\tFragmentMaxLength: fragmentMaxLength,\n\t\tFragmentMinDelay:  fragmentMinDelay,\n\t\tFragmentMaxDelay:  fragmentMaxDelay,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tc.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/brooklink.go",
+        "SourceLineNum": 93,
+        "ParentFunction": "NewBrookLink (link string) (*github.com/txthinking/brook.BrookLink, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tc.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/brooklink.go",
+          "SourceLineNum": 93,
+          "ParentFunction": "NewBrookLink (link string) (*github.com/txthinking/brook.BrookLink, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "WebSocketDial",
+    "file_path": "/analysis/repo/websocket.go",
+    "line_number": 160,
+    "full_implementation": "func WebSocketDial(src, dst, addr, host, path string, tc *tls.Config, timeout int, tlsfingerprint utls.ClientHelloID, fragmentMinLength, fragmentMaxLength, fragmentMinDelay, fragmentMaxDelay int64) (net.Conn, error) {\n\tvar c net.Conn\n\tvar err error\n\tif src == \"\" || dst == \"\" {\n\t\tc, err = DialTCP(\"tcp\", \"\", addr)\n\t}\n\tif src != \"\" \u0026\u0026 dst != \"\" {\n\t\tc, err = NATDial(\"tcp\", src, dst, addr)\n\t}\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif timeout != 0 {\n\t\tif err := c.SetDeadline(time.Now().Add(time.Duration(timeout) * time.Second)); err != nil {\n\t\t\tc.Close()\n\t\t\treturn nil, err\n\t\t}\n\t}\n\tif tc != nil {\n\t\tif fragmentMinLength != 0 \u0026\u0026 fragmentMaxLength != 0 \u0026\u0026 fragmentMinDelay != 0 \u0026\u0026 fragmentMaxDelay != 0 {\n\t\t\tc = \u0026TLSFragmentConn{\n\t\t\t\tConn:      c,\n\t\t\t\tMinLength: fragmentMinLength,\n\t\t\t\tMaxLength: fragmentMaxLength,\n\t\t\t\tMinDelay:  fragmentMinDelay,\n\t\t\t\tMaxDelay:  fragmentMaxDelay,\n\t\t\t}\n\t\t}\n\t\tif tlsfingerprint.Client == \"\" {\n\t\t\tc1 := tls.Client(c, tc)\n\t\t\tif err := c1.Handshake(); err != nil {\n\t\t\t\tc1.Close()\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\ts := host\n\t\t\th, _, err := net.SplitHostPort(host)\n\t\t\tif err == nil {\n\t\t\t\ts = h\n\t\t\t}\n\t\t\tif !tc.InsecureSkipVerify {\n\t\t\t\tif err := c1.VerifyHostname(s); err != nil {\n\t\t\t\t\tc1.Close()\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t}\n\t\t\tc = c1\n\t\t}\n\t\tif tlsfingerprint.Client != \"\" {\n\t\t\tc1 := utls.UClient(c, \u0026utls.Config{\n\t\t\t\tServerName:         tc.ServerName,\n\t\t\t\tNextProtos:         tc.NextProtos,\n\t\t\t\tInsecureSkipVerify: tc.InsecureSkipVerify,\n\t\t\t\tRootCAs:            tc.RootCAs,\n\t\t\t}, tlsfingerprint)\n\t\t\ts := host\n\t\t\th, _, err := net.SplitHostPort(host)\n\t\t\tif err == nil {\n\t\t\t\ts = h\n\t\t\t}\n\t\t\tif err := c1.BuildHandshakeState(); err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\tfor _, v := range c1.Extensions {\n\t\t\t\tif vv, ok := v.(*utls.ALPNExtension); ok {\n\t\t\t\t\tif tlsfingerprint.Client == \"Chrome\" {\n\t\t\t\t\t\tvv.AlpnProtocols = []string{\"http/1.1\"}\n\t\t\t\t\t}\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tif err := c1.BuildHandshakeState(); err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\tif err := c1.Handshake(); err != nil {\n\t\t\t\tc1.Close()\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\tif !tc.InsecureSkipVerify {\n\t\t\t\tif err := c1.VerifyHostname(s); err != nil {\n\t\t\t\t\tc1.Close()\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t}\n\t\t\tc = c1\n\t\t}\n\t}\n\tp := x1.BP16.Get().([]byte)\n\tif _, err := io.ReadFull(rand.Reader, p); err != nil {\n\t\tx1.BP16.Put(p)\n\t\tc.Close()\n\t\treturn nil, err\n\t}\n\tk := base64.StdEncoding.EncodeToString(p)\n\tx1.BP16.Put(p)\n\tb := make([]byte, 0, 300)\n\tb = append(b, []byte(\"GET \"+path+\" HTTP/1.1\\r\\n\")...)\n\tb = append(b, []byte(fmt.Sprintf(\"Host: %s\\r\\n\", host))...)\n\tb = append(b, []byte(\"Upgrade: websocket\\r\\n\")...)\n\tb = append(b, []byte(\"Connection: Upgrade\\r\\n\")...)\n\tb = append(b, []byte(fmt.Sprintf(\"Sec-WebSocket-Key: %s\\r\\n\", k))...)\n\tb = append(b, []byte(\"Sec-WebSocket-Version: 13\\r\\n\\r\\n\")...)\n\tif _, err := c.Write(b); err != nil {\n\t\tc.Close()\n\t\treturn nil, err\n\t}\n\tr := bufio.NewReader(c)\n\tfor {\n\t\tb, err = r.ReadBytes('\\n')\n\t\tif err != nil {\n\t\t\tc.Close()\n\t\t\treturn nil, err\n\t\t}\n\t\tb = bytes.TrimSpace(b)\n\t\tif len(b) == 0 {\n\t\t\tbreak\n\t\t}\n\t\tif bytes.HasPrefix(b, []byte(\"HTTP/1.1 \")) {\n\t\t\tif !bytes.Contains(b, []byte(\"101\")) {\n\t\t\t\tc.Close()\n\t\t\t\treturn nil, errors.New(string(b))\n\t\t\t}\n\t\t}\n\t\tif bytes.HasPrefix(b, []byte(\"Sec-WebSocket-Accept: \")) {\n\t\t\th := sha1.New()\n\t\t\th.Write([]byte(k))\n\t\t\th.Write([]byte(\"258EAFA5-E914-47DA-95CA-C5AB0DC85B11\"))\n\t\t\tak := base64.StdEncoding.EncodeToString(h.Sum(nil))\n\t\t\tif string(b[len(\"Sec-WebSocket-Accept: \"):]) != ak {\n\t\t\t\tc.Close()\n\t\t\t\treturn nil, errors.New(string(b))\n\t\t\t}\n\t\t}\n\t}\n\treturn c, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/websocket.go",
+        "SourceLineNum": 160,
+        "ParentFunction": "WebSocketDial (src string, dst string, addr string, host string, path string, tc *crypto/tls.Config, timeout int, tlsfingerprint github.com/refraction-networking/utls.ClientHelloID, fragmentMinLength int64, fragmentMaxLength int64, fragmentMinDelay int64, fragmentMaxDelay int64) (net.Conn, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

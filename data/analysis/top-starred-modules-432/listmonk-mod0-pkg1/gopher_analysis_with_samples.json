@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "initConstants",
+    "file_path": "/analysis/repo/cmd/init.go",
+    "line_number": 439,
+    "full_implementation": "func initConstants() *constants {\n\t// Read constants.\n\tvar c constants\n\tif err := ko.Unmarshal(\"app\", \u0026c); err != nil {\n\t\tlo.Fatalf(\"error loading app config: %v\", err)\n\t}\n\tif err := ko.Unmarshal(\"privacy\", \u0026c.Privacy); err != nil {\n\t\tlo.Fatalf(\"error loading app.privacy config: %v\", err)\n\t}\n\tif err := ko.Unmarshal(\"security\", \u0026c.Security); err != nil {\n\t\tlo.Fatalf(\"error loading app.security config: %v\", err)\n\t}\n\n\tif err := ko.UnmarshalWithConf(\"appearance\", \u0026c.Appearance, koanf.UnmarshalConf{FlatPaths: true}); err != nil {\n\t\tlo.Fatalf(\"error loading app.appearance config: %v\", err)\n\t}\n\n\tc.RootURL = strings.TrimRight(c.RootURL, \"/\")\n\tc.LoginURL = path.Join(uriAdmin, \"/login\")\n\tc.Lang = ko.String(\"app.lang\")\n\tc.Privacy.Exportable = maps.StringSliceToLookupMap(ko.Strings(\"privacy.exportable\"))\n\tc.MediaUpload.Provider = ko.String(\"upload.provider\")\n\tc.MediaUpload.Extensions = ko.Strings(\"upload.extensions\")\n\tc.Privacy.DomainBlocklist = ko.Strings(\"privacy.domain_blocklist\")\n\n\t// Static URLS.\n\t// url.com/subscription/{campaign_uuid}/{subscriber_uuid}\n\tc.UnsubURL = fmt.Sprintf(\"%s/subscription/%%s/%%s\", c.RootURL)\n\n\t// url.com/subscription/optin/{subscriber_uuid}\n\tc.OptinURL = fmt.Sprintf(\"%s/subscription/optin/%%s?%%s\", c.RootURL)\n\n\t// url.com/link/{campaign_uuid}/{subscriber_uuid}/{link_uuid}\n\tc.LinkTrackURL = fmt.Sprintf(\"%s/link/%%s/%%s/%%s\", c.RootURL)\n\n\t// url.com/link/{campaign_uuid}/{subscriber_uuid}\n\tc.MessageURL = fmt.Sprintf(\"%s/campaign/%%s/%%s\", c.RootURL)\n\n\t// url.com/archive\n\tc.ArchiveURL = c.RootURL + \"/archive\"\n\n\t// url.com/campaign/{campaign_uuid}/{subscriber_uuid}/px.png\n\tc.ViewTrackURL = fmt.Sprintf(\"%s/campaign/%%s/%%s/px.png\", c.RootURL)\n\n\tc.BounceWebhooksEnabled = ko.Bool(\"bounce.webhooks_enabled\")\n\tc.BounceSESEnabled = ko.Bool(\"bounce.ses_enabled\")\n\tc.BounceSendgridEnabled = ko.Bool(\"bounce.sendgrid_enabled\")\n\tc.BouncePostmarkEnabled = ko.Bool(\"bounce.postmark.enabled\")\n\tc.BounceForwardemailEnabled = ko.Bool(\"bounce.forwardemail.enabled\")\n\tc.HasLegacyUser = ko.Exists(\"app.admin_username\") || ko.Exists(\"app.admin_password\")\n\n\tb := md5.Sum([]byte(time.Now().String()))\n\tc.AssetVersion = fmt.Sprintf(\"%x\", b)[0:10]\n\n\tpm, err := fs.Read(\"/permissions.json\")\n\tif err != nil {\n\t\tlo.Fatalf(\"error reading permissions file: %v\", err)\n\t}\n\tc.PermissionsRaw = pm\n\n\t// Make a lookup map of permissions.\n\tpermGroups := []struct {\n\t\tGroup       string   `json:\"group\"`\n\t\tPermissions []string `json:\"permissions\"`\n\t}{}\n\tif err := json.Unmarshal(pm, \u0026permGroups); err != nil {\n\t\tlo.Fatalf(\"error loading permissions file: %v\", err)\n\t}\n\n\tc.Permissions = map[string]struct{}{}\n\tfor _, group := range permGroups {\n\t\tfor _, g := range group.Permissions {\n\t\t\tc.Permissions[g] = struct{}{}\n\t\t}\n\t}\n\n\treturn \u0026c\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "b := md5.Sum([]byte(time.Now().String()))",
+        "SourceFilename": "/analysis/repo/cmd/init.go",
+        "SourceLineNum": 439,
+        "ParentFunction": "initConstants () *github.com/knadh/listmonk/cmd.constants"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

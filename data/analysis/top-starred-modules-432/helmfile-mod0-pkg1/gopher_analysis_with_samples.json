@@ -1,0 +1,38 @@
+[
+  {
+    "function_name": "GenerateOutputFilePath",
+    "file_path": "/analysis/repo/pkg/state/state.go",
+    "line_number": 3131,
+    "full_implementation": "func (st *HelmState) GenerateOutputFilePath(release *ReleaseSpec, outputFileTemplate string) (string, error) {\n\t// get absolute path of state file to generate a hash\n\t// use this hash to write helm output in a specific directory by state file and release name\n\t// ie. in a directory named stateFileName-stateFileHash-releaseName\n\tstateAbsPath, err := filepath.Abs(st.FilePath)\n\tif err != nil {\n\t\treturn stateAbsPath, err\n\t}\n\n\thasher := sha1.New()\n\t_, err = io.WriteString(hasher, stateAbsPath)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tvar stateFileExtension = filepath.Ext(st.FilePath)\n\tvar stateFileName = st.FilePath[0 : len(st.FilePath)-len(stateFileExtension)]\n\n\tsha1sum := hex.EncodeToString(hasher.Sum(nil))[:8]\n\n\tvar sb strings.Builder\n\tsb.WriteString(stateFileName)\n\tsb.WriteString(\"-\")\n\tsb.WriteString(sha1sum)\n\tsb.WriteString(\"-\")\n\tsb.WriteString(release.Name)\n\n\tif outputFileTemplate == \"\" {\n\t\toutputFileTemplate = filepath.Join(\"{{ .State.BaseName }}-{{ .State.AbsPathSHA1 }}\", \"{{ .Release.Name }}.yaml\")\n\t}\n\n\tt, err := template.New(\"output-file\").Parse(outputFileTemplate)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"parsing output-file templmate\")\n\t}\n\n\tbuf := \u0026bytes.Buffer{}\n\n\ttype state struct {\n\t\tBaseName    string\n\t\tPath        string\n\t\tAbsPath     string\n\t\tAbsPathSHA1 string\n\t}\n\n\tdata := struct {\n\t\tState   state\n\t\tRelease *ReleaseSpec\n\t}{\n\t\tState: state{\n\t\t\tBaseName:    stateFileName,\n\t\t\tPath:        st.FilePath,\n\t\t\tAbsPath:     stateAbsPath,\n\t\t\tAbsPathSHA1: sha1sum,\n\t\t},\n\t\tRelease: release,\n\t}\n\n\tif err := t.Execute(buf, data); err != nil {\n\t\treturn \"\", fmt.Errorf(\"executing output-file template: %w\", err)\n\t}\n\n\treturn buf.String(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := sha1.New()",
+        "SourceFilename": "/analysis/repo/pkg/state/state.go",
+        "SourceLineNum": 3131,
+        "ParentFunction": "GenerateOutputFilePath (release *github.com/roboll/helmfile/pkg/state.ReleaseSpec, outputFileTemplate string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GenerateOutputDir",
+    "file_path": "/analysis/repo/pkg/state/state.go",
+    "line_number": 3064,
+    "full_implementation": "func (st *HelmState) GenerateOutputDir(outputDir string, release *ReleaseSpec, outputDirTemplate string) (string, error) {\n\t// get absolute path of state file to generate a hash\n\t// use this hash to write helm output in a specific directory by state file and release name\n\t// ie. in a directory named stateFileName-stateFileHash-releaseName\n\tstateAbsPath, err := filepath.Abs(st.FilePath)\n\tif err != nil {\n\t\treturn stateAbsPath, err\n\t}\n\n\thasher := sha1.New()\n\t_, err = io.WriteString(hasher, stateAbsPath)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tvar stateFileExtension = filepath.Ext(st.FilePath)\n\tvar stateFileName = st.FilePath[0 : len(st.FilePath)-len(stateFileExtension)]\n\n\tsha1sum := hex.EncodeToString(hasher.Sum(nil))[:8]\n\n\tvar sb strings.Builder\n\tsb.WriteString(stateFileName)\n\tsb.WriteString(\"-\")\n\tsb.WriteString(sha1sum)\n\tsb.WriteString(\"-\")\n\tsb.WriteString(release.Name)\n\n\tif outputDirTemplate == \"\" {\n\t\toutputDirTemplate = filepath.Join(\"{{ .OutputDir }}\", \"{{ .State.BaseName }}-{{ .State.AbsPathSHA1 }}-{{ .Release.Name}}\")\n\t}\n\n\tt, err := template.New(\"output-dir\").Parse(outputDirTemplate)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"parsing output-dir templmate\")\n\t}\n\n\tbuf := \u0026bytes.Buffer{}\n\n\ttype state struct {\n\t\tBaseName    string\n\t\tPath        string\n\t\tAbsPath     string\n\t\tAbsPathSHA1 string\n\t}\n\n\tdata := struct {\n\t\tOutputDir string\n\t\tState     state\n\t\tRelease   *ReleaseSpec\n\t}{\n\t\tOutputDir: outputDir,\n\t\tState: state{\n\t\t\tBaseName:    stateFileName,\n\t\t\tPath:        st.FilePath,\n\t\t\tAbsPath:     stateAbsPath,\n\t\t\tAbsPathSHA1: sha1sum,\n\t\t},\n\t\tRelease: release,\n\t}\n\n\tif err := t.Execute(buf, data); err != nil {\n\t\treturn \"\", fmt.Errorf(\"executing output-dir template: %w\", err)\n\t}\n\n\treturn buf.String(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := sha1.New()",
+        "SourceFilename": "/analysis/repo/pkg/state/state.go",
+        "SourceLineNum": 3064,
+        "ParentFunction": "GenerateOutputDir (outputDir string, release *github.com/roboll/helmfile/pkg/state.ReleaseSpec, outputDirTemplate string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

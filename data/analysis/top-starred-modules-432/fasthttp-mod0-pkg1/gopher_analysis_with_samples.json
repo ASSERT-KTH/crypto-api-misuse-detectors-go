@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "newClientTLSConfig",
+    "file_path": "/analysis/repo/client.go",
+    "line_number": 1925,
+    "full_implementation": "func newClientTLSConfig(c *tls.Config, addr string) *tls.Config {\n\tif c == nil {\n\t\tc = \u0026tls.Config{}\n\t} else {\n\t\tc = c.Clone()\n\t}\n\n\tif c.ServerName == \"\" {\n\t\tserverName := tlsServerName(addr)\n\t\tif serverName == \"*\" {\n\t\t\tc.InsecureSkipVerify = true\n\t\t} else {\n\t\t\tc.ServerName = serverName\n\t\t}\n\t}\n\treturn c\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "c.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/client.go",
+        "SourceLineNum": 1925,
+        "ParentFunction": "newClientTLSConfig (c *crypto/tls.Config, addr string) *crypto/tls.Config"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "c.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/client.go",
+          "SourceLineNum": 1925,
+          "ParentFunction": "newClientTLSConfig (c *crypto/tls.Config, addr string) *crypto/tls.Config"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

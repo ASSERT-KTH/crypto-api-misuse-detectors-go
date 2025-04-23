@@ -1,0 +1,339 @@
+[
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+		"Slicing_Criteria": {
+			"SourceCode": "h := hmac.New(hash, secret)",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 39,
+			"ParentFunction": "pHash (result []byte, secret []byte, seed []byte, hash "
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func pHash(result, secret, seed []byte, hash func() hash.Hash) {",
+				"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+				"SourceLineNum": 38,
+				"ParentFunction": "pHash (result []byte, secret []byte, seed []byte, hash "
+			},
+			{
+				"SourceCode": "pHash(result, s1, labelAndSeed, hashMD5)",
+				"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+				"SourceLineNum": 72,
+				"ParentFunction": "prf10 (result []byte, secret []byte, label []byte, seed []byte)"
+			}
+		],
+		"Predicate_Type": "SECURE_HMAC_HASH"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), version}",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 187,
+			"ParentFunction": "newFinishedHash (version uint16) github.com/bfenetworks/bfe/bfe_tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), version}",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 187,
+			"ParentFunction": "newFinishedHash (version uint16) github.com/bfenetworks/bfe/bfe_tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hashMD5 := md5.New()",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 94,
+			"ParentFunction": "prf30 (result []byte, secret []byte, label []byte, seed []byte)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hmd5 := md5.New()",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 124,
+			"ParentFunction": "md5SHA1Hash (slices [][]byte) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "sum := md5.Sum([]byte(c.ja3Raw))",
+			"SourceFilename": "/analysis/repo/bfe_tls/handshake_server.go",
+			"SourceLineNum": 80,
+			"ParentFunction": "serverHandshake () error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rc4.NewCipher",
+		"Message": "RC4 - RFC 7465 - Prohibiting RC4 Cipher Suites",
+		"Slicing_Criteria": {
+			"SourceCode": "cipher, _ := rc4.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/bfe_tls/cipher_suites.go",
+			"SourceLineNum": 195,
+			"ParentFunction": "cipherRC4 (key []byte, iv []byte, isRead bool) interface{}"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.EncryptPKCS1v15",
+		"Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
+		"Slicing_Criteria": {
+			"SourceCode": "encrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 99,
+			"ParentFunction": "generateClientKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/bfenetworks/bfe/bfe_tls.clientKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hsha1 := sha1.New()",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 113,
+			"ParentFunction": "sha1Hash (slices [][]byte) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), version}",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 187,
+			"ParentFunction": "newFinishedHash (version uint16) github.com/bfenetworks/bfe/bfe_tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), version}",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 187,
+			"ParentFunction": "newFinishedHash (version uint16) github.com/bfenetworks/bfe/bfe_tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hashSHA1 := sha1.New()",
+			"SourceFilename": "/analysis/repo/bfe_tls/prf.go",
+			"SourceLineNum": 93,
+			"ParentFunction": "prf30 (result []byte, secret []byte, label []byte, seed []byte)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h:   sha1.New(),",
+			"SourceFilename": "/analysis/repo/bfe_tls/cipher_suites.go",
+			"SourceLineNum": 227,
+			"ParentFunction": "macSHA1 (version uint16, key []byte) github.com/bfenetworks/bfe/bfe_tls.macFunction"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, _ := des.NewTripleDESCipher(key)",
+			"SourceFilename": "/analysis/repo/bfe_tls/cipher_suites.go",
+			"SourceLineNum": 200,
+			"ParentFunction": "cipher3DES (key []byte, iv []byte, isRead bool) interface{}"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.GenerateKey",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 417,
+			"ParentFunction": "generateClientKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/bfenetworks/bfe/bfe_tls.clientKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.GenerateKey",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "ka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 241,
+			"ParentFunction": "generateServerKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, cert *github.com/bfenetworks/bfe/bfe_tls.Certificate, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, hello *github.com/bfenetworks/bfe/bfe_tls.serverHelloMsg) (*github.com/bfenetworks/bfe/bfe_tls.serverKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Marshal",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "serialized := elliptic.Marshal(ka.curve, mx, my)",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 426,
+			"ParentFunction": "generateClientKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/bfenetworks/bfe/bfe_tls.clientKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Marshal",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "ecdhePublic := elliptic.Marshal(ka.curve, x, y)",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 245,
+			"ParentFunction": "generateServerKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, cert *github.com/bfenetworks/bfe/bfe_tls.Certificate, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, hello *github.com/bfenetworks/bfe/bfe_tls.serverHelloMsg) (*github.com/bfenetworks/bfe/bfe_tls.serverKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Unmarshal",
+		"Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+		"Slicing_Criteria": {
+			"SourceCode": "ka.x, ka.y = elliptic.Unmarshal(ka.curve, skx.key[4:4+publicLen])",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 348,
+			"ParentFunction": "processServerKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, serverHello *github.com/bfenetworks/bfe/bfe_tls.serverHelloMsg, cert *crypto/x509.Certificate, skx *github.com/bfenetworks/bfe/bfe_tls.serverKeyExchangeMsg) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Unmarshal",
+		"Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+		"Slicing_Criteria": {
+			"SourceCode": "x, y := elliptic.Unmarshal(ka.curve, ckx.ciphertext[1:])",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 318,
+			"ParentFunction": "processClientKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, cert *github.com/bfenetworks/bfe/bfe_tls.Certificate, ckx *github.com/bfenetworks/bfe/bfe_tls.clientKeyExchangeMsg, version uint16) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.SignPKCS1v15",
+		"Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+		"Slicing_Criteria": {
+			"SourceCode": "signed, err = rsa.SignPKCS1v15(c.config.rand(), key, hashFunc, digest)",
+			"SourceFilename": "/analysis/repo/bfe_tls/handshake_client.go",
+			"SourceLineNum": 445,
+			"ParentFunction": "doFullHandshake () error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.SignPKCS1v15",
+		"Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+		"Slicing_Criteria": {
+			"SourceCode": "sig, err = rsa.SignPKCS1v15(config.rand(), privKey, hashFunc, digest)",
+			"SourceFilename": "/analysis/repo/bfe_tls/key_agreement.go",
+			"SourceLineNum": 286,
+			"ParentFunction": "generateServerKeyExchange (config *github.com/bfenetworks/bfe/bfe_tls.Config, cert *github.com/bfenetworks/bfe/bfe_tls.Certificate, clientHello *github.com/bfenetworks/bfe/bfe_tls.clientHelloMsg, hello *github.com/bfenetworks/bfe/bfe_tls.serverHelloMsg) (*github.com/bfenetworks/bfe/bfe_tls.serverKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/x509.CertPool).Subjects",
+		"Message": "Deprecated: if s was returned by SystemCertPool, Subjects will not include the system roots.",
+		"Slicing_Criteria": {
+			"SourceCode": "certReq.certificateAuthorities = clientCAs.Subjects()",
+			"SourceFilename": "/analysis/repo/bfe_tls/handshake_server.go",
+			"SourceLineNum": 662,
+			"ParentFunction": "doFullHandshake () error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.ParseCRL",
+		"Message": "Deprecated: Use ParseRevocationList instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "crl, err := x509.ParseCRL(fileContent)",
+			"SourceFilename": "/analysis/repo/bfe_config/bfe_tls_conf/tls_rule_conf/tls_rule_conf_load.go",
+			"SourceLineNum": 502,
+			"ParentFunction": "getCientCRL (clientCRLDir string, clientCAName string) ([]*crypto/x509/pkix.CertificateList, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return AccessSign(md5.Sum(data)), nil",
+			"SourceFilename": "/analysis/repo/bfe_modules/mod_prison/access.go",
+			"SourceLineNum": 47,
+			"ParentFunction": "Sign (label string, req *github.com/bfenetworks/bfe/bfe_basic.Request) (github.com/bfenetworks/bfe/bfe_modules/mod_prison.AccessSign, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "tmpB := md5.Sum([]byte(origin))",
+			"SourceFilename": "/analysis/repo/bfe_modules/mod_secure_link/checker.go",
+			"SourceLineNum": 104,
+			"ParentFunction": "encode (origin string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Bytes := md5.Sum(wasmBytes)",
+			"SourceFilename": "/analysis/repo/bfe_wasmplugin/plugin.go",
+			"SourceLineNum": 140,
+			"ParentFunction": "loadWasmBytes (dir string, name string) (wasmBytes []byte, configBytes []byte, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

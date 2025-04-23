@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "newApnsClient",
+    "file_path": "/analysis/repo/notify/notification_apns.go",
+    "line_number": 171,
+    "full_implementation": "func newApnsClient(cfg *config.ConfYaml, certificate tls.Certificate) (*apns2.Client, error) {\n\tvar client *apns2.Client\n\n\tif cfg.Ios.Production {\n\t\tclient = apns2.NewClient(certificate).Production()\n\t} else {\n\t\tclient = apns2.NewClient(certificate).Development()\n\t}\n\n\tif cfg.Core.HTTPProxy == \"\" {\n\t\treturn client, nil\n\t}\n\n\t//nolint:gosec\n\ttlsConfig := \u0026tls.Config{\n\t\tCertificates: []tls.Certificate{certificate},\n\t}\n\n\tif len(certificate.Certificate) \u003e 0 {\n\t\t//nolint:staticcheck\n\t\ttlsConfig.BuildNameToCertificate()\n\t}\n\n\ttransport := \u0026http.Transport{\n\t\tTLSClientConfig: tlsConfig,\n\t\tDialTLS:         DialTLS(tlsConfig),\n\t\tProxy:           http.DefaultTransport.(*http.Transport).Proxy,\n\t\tIdleConnTimeout: idleConnTimeout,\n\t}\n\n\th2Transport, err := http2.ConfigureTransports(transport)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tconfigureHTTP2ConnHealthCheck(h2Transport)\n\n\tclient.HTTPClient.Transport = transport\n\n\treturn client, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/notify/notification_apns.go",
+        "SourceLineNum": 171,
+        "ParentFunction": "newApnsClient (cfg *github.com/appleboy/gorush/config.ConfYaml, certificate crypto/tls.Certificate) (*github.com/sideshow/apns2.Client, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "NewClientConfig",
+    "file_path": "/analysis/repo/sshd/client.go",
+    "line_number": 29,
+    "full_implementation": "func NewClientConfig(name string) *ssh.ClientConfig {\n\treturn \u0026ssh.ClientConfig{\n\t\tUser: name,\n\t\tAuth: []ssh.AuthMethod{\n\t\t\tssh.KeyboardInteractive(func(user, instruction string, questions []string, echos []bool) (answers []string, err error) {\n\t\t\t\treturn\n\t\t\t}),\n\t\t},\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/sshd/client.go",
+        "SourceLineNum": 29,
+        "ParentFunction": "NewClientConfig (name string) *golang.org/x/crypto/ssh.ClientConfig"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

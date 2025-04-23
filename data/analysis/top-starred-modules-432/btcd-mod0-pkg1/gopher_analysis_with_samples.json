@@ -1,0 +1,74 @@
+[
+  {
+    "function_name": "opcodeSha1",
+    "file_path": "/analysis/repo/txscript/opcode.go",
+    "line_number": 1898,
+    "full_implementation": "func opcodeSha1(op *opcode, data []byte, vm *Engine) error {\n\tbuf, err := vm.dstack.PopByteArray()\n\tif err != nil {\n\t\treturn err\n\t}\n\n\thash := sha1.Sum(buf)\n\tvm.dstack.PushByteArray(hash[:])\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum(buf)",
+        "SourceFilename": "/analysis/repo/txscript/opcode.go",
+        "SourceLineNum": 1898,
+        "ParentFunction": "opcodeSha1 (op *github.com/btcsuite/btcd/txscript.opcode, data []byte, vm *github.com/btcsuite/btcd/txscript.Engine) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "opcodeHash160",
+    "file_path": "/analysis/repo/txscript/opcode.go",
+    "line_number": 1929,
+    "full_implementation": "func opcodeHash160(op *opcode, data []byte, vm *Engine) error {\n\tbuf, err := vm.dstack.PopByteArray()\n\tif err != nil {\n\t\treturn err\n\t}\n\n\thash := sha256.Sum256(buf)\n\tvm.dstack.PushByteArray(calcHash(hash[:], ripemd160.New()))\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ripemd160.New",
+      "Message": "Mendel et al. On the Collision Resistance of RIPEMD-160. \nDeprecated: RIPEMD-160 is a legacy hash and should not be used for new applications. Also, this package does not and will not provide an optimized implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).",
+      "Slicing_Criteria": {
+        "SourceCode": "vm.dstack.PushByteArray(calcHash(hash[:], ripemd160.New()))",
+        "SourceFilename": "/analysis/repo/txscript/opcode.go",
+        "SourceLineNum": 1929,
+        "ParentFunction": "opcodeHash160 (op *github.com/btcsuite/btcd/txscript.opcode, data []byte, vm *github.com/btcsuite/btcd/txscript.Engine) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "opcodeRipemd160",
+    "file_path": "/analysis/repo/txscript/opcode.go",
+    "line_number": 1884,
+    "full_implementation": "func opcodeRipemd160(op *opcode, data []byte, vm *Engine) error {\n\tbuf, err := vm.dstack.PopByteArray()\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tvm.dstack.PushByteArray(calcHash(buf, ripemd160.New()))\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ripemd160.New",
+      "Message": "Mendel et al. On the Collision Resistance of RIPEMD-160. \nDeprecated: RIPEMD-160 is a legacy hash and should not be used for new applications. Also, this package does not and will not provide an optimized implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).",
+      "Slicing_Criteria": {
+        "SourceCode": "vm.dstack.PushByteArray(calcHash(buf, ripemd160.New()))",
+        "SourceFilename": "/analysis/repo/txscript/opcode.go",
+        "SourceLineNum": 1884,
+        "ParentFunction": "opcodeRipemd160 (op *github.com/btcsuite/btcd/txscript.opcode, data []byte, vm *github.com/btcsuite/btcd/txscript.Engine) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ripemd160h",
+    "file_path": "/analysis/repo/txscript/pkscript.go",
+    "line_number": 285,
+    "full_implementation": "func ripemd160h(data []byte) []byte {\n\th := ripemd160.New()\n\th.Write(data)\n\treturn h.Sum(nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ripemd160.New",
+      "Message": "Mendel et al. On the Collision Resistance of RIPEMD-160. \nDeprecated: RIPEMD-160 is a legacy hash and should not be used for new applications. Also, this package does not and will not provide an optimized implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).",
+      "Slicing_Criteria": {
+        "SourceCode": "h := ripemd160.New()",
+        "SourceFilename": "/analysis/repo/txscript/pkscript.go",
+        "SourceLineNum": 285,
+        "ParentFunction": "ripemd160h (data []byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

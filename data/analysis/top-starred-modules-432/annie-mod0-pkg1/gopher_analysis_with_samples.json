@@ -1,0 +1,201 @@
+[
+  {
+    "function_name": "Request",
+    "file_path": "/analysis/repo/request/request.go",
+    "line_number": 56,
+    "full_implementation": "func Request(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {\n\ttransport := \u0026http.Transport{\n\t\tProxy:               http.ProxyFromEnvironment,\n\t\tDisableCompression:  true,\n\t\tTLSHandshakeTimeout: 10 * time.Second,\n\t\tTLSClientConfig:     \u0026tls.Config{InsecureSkipVerify: true},\n\t}\n\tjar, err := cookiejar.New(nil)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tclient := \u0026http.Client{\n\t\tTransport: transport,\n\t\tTimeout:   15 * time.Minute,\n\t\tJar:       jar,\n\t}\n\n\treq, err := http.NewRequest(method, url, body)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tfor k, v := range config.FakeHeaders {\n\t\treq.Header.Set(k, v)\n\t}\n\tfor k, v := range headers {\n\t\treq.Header.Set(k, v)\n\t}\n\tif _, ok := headers[\"Referer\"]; !ok {\n\t\treq.Header.Set(\"Referer\", url)\n\t}\n\tif rawCookie != \"\" {\n\t\t// parse cookies in Netscape HTTP cookie format\n\t\tcookies, _ := cookiemonster.ParseString(rawCookie)\n\t\tif len(cookies) \u003e 0 {\n\t\t\tfor _, c := range cookies {\n\t\t\t\treq.AddCookie(c)\n\t\t\t}\n\t\t} else {\n\t\t\t// cookie is not Netscape HTTP format, set it directly\n\t\t\t// a=b; c=d\n\t\t\treq.Header.Set(\"Cookie\", rawCookie)\n\t\t}\n\t}\n\n\tif userAgent != \"\" {\n\t\treq.Header.Set(\"User-Agent\", userAgent)\n\t}\n\n\tif refer != \"\" {\n\t\treq.Header.Set(\"Referer\", refer)\n\t}\n\n\tvar (\n\t\tres          *http.Response\n\t\trequestError error\n\t)\n\tfor i := 0; ; i++ {\n\t\tres, requestError = client.Do(req)\n\t\tif requestError == nil \u0026\u0026 res.StatusCode \u003c 400 {\n\t\t\tbreak\n\t\t} else if i+1 \u003e= retryTimes {\n\t\t\tvar err error\n\t\t\tif requestError != nil {\n\t\t\t\terr = errors.Errorf(\"request error: %v\", requestError)\n\t\t\t} else {\n\t\t\t\terr = errors.Errorf(\"%s request error: HTTP %d\", url, res.StatusCode)\n\t\t\t}\n\t\t\treturn nil, errors.WithStack(err)\n\t\t}\n\t\ttime.Sleep(1 * time.Second)\n\t}\n\tif debug {\n\t\tblue := color.New(color.FgBlue)\n\t\tfmt.Println()\n\t\tblue.Printf(\"URL:         \") // nolint\n\t\tfmt.Printf(\"%s\\n\", url)\n\t\tblue.Printf(\"Method:      \") // nolint\n\t\tfmt.Printf(\"%s\\n\", method)\n\t\tblue.Printf(\"Headers:     \")        // nolint\n\t\tpretty.Printf(\"%# v\\n\", req.Header) // nolint\n\t\tblue.Printf(\"Status Code: \")        // nolint\n\t\tif res.StatusCode \u003e= 400 {\n\t\t\tcolor.Red(\"%d\", res.StatusCode)\n\t\t} else {\n\t\t\tcolor.Green(\"%d\", res.StatusCode)\n\t\t}\n\t}\n\treturn res, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig:     \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/request/request.go",
+        "SourceLineNum": 56,
+        "ParentFunction": "Request (method string, url string, body io.Reader, headers map[string]string) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSClientConfig:     \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/request/request.go",
+          "SourceLineNum": 56,
+          "ParentFunction": "Request (method string, url string, body io.Reader, headers map[string]string) (*net/http.Response, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Md5",
+    "file_path": "/analysis/repo/utils/utils.go",
+    "line_number": 188,
+    "full_implementation": "func Md5(text string) string {\n\tsign := md5.New()\n\tsign.Write([]byte(text)) // nolint\n\treturn fmt.Sprintf(\"%x\", sign.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sign := md5.New()",
+        "SourceFilename": "/analysis/repo/utils/utils.go",
+        "SourceLineNum": 188,
+        "ParentFunction": "Md5 (text string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Extract",
+    "file_path": "/analysis/repo/extractors/douyu/douyu.go",
+    "line_number": 86,
+    "full_implementation": "func (e *extractor) Extract(url string, option extractors.Options) ([]*extractors.Data, error) {\n\tvar err error\n\tliveVid := utils.MatchOneOf(url, `https?://www.douyu.com/(\\S+)`)\n\tif liveVid != nil {\n\t\treturn nil, errors.New(\"暂不支持斗鱼直播\")\n\t}\n\n\thtml, err := request.Get(url, url, nil)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\ttitles := utils.MatchOneOf(html, `\u003ctitle\u003e(.*?)\u003c/title\u003e`)\n\tif titles == nil || len(titles) \u003c 2 {\n\t\treturn nil, errors.WithStack(extractors.ErrURLParseFailed)\n\t}\n\ttitle := titles[1]\n\n\tvids := utils.MatchOneOf(url, `https?://v.douyu.com/show/(\\S+)`)\n\tif vids == nil || len(vids) \u003c 2 {\n\t\treturn nil, errors.WithStack(extractors.ErrURLParseFailed)\n\t}\n\tvid := vids[1]\n\n\tdataString, err := request.Get(\"http://vmobile.douyu.com/video/getInfo?vid=\"+vid, url, nil)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tdataDict := new(douyuData)\n\tif err := json.Unmarshal([]byte(dataString), dataDict); err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\n\tm3u8URLs, totalSize, err := douyuM3u8(dataDict.Data.VideoURL)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\turls := make([]*extractors.Part, len(m3u8URLs))\n\tfor index, u := range m3u8URLs {\n\t\turls[index] = \u0026extractors.Part{\n\t\t\tURL:  u.URL,\n\t\t\tSize: u.Size,\n\t\t\tExt:  \"ts\",\n\t\t}\n\t}\n\n\tstreams := map[string]*extractors.Stream{\n\t\t\"default\": {\n\t\t\tParts: urls,\n\t\t\tSize:  totalSize,\n\t\t},\n\t}\n\treturn []*extractors.Data{\n\t\t{\n\t\t\tSite:    \"斗鱼 douyu.com\",\n\t\t\tTitle:   title,\n\t\t\tType:    extractors.DataTypeVideo,\n\t\t\tStreams: streams,\n\t\t\tURL:     url,\n\t\t},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/iawia002/lux/request.Get",
+      "Message": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/request/request.go\nRequest (method string, url string, body io.Reader, headers map[string]string) (*net/http.Response, error)\n\t68:\treq, err := http.NewRequest(method, url, body)\n\t51:\tfunc Request(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {\n\u003e\u003e/analysis/repo/request/request.go\nGetByte (url string, refer string, headers map[string]string) ([]byte, error)\n\t148:\tfunc GetByte(url, refer string, headers map[string]string) ([]byte, error) {\n\u003e\u003e/analysis/repo/request/request.go\nGet (url string, refer string, headers map[string]string) (string, error)\n\t142:\tfunc Get(url, refer string, headers map[string]string) (string, error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "dataString, err := request.Get(\"http://vmobile.douyu.com/video/getInfo?vid=\"+vid, url, nil)",
+        "SourceFilename": "/analysis/repo/extractors/douyu/douyu.go",
+        "SourceLineNum": 86,
+        "ParentFunction": "Extract (url string, option github.com/iawia002/lux/extractors.Options) ([]*github.com/iawia002/lux/extractors.Data, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "dataString, err := request.Get(\"http://vmobile.douyu.com/video/getInfo?vid=\"+vid, url, nil)",
+          "SourceFilename": "/analysis/repo/extractors/douyu/douyu.go",
+          "SourceLineNum": 86,
+          "ParentFunction": "Extract (url string, option github.com/iawia002/lux/extractors.Options) ([]*github.com/iawia002/lux/extractors.Data, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "Extract",
+    "file_path": "/analysis/repo/extractors/geekbang/geekbang.go",
+    "line_number": 135,
+    "full_implementation": "func (e *extractor) Extract(url string, _ extractors.Options) ([]*extractors.Data, error) {\n\tvar err error\n\tmatches := utils.MatchOneOf(url, `https?://time.geekbang.org/course/detail/(\\d+)-(\\d+)`)\n\tif matches == nil || len(matches) \u003c 3 {\n\t\treturn nil, errors.WithStack(extractors.ErrURLParseFailed)\n\t}\n\n\t// Get video information\n\theanders := map[string]string{\"Origin\": \"https://time.geekbang.org\", \"Content-Type\": \"application/json\", \"Referer\": url}\n\tparams := strings.NewReader(fmt.Sprintf(`{\"id\": %q}`, matches[2]))\n\tres, err := request.Request(http.MethodPost, \"https://time.geekbang.org/serv/v1/article\", params, heanders)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tdefer res.Body.Close() // nolint\n\n\tvar data geekData\n\tif err = json.NewDecoder(res.Body).Decode(\u0026data); err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\n\tif data.Code \u003c 0 {\n\t\treturn nil, errors.New(string(data.Error))\n\t}\n\n\tif data.Data.VideoID == \"\" \u0026\u0026 !data.Data.ColumnHadSub {\n\t\treturn nil, errors.New(\"请先购买课程，或使用Cookie登录。\")\n\t}\n\n\t// Get video license token information\n\tparams = strings.NewReader(\"{\\\"source_type\\\":1,\\\"aid\\\":\" + matches[2] + \",\\\"video_id\\\":\\\"\" + data.Data.VideoID + \"\\\"}\")\n\tres, err = request.Request(http.MethodPost, \"https://time.geekbang.org/serv/v3/source_auth/video_play_auth\", params, heanders)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tdefer res.Body.Close() // nolint\n\n\tvar playAuth videoPlayAuth\n\tif err = json.NewDecoder(res.Body).Decode(\u0026playAuth); err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\n\tif playAuth.Code \u003c 0 {\n\t\treturn nil, errors.New(string(playAuth.Error))\n\t}\n\n\t// Get video playback information\n\theanders = map[string]string{\"Accept-Encoding\": \"\"}\n\tres, err = request.Request(http.MethodGet, \"http://ali.mantv.top/play/info?playAuth=\"+playAuth.Data.PlayAuth, nil, heanders)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tdefer res.Body.Close() // nolint\n\n\tvar playInfo playInfo\n\tif err = json.NewDecoder(res.Body).Decode(\u0026playInfo); err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\n\ttitle := data.Data.Title\n\n\tstreams := make(map[string]*extractors.Stream, len(playInfo.PlayInfoList.PlayInfo))\n\n\tfor _, media := range playInfo.PlayInfoList.PlayInfo {\n\t\tm3u8URLs, err := geekM3u8(media.URL)\n\n\t\tif err != nil {\n\t\t\treturn nil, errors.WithStack(err)\n\t\t}\n\n\t\turls := make([]*extractors.Part, len(m3u8URLs))\n\t\tfor index, u := range m3u8URLs {\n\t\t\turls[index] = \u0026extractors.Part{\n\t\t\t\tURL:  u.URL,\n\t\t\t\tSize: u.Size,\n\t\t\t\tExt:  \"ts\",\n\t\t\t}\n\t\t}\n\n\t\tstreams[media.Definition] = \u0026extractors.Stream{\n\t\t\tParts: urls,\n\t\t\tSize:  media.Size,\n\t\t}\n\t}\n\n\treturn []*extractors.Data{\n\t\t{\n\t\t\tSite:    \"极客时间 geekbang.org\",\n\t\t\tTitle:   title,\n\t\t\tType:    extractors.DataTypeVideo,\n\t\t\tStreams: streams,\n\t\t\tURL:     url,\n\t\t},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/iawia002/lux/request.Request",
+      "Message": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/request/request.go\nRequest (method string, url string, body io.Reader, headers map[string]string) (*net/http.Response, error)\n\t68:\treq, err := http.NewRequest(method, url, body)\n\t51:\tfunc Request(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "res, err = request.Request(http.MethodGet, \"http://ali.mantv.top/play/info?playAuth=\"+playAuth.Data.PlayAuth, nil, heanders)",
+        "SourceFilename": "/analysis/repo/extractors/geekbang/geekbang.go",
+        "SourceLineNum": 135,
+        "ParentFunction": "Extract (url string, _ github.com/iawia002/lux/extractors.Options) ([]*github.com/iawia002/lux/extractors.Data, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "res, err = request.Request(http.MethodGet, \"http://ali.mantv.top/play/info?playAuth=\"+playAuth.Data.PlayAuth, nil, heanders)",
+          "SourceFilename": "/analysis/repo/extractors/geekbang/geekbang.go",
+          "SourceLineNum": 135,
+          "ParentFunction": "Extract (url string, _ github.com/iawia002/lux/extractors.Options) ([]*github.com/iawia002/lux/extractors.Data, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "Extract",
+    "file_path": "/analysis/repo/extractors/udn/udn.go",
+    "line_number": 73,
+    "full_implementation": "func (e *extractor) Extract(url string, option extractors.Options) ([]*extractors.Data, error) {\n\turl = prepareEmbedURL(url)\n\tif len(url) == 0 {\n\t\treturn nil, errors.WithStack(extractors.ErrURLParseFailed)\n\t}\n\n\thtml, err := request.Get(url, url, nil)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tvar title string\n\tdesc := utils.MatchOneOf(html, `title: '(.+?)',\n        link:`)\n\tif len(desc) \u003e 1 {\n\t\ttitle = desc[1]\n\t} else {\n\t\ttitle = \"udn\"\n\t}\n\tcdnURL := getCDNUrl(html)\n\tif cdnURL == \"\" {\n\t\treturn nil, errors.New(\"empty list\")\n\t}\n\tsrcURL, err := request.Get(\"http://\"+cdnURL, url, nil)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\tsize, err := request.Size(srcURL, url)\n\tif err != nil {\n\t\treturn nil, errors.WithStack(err)\n\t}\n\turlData := \u0026extractors.Part{\n\t\tURL:  srcURL,\n\t\tSize: size,\n\t\tExt:  \"mp4\",\n\t}\n\tquality := \"normal\"\n\tstreams := map[string]*extractors.Stream{\n\t\tquality: {\n\t\t\tParts:   []*extractors.Part{urlData},\n\t\t\tSize:    size,\n\t\t\tQuality: quality,\n\t\t},\n\t}\n\treturn []*extractors.Data{\n\t\t{\n\t\t\tSite:    \"udn udn.com\",\n\t\t\tTitle:   title,\n\t\t\tType:    extractors.DataTypeVideo,\n\t\t\tStreams: streams,\n\t\t\tURL:     url,\n\t\t},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/iawia002/lux/request.Get",
+      "Message": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/request/request.go\nRequest (method string, url string, body io.Reader, headers map[string]string) (*net/http.Response, error)\n\t68:\treq, err := http.NewRequest(method, url, body)\n\t51:\tfunc Request(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {\n\u003e\u003e/analysis/repo/request/request.go\nGetByte (url string, refer string, headers map[string]string) ([]byte, error)\n\t148:\tfunc GetByte(url, refer string, headers map[string]string) ([]byte, error) {\n\u003e\u003e/analysis/repo/request/request.go\nGet (url string, refer string, headers map[string]string) (string, error)\n\t142:\tfunc Get(url, refer string, headers map[string]string) (string, error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "srcURL, err := request.Get(\"http://\"+cdnURL, url, nil)",
+        "SourceFilename": "/analysis/repo/extractors/udn/udn.go",
+        "SourceLineNum": 73,
+        "ParentFunction": "Extract (url string, option github.com/iawia002/lux/extractors.Options) ([]*github.com/iawia002/lux/extractors.Data, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "srcURL, err := request.Get(\"http://\"+cdnURL, url, nil)",
+          "SourceFilename": "/analysis/repo/extractors/udn/udn.go",
+          "SourceLineNum": 73,
+          "ParentFunction": "Extract (url string, option github.com/iawia002/lux/extractors.Options) ([]*github.com/iawia002/lux/extractors.Data, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "youkuUps",
+    "file_path": "/analysis/repo/extractors/youku/youku.go",
+    "line_number": 95,
+    "full_implementation": "func youkuUps(vid string, option extractors.Options) (*youkuData, error) {\n\tvar (\n\t\turl   string\n\t\tutid  string\n\t\tutids []string\n\t\tdata  youkuData\n\t)\n\tif strings.Contains(option.Cookie, \"cna\") {\n\t\tutids = utils.MatchOneOf(option.Cookie, `cna=(.+?);`, `cna\\s+(.+?)\\s`, `cna\\s+(.+?)$`)\n\t} else {\n\t\theaders, err := request.Headers(\"http://log.mmstat.com/eg.js\", youkuReferer)\n\t\tif err != nil {\n\t\t\treturn nil, errors.WithStack(err)\n\t\t}\n\t\tsetCookie := headers.Get(\"Set-Cookie\")\n\t\tutids = utils.MatchOneOf(setCookie, `cna=(.+?);`)\n\t}\n\tif utids == nil || len(utids) \u003c 2 {\n\t\treturn nil, errors.WithStack(extractors.ErrURLParseFailed)\n\t}\n\tutid = utids[1]\n\n\t// https://g.alicdn.com/player/ykplayer/0.5.61/youku-player.min.js\n\t// grep -oE '\"[0-9a-zA-Z+/=]{256}\"' youku-player.min.js\n\tfor _, ccode := range []string{option.YoukuCcode} {\n\t\tif ccode == \"0103010102\" {\n\t\t\tutid = generateUtdid()\n\t\t}\n\t\turl = fmt.Sprintf(\n\t\t\t\"https://ups.youku.com/ups/get.json?vid=%s\u0026ccode=%s\u0026client_ip=192.168.1.1\u0026client_ts=%d\u0026utid=%s\u0026ckey=%s\",\n\t\t\tvid, ccode, time.Now().Unix()/1000, netURL.QueryEscape(utid), netURL.QueryEscape(option.YoukuCkey),\n\t\t)\n\t\tif option.YoukuPassword != \"\" {\n\t\t\turl = fmt.Sprintf(\"%s\u0026password=%s\", url, option.YoukuPassword)\n\t\t}\n\t\thtml, err := request.GetByte(url, youkuReferer, nil)\n\t\tif err != nil {\n\t\t\treturn nil, errors.WithStack(err)\n\t\t}\n\t\t// data must be emptied before reassignment, otherwise it will contain the previous value(the 'error' data)\n\t\tdata = youkuData{}\n\t\tif err = json.Unmarshal(html, \u0026data); err != nil {\n\t\t\treturn nil, errors.WithStack(err)\n\t\t}\n\t\tif data.Data.Error == (errorData{}) {\n\t\t\treturn \u0026data, nil\n\t\t}\n\t}\n\treturn \u0026data, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/iawia002/lux/request.Headers",
+      "Message": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/request/request.go\nRequest (method string, url string, body io.Reader, headers map[string]string) (*net/http.Response, error)\n\t68:\treq, err := http.NewRequest(method, url, body)\n\t51:\tfunc Request(method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {\n\u003e\u003e/analysis/repo/request/request.go\nHeaders (url string, refer string) (net/http.Header, error)\n\t180:\tfunc Headers(url, refer string) (http.Header, error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "headers, err := request.Headers(\"http://log.mmstat.com/eg.js\", youkuReferer)",
+        "SourceFilename": "/analysis/repo/extractors/youku/youku.go",
+        "SourceLineNum": 95,
+        "ParentFunction": "youkuUps (vid string, option github.com/iawia002/lux/extractors.Options) (*github.com/iawia002/lux/extractors/youku.youkuData, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "headers, err := request.Headers(\"http://log.mmstat.com/eg.js\", youkuReferer)",
+          "SourceFilename": "/analysis/repo/extractors/youku/youku.go",
+          "SourceLineNum": 95,
+          "ParentFunction": "youkuUps (vid string, option github.com/iawia002/lux/extractors.Options) (*github.com/iawia002/lux/extractors/youku.youkuData, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "hmacSha1",
+    "file_path": "/analysis/repo/extractors/youku/youku.go",
+    "line_number": 151,
+    "full_implementation": "func hmacSha1(key []byte, msg []byte) []byte {\n\tmac := hmac.New(sha1.New, key)\n\tmac.Write(msg) // nolint\n\treturn mac.Sum(nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha1.New, key)",
+        "SourceFilename": "/analysis/repo/extractors/youku/youku.go",
+        "SourceLineNum": 151,
+        "ParentFunction": "hmacSha1 (key []byte, msg []byte) []byte"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func hmacSha1(key []byte, msg []byte) []byte {",
+          "SourceFilename": "/analysis/repo/extractors/youku/youku.go",
+          "SourceLineNum": 150,
+          "ParentFunction": "hmacSha1 (key []byte, msg []byte) []byte"
+        },
+        {
+          "SourceCode": "data := hmacSha1([]byte(\"d6fc3a4a06adbde89223bvefedc24fecde188aaa9161\"), buffer.Bytes())",
+          "SourceFilename": "/analysis/repo/extractors/youku/youku.go",
+          "SourceLineNum": 165,
+          "ParentFunction": "generateUtdid () string"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "generateSig",
+    "file_path": "/analysis/repo/extractors/zingmp3/zingmp3.go",
+    "line_number": 204,
+    "full_implementation": "func generateSig(slugApi string, p params) string {\n\tstr := \"\"\n\tfor key, value := range p {\n\t\tstr += fmt.Sprintf(\"%s=%s\", key, value)\n\t}\n\th := sha256.New()\n\th.Write([]byte(str))\n\tsha256Value := hex.EncodeToString(h.Sum(nil))\n\tvar passwordBytes = []byte(fmt.Sprintf(\"%s%s\", slugApi, sha256Value))\n\tsalt := []byte(\"acOrvUS15XRW2o9JksiK1KgQ6Vbds8ZW\")\n\thmacHashed := hmac.New(sha512.New, salt)\n\thmacHashed.Write(passwordBytes)\n\treturn hex.EncodeToString(hmacHashed.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "hmacHashed := hmac.New(sha512.New, salt)",
+        "SourceFilename": "/analysis/repo/extractors/zingmp3/zingmp3.go",
+        "SourceLineNum": 204,
+        "ParentFunction": "generateSig (slugApi string, p github.com/iawia002/lux/extractors/zingmp3.params) string"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "salt := []byte(\"acOrvUS15XRW2o9JksiK1KgQ6Vbds8ZW\")",
+          "SourceFilename": "/analysis/repo/extractors/zingmp3/zingmp3.go",
+          "SourceLineNum": 203,
+          "ParentFunction": "generateSig (slugApi string, p github.com/iawia002/lux/extractors/zingmp3.params) string"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  }
+]

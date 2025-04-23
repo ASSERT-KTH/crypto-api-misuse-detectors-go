@@ -1,0 +1,58 @@
+[
+  {
+    "function_name": "handler",
+    "file_path": "/analysis/repo/examples/dialog/dialog.go",
+    "line_number": 37,
+    "full_implementation": "func handler(w http.ResponseWriter, r *http.Request) {\n\n\t// Read request body\n\tdefer r.Body.Close()\n\tbody, err := io.ReadAll(r.Body)\n\tif err != nil {\n\t\tw.WriteHeader(http.StatusInternalServerError)\n\t\tlog.Printf(\"[ERROR] Fail to read request body: %v\", err)\n\t\treturn\n\t}\n\n\t// Verify signing secret\n\tsv, err := slack.NewSecretsVerifier(r.Header, signingSecret)\n\tif err != nil {\n\t\tw.WriteHeader(http.StatusUnauthorized)\n\t\tlog.Printf(\"[ERROR] Fail to verify SigningSecret: %v\", err)\n\t\treturn\n\t}\n\tsv.Write(body)\n\tif err := sv.Ensure(); err != nil {\n\t\tw.WriteHeader(http.StatusUnauthorized)\n\t\tlog.Printf(\"[ERROR] Fail to verify SigningSecret: %v\", err)\n\t\treturn\n\t}\n\n\t// Parse request body\n\tstr, _ := url.QueryUnescape(string(body))\n\tstr = strings.Replace(str, \"payload=\", \"\", 1)\n\tvar message slack.InteractionCallback\n\tif err := json.Unmarshal([]byte(str), \u0026message); err != nil {\n\t\tlog.Printf(\"[ERROR] Fail to unmarshal json: %v\", err)\n\t\treturn\n\t}\n\n\tswitch message.Type {\n\tcase slack.InteractionTypeInteractionMessage:\n\t\t// Make new dialog components and open a dialog.\n\t\t// Component-Text\n\t\ttextInput := slack.NewTextInput(\"TextSample\", \"Sample label - Text\", \"Default value\")\n\n\t\t// Component-TextArea\n\t\ttextareaInput := slack.NewTextAreaInput(\"TexaAreaSample\", \"Sample label - TextArea\", \"Default value\")\n\n\t\t// Component-Select menu\n\t\toption1 := slack.DialogSelectOption{\n\t\t\tLabel: \"Display name 1\",\n\t\t\tValue: \"Inner value 1\",\n\t\t}\n\t\toption2 := slack.DialogSelectOption{\n\t\t\tLabel: \"Display name 2\",\n\t\t\tValue: \"Inner value 2\",\n\t\t}\n\t\toptions := []slack.DialogSelectOption{option1, option2}\n\t\tselectInput := slack.NewStaticSelectDialogInput(\"SelectSample\", \"Sample label - Select\", options)\n\n\t\t// Open a dialog\n\t\telements := []slack.DialogElement{\n\t\t\ttextInput,\n\t\t\ttextareaInput,\n\t\t\tselectInput,\n\t\t}\n\t\tdialog := slack.Dialog{\n\t\t\tCallbackID:  \"Callback_ID\",\n\t\t\tTitle:       \"Dialog title\",\n\t\t\tSubmitLabel: \"Submit\",\n\t\t\tElements:    elements,\n\t\t}\n\t\tapi.OpenDialog(message.TriggerID, dialog)\n\n\tcase slack.InteractionTypeDialogSubmission:\n\t\t// Receive a notification of a dialog submission\n\t\tlog.Printf(\"Successfully receive a dialog submission.\")\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/slack-go/slack.NewSecretsVerifier",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/security.go\nunsafeSignatureVerifier (header net/http.Header, secret string) (_ github.com/slack-go/slack.SecretsVerifier, err error)\n\t44:\thash := hmac.New(sha256.New, []byte(secret))\n\t44:\thash := hmac.New(sha256.New, []byte(secret))\n\t28:\tfunc unsafeSignatureVerifier(header http.Header, secret string) (_ SecretsVerifier, err error) {\n\u003e\u003e/analysis/repo/security.go\nNewSecretsVerifier (header net/http.Header, secret string) (sv github.com/slack-go/slack.SecretsVerifier, err error)\n\t56:\tfunc NewSecretsVerifier(header http.Header, secret string) (sv SecretsVerifier, err error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "sv, err := slack.NewSecretsVerifier(r.Header, signingSecret)",
+        "SourceFilename": "/analysis/repo/examples/dialog/dialog.go",
+        "SourceLineNum": 37,
+        "ParentFunction": "handler (w net/http.ResponseWriter, r *net/http.Request)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "sv, err := slack.NewSecretsVerifier(r.Header, signingSecret)",
+          "SourceFilename": "/analysis/repo/examples/dialog/dialog.go",
+          "SourceLineNum": 37,
+          "ParentFunction": "handler (w net/http.ResponseWriter, r *net/http.Request)"
+        },
+        {
+          "SourceCode": "var signingSecret = \"YOUR_SIGNING_SECRET\"",
+          "SourceFilename": "/analysis/repo/examples/dialog/dialog.go",
+          "SourceLineNum": 15,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "verifySigningSecret",
+    "file_path": "/analysis/repo/examples/modal/modal.go",
+    "line_number": 92,
+    "full_implementation": "func verifySigningSecret(r *http.Request) error {\n\tsigningSecret := \"YOUR_SIGNING_SECRET_HERE\"\n\tverifier, err := slack.NewSecretsVerifier(r.Header, signingSecret)\n\tif err != nil {\n\t\tfmt.Println(err.Error())\n\t\treturn err\n\t}\n\n\tbody, err := io.ReadAll(r.Body)\n\tif err != nil {\n\t\tfmt.Println(err.Error())\n\t\treturn err\n\t}\n\t// Need to use r.Body again when unmarshalling SlashCommand and InteractionCallback\n\tr.Body = io.NopCloser(bytes.NewBuffer(body))\n\n\tverifier.Write(body)\n\tif err = verifier.Ensure(); err != nil {\n\t\tfmt.Println(err.Error())\n\t\treturn err\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/slack-go/slack.NewSecretsVerifier",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/security.go\nunsafeSignatureVerifier (header net/http.Header, secret string) (_ github.com/slack-go/slack.SecretsVerifier, err error)\n\t44:\thash := hmac.New(sha256.New, []byte(secret))\n\t44:\thash := hmac.New(sha256.New, []byte(secret))\n\t28:\tfunc unsafeSignatureVerifier(header http.Header, secret string) (_ SecretsVerifier, err error) {\n\u003e\u003e/analysis/repo/security.go\nNewSecretsVerifier (header net/http.Header, secret string) (sv github.com/slack-go/slack.SecretsVerifier, err error)\n\t56:\tfunc NewSecretsVerifier(header http.Header, secret string) (sv SecretsVerifier, err error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "verifier, err := slack.NewSecretsVerifier(r.Header, signingSecret)",
+        "SourceFilename": "/analysis/repo/examples/modal/modal.go",
+        "SourceLineNum": 92,
+        "ParentFunction": "verifySigningSecret (r *net/http.Request) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "verifier, err := slack.NewSecretsVerifier(r.Header, signingSecret)",
+          "SourceFilename": "/analysis/repo/examples/modal/modal.go",
+          "SourceLineNum": 92,
+          "ParentFunction": "verifySigningSecret (r *net/http.Request) error"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  }
+]

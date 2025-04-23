@@ -1,0 +1,217 @@
+[
+  {
+    "function_name": "indexWatchChannel",
+    "file_path": "/analysis/repo/src/internal/collection/postgres_collection.go",
+    "line_number": 136,
+    "full_implementation": "func (c *postgresCollection) indexWatchChannel(field string, value string) string {\n\tdata := fmt.Sprintf(\"%s %s\", field, value)\n\treturn c.tableWatchChannel() + \"_\" + fmt.Sprintf(\"%x\", md5.Sum([]byte(data)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "return c.tableWatchChannel() + \"_\" + fmt.Sprintf(\"%x\", md5.Sum([]byte(data)))",
+        "SourceFilename": "/analysis/repo/src/internal/collection/postgres_collection.go",
+        "SourceLineNum": 136,
+        "ParentFunction": "indexWatchChannel (field string, value string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "derefCipher",
+    "file_path": "/analysis/repo/src/cdr/resolver.go",
+    "line_number": 153,
+    "full_implementation": "func (r *Resolver) derefCipher(ctx context.Context, ref *Cipher, cache bool) (io.ReadCloser, error) {\n\tinnerRc, err := r.deref(ctx, ref.Inner, cache)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tvar rd io.Reader\n\tswitch ref.Algo {\n\tcase CipherAlgo_CHACHA20:\n\t\tciph, err := chacha20.NewUnauthenticatedCipher(ref.Key, ref.Nonce)\n\t\tif err != nil {\n\t\t\treturn nil, errors.EnsureStack(err)\n\t\t}\n\t\trd = \u0026cipher.StreamReader{R: innerRc, S: ciph}\n\tdefault:\n\t\treturn nil, errors.Errorf(\"unrecognized cipher algo %v\", ref.Algo)\n\t}\n\trc := readCloser{r: rd, closes: []func() error{\n\t\tinnerRc.Close,\n\t}}\n\treturn rc, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+      "Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+      "Slicing_Criteria": {
+        "SourceCode": "ciph, err := chacha20.NewUnauthenticatedCipher(ref.Key, ref.Nonce)",
+        "SourceFilename": "/analysis/repo/src/cdr/resolver.go",
+        "SourceLineNum": 153,
+        "ParentFunction": "derefCipher (ctx context.Context, ref *github.com/pachyderm/pachyderm/v2/src/cdr.Cipher, cache bool) (io.ReadCloser, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "cryptoXOR",
+    "file_path": "/analysis/repo/src/internal/storage/chunk/transform.go",
+    "line_number": 178,
+    "full_implementation": "func cryptoXOR(key, dst, src []byte) {\n\tnonce := [chacha20.NonceSize]byte{}\n\tciph, err := chacha20.NewUnauthenticatedCipher(key, nonce[:])\n\tif err != nil {\n\t\tpanic(err) // this only happens if you pass in an invalid key/nonce size, which we shouldn't do\n\t}\n\tciph.XORKeyStream(dst, src)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+      "Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+      "Slicing_Criteria": {
+        "SourceCode": "ciph, err := chacha20.NewUnauthenticatedCipher(key, nonce[:])",
+        "SourceFilename": "/analysis/repo/src/internal/storage/chunk/transform.go",
+        "SourceLineNum": 178,
+        "ParentFunction": "cryptoXOR (key []byte, dst []byte, src []byte)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "decrypt",
+    "file_path": "/analysis/repo/src/internal/storage/chunk/transform.go",
+    "line_number": 160,
+    "full_implementation": "func decrypt(dek []byte, r io.Reader) (io.Reader, error) {\n\tif len(dek) != 32 {\n\t\treturn nil, errors.Errorf(\"data encryption key is wrong length\")\n\t}\n\tnonce := [chacha20.NonceSize]byte{}\n\tciph, err := chacha20.NewUnauthenticatedCipher(dek, nonce[:])\n\tif err != nil {\n\t\treturn nil, errors.EnsureStack(err)\n\t}\n\treturn cipher.StreamReader{S: ciph, R: r}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+      "Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+      "Slicing_Criteria": {
+        "SourceCode": "ciph, err := chacha20.NewUnauthenticatedCipher(dek, nonce[:])",
+        "SourceFilename": "/analysis/repo/src/internal/storage/chunk/transform.go",
+        "SourceLineNum": 160,
+        "ParentFunction": "decrypt (dek []byte, r io.Reader) (io.Reader, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "SidecarS3GatewayService",
+    "file_path": "/analysis/repo/src/internal/ppsutil/util.go",
+    "line_number": 407,
+    "full_implementation": "func SidecarS3GatewayService(pipeline *pps.Pipeline, commitSetId string) string {\n\thash := md5.New()\n\thash.Write([]byte(pipeline.String()))\n\thash.Write([]byte(commitSetId))\n\treturn \"s3-\" + pfs.EncodeHash(hash.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := md5.New()",
+        "SourceFilename": "/analysis/repo/src/internal/ppsutil/util.go",
+        "SourceLineNum": 407,
+        "ParentFunction": "SidecarS3GatewayService (pipeline *github.com/pachyderm/pachyderm/v2/src/pps.Pipeline, commitSetId string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewClient",
+    "file_path": "/analysis/repo/src/internal/determined/client.go",
+    "line_number": 35,
+    "full_implementation": "func NewClient(ctx context.Context, masterURL string, withTLS bool) (client det.DeterminedClient, close func() error, retErr error) {\n\ttlsOpt := grpc.WithTransportCredentials(insecure.NewCredentials())\n\tif withTLS {\n\t\ttlsOpt = grpc.WithTransportCredentials(credentials.NewTLS(\u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t}))\n\t}\n\tdeterminedURL, err := url.Parse(masterURL)\n\tif err != nil {\n\t\treturn nil, nil, errors.Wrapf(err, \"parsing determined url %q\", masterURL)\n\t}\n\tconn, err := grpc.DialContext(ctx, determinedURL.Host, tlsOpt, grpc.WithStreamInterceptor(mlc.LogStream), grpc.WithUnaryInterceptor(mlc.LogUnary)) //nolint:SA1019\n\tif err != nil {\n\t\treturn nil, nil, errors.Wrapf(err, \"dialing determined at %q\", determinedURL.Host)\n\t}\n\tdc := det.NewDeterminedClient(conn)\n\treturn dc, conn.Close, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/src/internal/determined/client.go",
+        "SourceLineNum": 35,
+        "ParentFunction": "NewClient (ctx context.Context, masterURL string, withTLS bool) (client github.com/determined-ai/determined/proto/pkg/apiv1.DeterminedClient, close "
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/src/internal/determined/client.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "NewClient (ctx context.Context, masterURL string, withTLS bool) (client github.com/determined-ai/determined/proto/pkg/apiv1.DeterminedClient, close "
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "amazonHTTPClient",
+    "file_path": "/analysis/repo/src/internal/obj/bucket.go",
+    "line_number": 147,
+    "full_implementation": "func amazonHTTPClient() (*http.Client, int, error) {\n\tadvancedConfig := \u0026AmazonAdvancedConfiguration{}\n\tif err := cmdutil.Populate(advancedConfig); err != nil {\n\t\treturn nil, -1, errors.Wrap(err, \"creating amazon http client\")\n\t}\n\ttimeout, err := time.ParseDuration(advancedConfig.Timeout)\n\tif err != nil {\n\t\treturn nil, -1, errors.Wrap(err, \"creating amazon http client\")\n\t}\n\thttpClient := \u0026http.Client{Timeout: timeout}\n\tif advancedConfig.NoVerifySSL {\n\t\ttransport := http.DefaultTransport.(*http.Transport).Clone()\n\t\ttransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t\thttpClient.Transport = transport\n\t}\n\thttpClient.Transport = promutil.InstrumentRoundTripper(\"s3\", httpClient.Transport)\n\treturn httpClient, advancedConfig.Retries, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/src/internal/obj/bucket.go",
+        "SourceLineNum": 147,
+        "ParentFunction": "amazonHTTPClient () (*net/http.Client, int, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/src/internal/obj/bucket.go",
+          "SourceLineNum": 147,
+          "ParentFunction": "amazonHTTPClient () (*net/http.Client, int, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "WaitForPachdVersion",
+    "file_path": "/analysis/repo/src/internal/kindenv/pachyderm.go",
+    "line_number": 361,
+    "full_implementation": "func (c *Cluster) WaitForPachdVersion(ctx context.Context, namespace string) error {\n\taddr, err := c.PachdAddress(ctx, namespace)\n\tif err != nil {\n\t\treturn errors.Wrap(err, \"get pachd address\")\n\t}\n\n\topts := []grpc.DialOption{\n\t\tgrpc.WithUnaryInterceptor(ci.LogUnary),\n\t\tgrpc.WithStreamInterceptor(ci.LogStream),\n\t}\n\tu, err := url.Parse(addr)\n\tif err != nil {\n\t\treturn errors.Wrap(err, \"parse pachd address\")\n\t}\n\tif u.Scheme == \"grpc\" {\n\t\topts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))\n\t} else {\n\t\tt := \u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t}\n\t\topts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(t)))\n\t}\n\n\tlog.Info(ctx, \"waiting for pachd to be ready\")\n\tif err := backoff.RetryUntilCancel(ctx, func() error {\n\t\tctx, c := context.WithTimeout(ctx, 2*time.Second)\n\t\tdefer c()\n\t\tcc, err := grpc.DialContext(ctx, \"dns:///\"+u.Host, opts...) //nolint:SA1019\n\t\tif err != nil {\n\t\t\treturn errors.Wrap(err, \"dial\")\n\t\t}\n\t\tvc := versionpb.NewAPIClient(cc)\n\t\tv, err := vc.GetVersion(ctx, \u0026emptypb.Empty{})\n\t\tif err != nil {\n\t\t\treturn errors.Wrap(err, \"GetVersion\")\n\t\t}\n\t\tgot, want := v.Canonical(), version.Version.Canonical()\n\t\tif got != want {\n\t\t\treturn errors.Errorf(\"running pachd has wrong version; got %v, want %v\", got, want)\n\t\t}\n\t\tlog.Info(ctx, \"pachd ready\", log.Proto(\"version\", v))\n\t\treturn nil\n\t}, backoff.NewConstantBackOff(time.Second), func(err error, d time.Duration) error {\n\t\tlog.Info(ctx, \"pachd not ready: \"+err.Error())\n\t\treturn nil\n\t}); err != nil {\n\t\treturn errors.Wrap(err, \"dial and check version\")\n\t}\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/src/internal/kindenv/pachyderm.go",
+        "SourceLineNum": 361,
+        "ParentFunction": "WaitForPachdVersion (ctx context.Context, namespace string) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/src/internal/kindenv/pachyderm.go",
+          "SourceLineNum": 361,
+          "ParentFunction": "WaitForPachdVersion (ctx context.Context, namespace string) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Run",
+    "file_path": "/analysis/repo/src/server/misc/cmds/grpc.go",
+    "line_number": 130,
+    "full_implementation": "func (p gRPCParams) Run(ctx context.Context, pachctlCfg *pachctl.Config, w io.Writer, args []string) (retErr error) {\n\thandlers := buildRPCs(\n\t\tadmin.File_admin_admin_proto,\n\t\tauth.File_auth_auth_proto,\n\t\tdebug.File_debug_debug_proto,\n\t\tenterprise.File_enterprise_enterprise_proto,\n\t\tidentity.File_identity_identity_proto,\n\t\tlicense.File_license_license_proto,\n\t\tlogs.File_logs_logs_proto,\n\t\tmetadata.File_metadata_metadata_proto,\n\t\tpfs.File_pfs_pfs_proto,\n\t\tpjs.File_pjs_pjs_proto,\n\t\tpps.File_pps_pps_proto,\n\t\tproxy.File_proxy_proxy_proto,\n\t\tsnapshot.File_snapshot_snapshot_proto,\n\t\tstorage.File_storage_fileset_proto,\n\t\ttransaction.File_transaction_transaction_proto,\n\t\tversionpb.File_version_versionpb_version_proto,\n\t\tworker.File_worker_worker_proto,\n\t)\n\n\t// If no args, print all available RPCs.  The names can be difficult to\n\t// guess.\n\tif len(args) == 0 {\n\t\t// Print RPCs.\n\t\tmethods := maps.Keys(handlers)\n\t\tsort.Strings(methods)\n\t\tfor _, m := range methods {\n\t\t\tfmt.Println(m)\n\t\t}\n\t\treturn nil\n\t}\n\n\t// If there's an arg, find the method.\n\tf, ok := handlers[args[0]]\n\tif !ok {\n\t\treturn errors.Errorf(\"no method %v\", args[0])\n\t}\n\n\tvar msgs []string\n\t// If there's no more args, read messages from stdin.\n\tif len(args) == 1 {\n\t\tfmt.Fprintf(os.Stderr, \"Reading messages from stdin; will send after EOF...\\n\")\n\t\ts := bufio.NewScanner(os.Stdin)\n\t\tfor s.Scan() {\n\t\t\ttext := strings.TrimSpace(s.Text())\n\t\t\tif text != \"\" {\n\t\t\t\tmsgs = append(msgs, s.Text())\n\t\t\t}\n\t\t}\n\t\tif err := s.Err(); err != nil {\n\t\t\treturn errors.Wrap(err, \"scan lines\")\n\t\t}\n\t} else {\n\t\tmsgs = args[1:]\n\t}\n\n\t// Get a client connection.\n\tctx, c := signal.NotifyContext(ctx, signals.TerminationSignals...)\n\tdefer c()\n\n\tauthCtx := ctx\n\tvar cc grpc.ClientConnInterface\n\tif p.Address == \"\" {\n\t\t// If --address isn't set, use the pach context to connect.\n\t\tcl, err := pachctlCfg.NewOnUserMachine(ctx, false)\n\t\tif err != nil {\n\t\t\treturn errors.Wrap(err, \"connect\")\n\t\t}\n\t\tauthCtx = cl.Ctx()\n\t\tcc = cl.ClientConn()\n\t\tdefer errors.Close(\u0026retErr, cl, \"close ClientConn\")\n\t} else {\n\t\t// If --address is set, just dial the server.\n\t\tcreds := insecure.NewCredentials()\n\t\tif p.TLS {\n\t\t\tcreds = credentials.NewTLS(\u0026tls.Config{\n\t\t\t\tInsecureSkipVerify: true,\n\t\t\t})\n\t\t}\n\t\tvar err error\n\t\tcc, err = grpc.DialContext(ctx, p.Address, //nolint:SA1019\n\t\t\tgrpc.WithTransportCredentials(creds),\n\t\t\tgrpc.WithUnaryInterceptor(ci.LogUnary),\n\t\t\tgrpc.WithStreamInterceptor(ci.LogStream),\n\t\t\tgrpc.WithKeepaliveParams(keepalive.ClientParameters{\n\t\t\t\tTime:                20 * time.Second,\n\t\t\t\tTimeout:             20 * time.Second,\n\t\t\t\tPermitWithoutStream: true,\n\t\t\t}),\n\t\t\tgrpc.WithDefaultCallOptions(\n\t\t\t\tgrpc.MaxCallRecvMsgSize(grpcutil.MaxMsgSize),\n\t\t\t\tgrpc.MaxCallSendMsgSize(grpcutil.MaxMsgSize),\n\t\t\t),\n\t\t)\n\t\tif err != nil {\n\t\t\treturn errors.Wrap(err, \"dial --address\")\n\t\t}\n\t}\n\n\t// Add headers\n\tfor _, h := range p.Headers {\n\t\tparts := strings.SplitN(h, \"=\", 2)\n\t\tif len(parts) != 2 {\n\t\t\treturn errors.Errorf(\"malformed --header %q; use Key=Value\", h)\n\t\t}\n\t\tauthCtx = md.AppendToOutgoingContext(authCtx, parts[0], parts[1])\n\t}\n\n\t// Add a note during \"long\" RPCs.\n\tgo func() {\n\t\tselect {\n\t\tcase \u003c-time.After(5 * time.Second):\n\t\t\tfmt.Fprintln(os.Stderr, \"RPC running; press Control-c to cancel...\")\n\t\tcase \u003c-ctx.Done():\n\t\t\treturn\n\t\t}\n\t}()\n\tif err := f(authCtx, cc, w, msgs...); err != nil {\n\t\treturn errors.Wrap(err, \"do RPC\")\n\t}\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/src/server/misc/cmds/grpc.go",
+        "SourceLineNum": 130,
+        "ParentFunction": "Run (ctx context.Context, pachctlCfg *github.com/pachyderm/pachyderm/v2/src/internal/pachctl.Config, w io.Writer, args []string) (retErr error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/src/server/misc/cmds/grpc.go",
+          "SourceLineNum": 130,
+          "ParentFunction": "Run (ctx context.Context, pachctlCfg *github.com/pachyderm/pachyderm/v2/src/internal/pachctl.Config, w io.Writer, args []string) (retErr error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Cmds",
+    "file_path": "/analysis/repo/src/server/misc/cmds/cmds.go",
+    "line_number": 67,
+    "full_implementation": "func Cmds(pachctlCfg *pachctl.Config) []*cobra.Command {\n\tvar commands []*cobra.Command\n\n\tvar d net.Dialer\n\td.ControlContext = func(ctx context.Context, network, address string, c syscall.RawConn) error {\n\t\tvar fd uintptr\n\t\tc.Control(func(f uintptr) { fd = f }) //nolint:errcheck\n\t\tlog.Debug(ctx, \"created socket for connection\", zap.String(\"network\", network), zap.String(\"address\", address), zap.Any(\"rawConn\", c), zap.String(\"rawConn.type\", fmt.Sprintf(\"%T\", c)), zap.Uintptr(\"fd\", fd))\n\t\treturn nil\n\t}\n\n\tr := new(net.Resolver)\n\td.Resolver = r\n\tr.Dial = func(ctx context.Context, network, address string) (_ net.Conn, retErr error) {\n\t\tdefer log.Span(ctx, \"DialDNS\", zap.String(\"network\", network), zap.String(\"address\", address))(log.Errorp(\u0026retErr))\n\t\treturn d.DialContext(ctx, network, address) //nolint:wrapcheck\n\t}\n\n\tt := http.DefaultTransport.(*http.Transport).Clone()\n\tt.DialContext = d.DialContext\n\tt.TLSClientConfig.VerifyConnection = func(cs tls.ConnectionState) error {\n\t\tfor _, cert := range cs.PeerCertificates {\n\t\t\tfmt.Printf(\"tls: cert: %v\\n\", cert.Subject.String())\n\t\t}\n\t\tfmt.Printf(\"tls: server name: %v\\n\", cs.ServerName)\n\t\tfmt.Printf(\"tls: negotiated protocol: %v\\n\", cs.NegotiatedProtocol)\n\t\tfmt.Println()\n\t\treturn nil\n\t}\n\tt.TLSClientConfig.InsecureSkipVerify = true\n\thc := \u0026http.Client{\n\t\tTransport: promutil.InstrumentRoundTripper(\"pachctl\", t),\n\t}\n\n\tdnsLookup := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} \u003chostname\u003e\",\n\t\tShort: \"Do a DNS lookup on a hostname.\",\n\t\tLong:  \"Do a DNS lookup on a hostname.\",\n\t\tRun: cmdutil.RunFixedArgs(1, func(cmd *cobra.Command, args []string) error {\n\t\t\tctx := cmd.Context()\n\t\t\tvar errs error\n\t\t\tif result, err := r.LookupHost(ctx, args[0]); err != nil {\n\t\t\t\terrors.JoinInto(\u0026errs, errors.Wrap(err, \"lookup host\"))\n\t\t\t} else {\n\t\t\t\tfmt.Printf(\"A: %v\\n\", result)\n\t\t\t}\n\t\t\tif result, err := r.LookupCNAME(ctx, args[0]); err != nil {\n\t\t\t\terrors.JoinInto(\u0026errs, errors.Wrap(err, \"lookup cname\"))\n\t\t\t} else {\n\t\t\t\tfmt.Printf(\"CNAME: %v\\n\", result)\n\t\t\t}\n\t\t\tif result, err := r.LookupAddr(ctx, args[0]); err != nil {\n\t\t\t\terrors.JoinInto(\u0026errs, errors.Wrap(err, \"lookup reverse address\"))\n\t\t\t} else {\n\t\t\t\tfmt.Printf(\"IP: %v\\n\", result)\n\t\t\t}\n\t\t\tif errs != nil {\n\t\t\t\tfmt.Fprintf(os.Stderr, \"some lookups not successful, this is normally fine:\\n%v\", errs)\n\t\t\t}\n\t\t\treturn nil\n\t\t}),\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(dnsLookup, \"misc dns-lookup\"))\n\n\thttpHead := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} \u003curl\u003e\",\n\t\tShort: \"Make an HTTP HEAD request.\",\n\t\tLong:  \"Make an HTTP HEAD request.\",\n\t\tRun: cmdutil.RunFixedArgs(1, func(cmd *cobra.Command, args []string) (retErr error) {\n\t\t\tctx := cmd.Context()\n\t\t\treq, err := http.NewRequestWithContext(ctx, \"HEAD\", args[0], nil)\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"NewRequest\")\n\t\t\t}\n\t\t\tif content, err := httputil.DumpRequestOut(req, false); err == nil {\n\t\t\t\tfmt.Printf(\"%s\", content)\n\t\t\t}\n\t\t\tres, err := hc.Do(req)\n\t\t\tif res != nil {\n\t\t\t\tdefer errors.Close(\u0026retErr, res.Body, \"close body\")\n\t\t\t\tif content, err := httputil.DumpResponse(res, true); err == nil {\n\t\t\t\t\tfmt.Printf(\"%s\", content)\n\t\t\t\t}\n\t\t\t}\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"Do\")\n\t\t\t}\n\t\t\treturn nil\n\t\t}),\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(httpHead, \"misc http-head\"))\n\n\tdial := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} \u003cnetwork(tcp|udp)\u003e \u003caddress\u003e\",\n\t\tShort: \"Dials a network server and then disconnects.\",\n\t\tLong:  \"Dials a network server and then disconnects.\",\n\t\tRun: cmdutil.RunFixedArgs(2, func(cmd *cobra.Command, args []string) error {\n\t\t\tctx := cmd.Context()\n\t\t\tconn, err := d.DialContext(ctx, args[0], args[1])\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"Dial\")\n\t\t\t}\n\t\t\tfmt.Printf(\"OK: %s -\u003e %s\\n\", conn.LocalAddr(), conn.RemoteAddr())\n\t\t\treturn errors.Wrap(conn.Close(), \"Close\")\n\t\t}),\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(dial, \"misc dial\"))\n\n\t// NOTE(jonathan): This can move out of misc when we add OAuth support to the download\n\t// endpoint, and tell pachd what its externally-accessible URL is (so the link works when\n\t// you click it).\n\tgenerateURL := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} project/repo@branch_or_commit:/file_or_directory ...\",\n\t\tShort: \"Generates the encoded part of an archive download URL.\",\n\t\tLong:  \"Generates the encoded part of an archive download URL.\",\n\t\tRun: cmdutil.Run(func(cmd *cobra.Command, args []string) error {\n\t\t\tctx := cmd.Context()\n\t\t\tpath, err := archiveserver.EncodeV1(args)\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"encode\")\n\t\t\t}\n\n\t\t\tu := \u0026url.URL{}\n\t\t\tgetPrefix := func() (retErr error) {\n\t\t\t\ttctx, cancel := context.WithTimeout(ctx, time.Second)\n\t\t\t\tdefer cancel()\n\t\t\t\tc, err := pachctlCfg.NewOnUserMachine(tctx, false)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn err\n\t\t\t\t}\n\t\t\t\tdefer errors.Close(\u0026retErr, c, \"close client\")\n\n\t\t\t\tinfo, _ := c.ClusterInfo()\n\t\t\t\tfmt.Println(info.GetWebResources().GetArchiveDownloadBaseUrl() + path + \".zip\")\n\t\t\t\treturn nil\n\t\t\t}\n\t\t\tif err := getPrefix(); err != nil {\n\t\t\t\tfmt.Println(path)\n\t\t\t\treturn err\n\t\t\t}\n\t\t\tfmt.Println(u.String())\n\t\t\treturn nil\n\t\t}),\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(generateURL, \"misc generate-download-url\"))\n\n\tdecodeURL := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} \u003curl\u003e\",\n\t\tShort: \"Decodes the encoded part of an archive download URL.\",\n\t\tLong:  \"Decodes the encoded part of an archive download URL.\",\n\t\tRun: cmdutil.RunFixedArgs(1, func(cmd *cobra.Command, args []string) error {\n\t\t\tu, err := url.Parse(args[0])\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"url.Parse\")\n\t\t\t}\n\t\t\tif !strings.HasPrefix(u.Path, \"/archive/\") {\n\t\t\t\tu.Path = \"/archive/\" + u.Path\n\t\t\t}\n\t\t\tif !strings.HasSuffix(u.Path, \".zip\") {\n\t\t\t\tu.Path = u.Path + \".zip\"\n\t\t\t}\n\t\t\treq, err := archiveserver.ArchiveFromURL(u)\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"ArchiveFromURL\")\n\t\t\t}\n\t\t\tif err := req.ForEachPath(func(path string) error {\n\t\t\t\tfmt.Println(path)\n\t\t\t\treturn nil\n\t\t\t}); err != nil {\n\t\t\t\treturn errors.Wrap(err, \"ForEachPath\")\n\t\t\t}\n\t\t\treturn nil\n\t\t}),\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(decodeURL, \"misc decode-download-url\"))\n\n\ttestMigrations := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} \u003cpostgres dsn\u003e\",\n\t\tShort: \"Runs the database migrations against the supplied database, then rolls them back.\",\n\t\tLong:  \"Runs the database migrations against the supplied database, then rolls them back.\",\n\t\tRun: cmdutil.RunFixedArgs(1, func(cmd *cobra.Command, args []string) (retErr error) {\n\t\t\tctx := cmd.Context()\n\t\t\tctx, c := signal.NotifyContext(ctx, signals.TerminationSignals...)\n\t\t\tdefer c()\n\n\t\t\tdsn := args[0]\n\t\t\tdb, err := sqlx.Open(\"pgx\", dsn)\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrap(err, \"open database\")\n\t\t\t}\n\t\t\tif err := dbutil.WaitUntilReady(ctx, db); err != nil {\n\t\t\t\treturn errors.Wrap(err, \"wait for database ready\")\n\t\t\t}\n\t\t\tif err := preflight.TestMigrations(ctx, db); err != nil {\n\t\t\t\treturn errors.Wrap(err, \"apply migrations\")\n\t\t\t}\n\t\t\treturn nil\n\t\t}),\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(testMigrations, \"misc test-migrations\"))\n\n\tvar grpcAddress string\n\tvar grpcTLS bool\n\tvar grpcHeaders []string\n\tgrpc := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} service.Method {msg}... \",\n\t\tShort: \"Call a gRPC method on the server.\",\n\t\tLong:  \"Call a gRPC method on the server.  With no args; prints all available methods.  With 1 arg; reads messages to send as JSON lines from stdin.  With \u003e1 arg, sends each JSON-encoded argument as a message.\",\n\t\tRun: cmdutil.Run(func(cmd *cobra.Command, args []string) error {\n\t\t\tctx := cmd.Context()\n\t\t\treturn gRPCParams{\n\t\t\t\tAddress: grpcAddress,\n\t\t\t\tTLS:     grpcTLS,\n\t\t\t\tHeaders: grpcHeaders,\n\t\t\t}.Run(ctx, pachctlCfg, os.Stdout, args)\n\t\t}),\n\t}\n\tgrpc.PersistentFlags().StringVar(\u0026grpcAddress, \"address\", \"\", \"If set, don't use the pach client to connect, but manually dial the provided GRPC address instead; url must be in a form like dns:/// or passthrough:///, not http:// or grpc://.\")\n\tgrpc.PersistentFlags().BoolVar(\u0026grpcTLS, \"tls\", false, \"If set along with --address, use TLS to connect to the server.  The certificate is NOT checked for validity.\")\n\tgrpc.PersistentFlags().StringSliceVarP(\u0026grpcHeaders, \"header\", \"H\", nil, \"Key=Value metadata to add to the request; repeatable.\")\n\tcommands = append(commands, cmdutil.CreateAlias(grpc, \"misc grpc\"))\n\n\tvar decodeProtoFormat string\n\tvar decodeCompact bool\n\tdecodeProto := \u0026cobra.Command{\n\t\tUse:   \"{{alias}} \u003cmessage type\u003e \u003cmessage bytes\u003e\",\n\t\tShort: \"Decodes a protocol buffer message\",\n\t\tLong:  \"Decodes the provided bytes as the named proto message type and prints the result as JSON.  Without the last arg, reads from stdin.  If the message type is @, then try all message types and print any messages that result in non-empty JSON.\",\n\t\tRun: cmdutil.RunBoundedArgs(0, 2, func(cmd *cobra.Command, args []string) error {\n\t\t\tall := allProtoMessages()\n\n\t\t\t// If no args, print all message types.\n\t\t\tif len(args) == 0 {\n\t\t\t\tkeys := maps.Keys(all)\n\t\t\t\tsort.Strings(keys)\n\t\t\t\tfmt.Println(strings.Join(keys, \"\\n\"))\n\t\t\t\treturn nil\n\t\t\t}\n\n\t\t\t// If at least one arg, figure out if we can decode it.\n\t\t\t// If the message type is \"@\", then we'll try every possible message\n\t\t\t// below.  md will be nil. \"@\" was chosen for not needing to be\n\t\t\t// escaped from shells.\n\t\t\tvar suppressErrors bool\n\t\t\tvar mds []protoreflect.MessageDescriptor\n\t\t\tif args[0] != \"@\" {\n\t\t\t\tmd, ok := all[args[0]]\n\t\t\t\tif !ok {\n\t\t\t\t\treturn errors.Errorf(\"no known message %q\", args[0])\n\t\t\t\t}\n\t\t\t\tmds = append(mds, md)\n\t\t\t} else {\n\t\t\t\tsuppressErrors = true\n\t\t\t\ttry := maps.Keys(all)\n\t\t\t\tsort.Strings(try)\n\t\t\t\tfor _, name := range try {\n\t\t\t\t\tmds = append(mds, all[name])\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// If a second arg, don't read stdin.\n\t\t\tvar input []byte\n\t\t\tif len(args) \u003e 1 {\n\t\t\t\tinput = []byte(args[1])\n\t\t\t} else {\n\t\t\t\tfmt.Fprintln(os.Stderr, \"Reading from stdin...\")\n\t\t\t\tvar err error\n\t\t\t\tinput, err = io.ReadAll(os.Stdin)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn errors.Wrap(err, \"read stdin\")\n\t\t\t\t}\n\t\t\t}\n\n\t\t\t// Decode the transport encoding.\n\t\t\traw, err := decodeBinfmt(input, decodeProtoFormat)\n\t\t\tif err != nil {\n\t\t\t\treturn errors.Wrapf(err, \"decode transport format\")\n\t\t\t}\n\n\t\t\t// Decode the actual protobuf data.\n\t\t\tfor _, md := range mds {\n\t\t\t\tm, err := decodeBinaryProto(md, raw)\n\t\t\t\tif err != nil {\n\t\t\t\t\tif suppressErrors {\n\t\t\t\t\t\tcontinue\n\t\t\t\t\t}\n\t\t\t\t\tn := min(len(raw), 10)\n\t\t\t\t\tdots := \"\"\n\t\t\t\t\tif len(raw) \u003e n {\n\t\t\t\t\t\tdots = \"...\"\n\t\t\t\t\t}\n\t\t\t\t\treturn errors.Wrapf(err, \"unmarshal binary %x%s\", raw[:n], dots)\n\t\t\t\t}\n\t\t\t\t// Print the message out as JSON.\n\t\t\t\tmo := protojson.MarshalOptions{\n\t\t\t\t\tIndent:    \"  \",\n\t\t\t\t\tMultiline: true,\n\t\t\t\t}\n\t\t\t\tif decodeCompact {\n\t\t\t\t\tmo = protojson.MarshalOptions{}\n\t\t\t\t}\n\t\t\t\tjs, err := mo.Marshal(m)\n\t\t\t\tif err != nil {\n\t\t\t\t\t// If we can't do JSON for some reason, we can at least do\n\t\t\t\t\t// something.  And exit non-zero to not mess up scripts.\n\t\t\t\t\tfmt.Fprintf(os.Stderr, \"%s\\n\", m)\n\t\t\t\t\tif suppressErrors {\n\t\t\t\t\t\tcontinue\n\t\t\t\t\t}\n\t\t\t\t\treturn errors.Wrap(err, \"marshal to json\")\n\t\t\t\t}\n\t\t\t\tif !suppressErrors || !bytes.Equal(js, []byte(\"{}\")) {\n\t\t\t\t\tif suppressErrors {\n\t\t\t\t\t\tfmt.Printf(\"%s: \", md.FullName())\n\t\t\t\t\t}\n\t\t\t\t\tfmt.Printf(\"%s\\n\", js)\n\t\t\t\t}\n\t\t\t}\n\t\t\treturn nil\n\t\t}),\n\t}\n\tdecodeProto.PersistentFlags().StringVarP(\u0026decodeProtoFormat, \"format\", \"f\", \"hex\", \"The format of binary data to read; 'go', 'hex', 'base64', or 'raw'\")\n\tdecodeProto.PersistentFlags().BoolVarP(\u0026decodeCompact, \"compact\", \"c\", false, \"If true, print the output on a single line.\")\n\tcommands = append(commands, cmdutil.CreateAlias(decodeProto, \"misc decode-proto\"))\n\n\tmisc := \u0026cobra.Command{\n\t\tShort:  \"Miscellaneous utilities unrelated to Pachyderm itself.\",\n\t\tLong:   \"Miscellaneous utilities unrelated to Pachyderm itself.  These utilities can be removed or changed in minor releases; do not rely on them.\",\n\t\tHidden: true,\n\t}\n\tcommands = append(commands, cmdutil.CreateAlias(misc, \"misc\"))\n\treturn commands\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "t.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/src/server/misc/cmds/cmds.go",
+        "SourceLineNum": 67,
+        "ParentFunction": "Cmds (pachctlCfg *github.com/pachyderm/pachyderm/v2/src/internal/pachctl.Config) []*github.com/spf13/cobra.Command"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "t.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/src/server/misc/cmds/cmds.go",
+          "SourceLineNum": 67,
+          "ParentFunction": "Cmds (pachctlCfg *github.com/pachyderm/pachyderm/v2/src/internal/pachctl.Config) []*github.com/spf13/cobra.Command"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

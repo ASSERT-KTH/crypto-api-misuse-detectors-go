@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "fetchAll",
+    "file_path": "/analysis/repo/tools/tester/main.go",
+    "line_number": 174,
+    "full_implementation": "func fetchAll(src string) error {\n\tctx, cancel := context.WithTimeout(context.Background(), requestTimeout)\n\tdefer cancel()\n\n\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, librariesURL, nil)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"request libraries %q: %w\", src, err)\n\t}\n\n\tresp, err := http.DefaultClient.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"get libraries %q: %w\", src, err)\n\t}\n\tdefer resp.Body.Close() //nolint:errcheck\n\n\tvar libs libraries\n\tdec := json.NewDecoder(resp.Body)\n\tif err = dec.Decode(\u0026libs); err != nil {\n\t\treturn fmt.Errorf(\"json decode: %w\", err)\n\t}\n\n\tif err = os.Mkdir(dataDir, 0o750); err != nil \u0026\u0026 !errors.Is(err, fs.ErrExist) {\n\t\treturn fmt.Errorf(\"mkdir: %w\", err)\n\t}\n\n\tvar wg sync.WaitGroup\n\twork := make(chan library, downloadWorkers)\n\terrs := make(chan error, len(libs.Results))\n\twg.Add(downloadWorkers)\n\tfor range downloadWorkers {\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\tfor lib := range work {\n\t\t\t\tfmt.Fprint(os.Stdout, \".\")\n\t\t\t\terrs \u003c- lib.fetch()\n\t\t\t}\n\t\t}()\n\t}\n\n\tfmt.Fprintf(os.Stdout, \"Downloading %d libraries with %d workers ...\", len(libs.Results), downloadWorkers)\n\twg.Add(1)\n\tgo func() {\n\t\tdefer wg.Done()\n\t\tfor _, lib := range libs.Results {\n\t\t\twork \u003c- lib\n\t\t}\n\t\tclose(work)\n\t}()\n\n\twg.Wait()\n\tclose(errs)\n\tfmt.Fprintln(os.Stdout, \" done\")\n\n\tfor e := range errs {\n\t\tif e != nil {\n\t\t\tfmt.Fprintln(os.Stderr, e)\n\t\t\terr = e\n\t\t}\n\t}\n\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequestWithContext",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequestWithContext(ctx, http.MethodGet, librariesURL, nil)",
+        "SourceFilename": "/analysis/repo/tools/tester/main.go",
+        "SourceLineNum": 174,
+        "ParentFunction": "fetchAll (src string) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequestWithContext(ctx, http.MethodGet, librariesURL, nil)",
+          "SourceFilename": "/analysis/repo/tools/tester/main.go",
+          "SourceLineNum": 174,
+          "ParentFunction": "fetchAll (src string) error"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  }
+]

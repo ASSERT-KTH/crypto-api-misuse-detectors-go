@@ -1,0 +1,170 @@
+[
+  {
+    "function_name": "HashNonce",
+    "file_path": "/analysis/repo/pkg/encryption/nonce.go",
+    "line_number": 28,
+    "full_implementation": "func HashNonce(nonce []byte) string {\n\thasher, _ := blake2b.New256(nil)\n\thasher.Write(nonce)\n\tsum := hasher.Sum(nil)\n\treturn base64.RawURLEncoding.EncodeToString(sum)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/blake2b.New256",
+      "Message": "If used as a MAC, the length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher, _ := blake2b.New256(nil)",
+        "SourceFilename": "/analysis/repo/pkg/encryption/nonce.go",
+        "SourceLineNum": 28,
+        "ParentFunction": "HashNonce (nonce []byte) string"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hasher, _ := blake2b.New256(nil)",
+          "SourceFilename": "/analysis/repo/pkg/encryption/nonce.go",
+          "SourceLineNum": 28,
+          "ParentFunction": "HashNonce (nonce []byte) string"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "GenerateCert",
+    "file_path": "/analysis/repo/pkg/util/util.go",
+    "line_number": 68,
+    "full_implementation": "func GenerateCert(ipaddr string) ([]byte, []byte, error) {\n\tvar err error\n\n\tpriv, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\tkeyBytes, err := x509.MarshalPKCS8PrivateKey(priv)\n\tif err != nil {\n\t\treturn nil, keyBytes, err\n\t}\n\n\tserialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))\n\tif err != nil {\n\t\treturn nil, keyBytes, err\n\t}\n\n\tnotBefore := time.Now()\n\ttemplate := x509.Certificate{\n\t\tSerialNumber: serialNumber,\n\t\tSubject: pkix.Name{\n\t\t\tOrganization: []string{\"OAuth2 Proxy Test Suite\"},\n\t\t},\n\t\tNotBefore: notBefore,\n\t\tNotAfter:  notBefore.Add(time.Hour),\n\t\tKeyUsage:  x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,\n\n\t\tExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\n\t\tIPAddresses: []net.IP{net.ParseIP(ipaddr)},\n\t}\n\tcertBytes, err := x509.CreateCertificate(rand.Reader, \u0026template, \u0026template, \u0026priv.PublicKey, priv)\n\treturn certBytes, keyBytes, err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/pkg/util/util.go",
+        "SourceLineNum": 68,
+        "ParentFunction": "GenerateCert (ipaddr string) ([]byte, []byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/pkg/util/util.go",
+          "SourceLineNum": 68,
+          "ParentFunction": "GenerateCert (ipaddr string) ([]byte, []byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Validate",
+    "file_path": "/analysis/repo/pkg/authentication/basic/htpasswd.go",
+    "line_number": 163,
+    "full_implementation": "func (h *htpasswdMap) Validate(user string, password string) bool {\n\trealPassword, exists := h.users[user]\n\tif !exists {\n\t\treturn false\n\t}\n\n\tswitch rp := realPassword.(type) {\n\tcase sha1Pass:\n\t\t// We support SHA1 HTPasswd entries\n\t\td := sha1.New() // #nosec G401\n\t\t_, err := d.Write([]byte(password))\n\t\tif err != nil {\n\t\t\treturn false\n\t\t}\n\t\treturn string(rp) == base64.StdEncoding.EncodeToString(d.Sum(nil))\n\tcase bcryptPass:\n\t\treturn bcrypt.CompareHashAndPassword([]byte(rp), []byte(password)) == nil\n\tdefault:\n\t\treturn false\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "d := sha1.New() // #nosec G401",
+        "SourceFilename": "/analysis/repo/pkg/authentication/basic/htpasswd.go",
+        "SourceLineNum": 163,
+        "ParentFunction": "Validate (user string, password string) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "setupTLSConfig",
+    "file_path": "/analysis/repo/pkg/sessions/redis/redis_store.go",
+    "line_number": 187,
+    "full_implementation": "func setupTLSConfig(opts options.RedisStoreOptions, opt *redis.Options) error {\n\tif opts.InsecureSkipTLSVerify {\n\t\tif opt.TLSConfig == nil {\n\t\t\t/* #nosec */\n\t\t\topt.TLSConfig = \u0026tls.Config{}\n\t\t}\n\n\t\topt.TLSConfig.InsecureSkipVerify = true\n\t}\n\n\tif opts.CAPath != \"\" {\n\t\trootCAs, err := x509.SystemCertPool()\n\t\tif err != nil {\n\t\t\tlogger.Errorf(\"failed to load system cert pool for redis connection, falling back to empty cert pool\")\n\t\t}\n\t\tif rootCAs == nil {\n\t\t\trootCAs = x509.NewCertPool()\n\t\t}\n\t\tcerts, err := os.ReadFile(opts.CAPath)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"failed to load %q, %v\", opts.CAPath, err)\n\t\t}\n\n\t\t// Append our cert to the system pool\n\t\tif ok := rootCAs.AppendCertsFromPEM(certs); !ok {\n\t\t\tlogger.Errorf(\"no certs appended, using system certs only\")\n\t\t}\n\n\t\tif opt.TLSConfig == nil {\n\t\t\t/* #nosec */\n\t\t\topt.TLSConfig = \u0026tls.Config{}\n\t\t}\n\n\t\topt.TLSConfig.RootCAs = rootCAs\n\t}\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "opt.TLSConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/pkg/sessions/redis/redis_store.go",
+        "SourceLineNum": 187,
+        "ParentFunction": "setupTLSConfig (opts github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options.RedisStoreOptions, opt *github.com/redis/go-redis/v9.Options) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "opt.TLSConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/pkg/sessions/redis/redis_store.go",
+          "SourceLineNum": 187,
+          "ParentFunction": "setupTLSConfig (opts github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options.RedisStoreOptions, opt *github.com/redis/go-redis/v9.Options) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "newWebSocketReverseProxy",
+    "file_path": "/analysis/repo/pkg/upstream/http.go",
+    "line_number": 207,
+    "full_implementation": "func newWebSocketReverseProxy(u *url.URL, skipTLSVerify bool) http.Handler {\n\twsProxy := httputil.NewSingleHostReverseProxy(u)\n\n\t// Inherit default transport options from Go's stdlib\n\ttransport := http.DefaultTransport.(*http.Transport).Clone()\n\n\t/* #nosec G402 */\n\tif skipTLSVerify {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t}\n\n\t// Apply the customized transport to our proxy before returning it\n\twsProxy.Transport = transport\n\n\treturn wsProxy\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/pkg/upstream/http.go",
+        "SourceLineNum": 207,
+        "ParentFunction": "newWebSocketReverseProxy (u *net/url.URL, skipTLSVerify bool) net/http.Handler"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/pkg/upstream/http.go",
+          "SourceLineNum": 207,
+          "ParentFunction": "newWebSocketReverseProxy (u *net/url.URL, skipTLSVerify bool) net/http.Handler"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "newReverseProxy",
+    "file_path": "/analysis/repo/pkg/upstream/http.go",
+    "line_number": 153,
+    "full_implementation": "func newReverseProxy(target *url.URL, upstream options.Upstream, errorHandler ProxyErrorHandler) http.Handler {\n\tproxy := httputil.NewSingleHostReverseProxy(target)\n\n\t// Inherit default transport options from Go's stdlib\n\ttransport := http.DefaultTransport.(*http.Transport).Clone()\n\n\tif target.Scheme == \"unix\" {\n\t\ttransport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {\n\t\t\tdialer := net.Dialer{}\n\t\t\treturn dialer.DialContext(ctx, target.Scheme, target.Path)\n\t\t}\n\t\ttransport.RegisterProtocol(target.Scheme, \u0026unixRoundTripper{Transport: transport})\n\t}\n\n\t// Change default duration for waiting for an upstream response\n\tif upstream.Timeout != nil {\n\t\ttransport.ResponseHeaderTimeout = upstream.Timeout.Duration()\n\t}\n\n\t// Configure options on the SingleHostReverseProxy\n\tif upstream.FlushInterval != nil {\n\t\tproxy.FlushInterval = upstream.FlushInterval.Duration()\n\t} else {\n\t\tproxy.FlushInterval = options.DefaultUpstreamFlushInterval\n\t}\n\n\t// InsecureSkipVerify is a configurable option we allow\n\t/* #nosec G402 */\n\tif upstream.InsecureSkipTLSVerify {\n\t\ttransport.TLSClientConfig.InsecureSkipVerify = true\n\t}\n\n\t// Ensure we always pass the original request path\n\tsetProxyDirector(proxy)\n\n\tif upstream.PassHostHeader != nil \u0026\u0026 !*upstream.PassHostHeader {\n\t\tsetProxyUpstreamHostHeader(proxy, target)\n\t}\n\n\t// Set the error handler so that upstream connection failures render the\n\t// error page instead of sending a empty response\n\tif errorHandler != nil {\n\t\tproxy.ErrorHandler = errorHandler\n\t}\n\n\t// Apply the customized transport to our proxy before returning it\n\tproxy.Transport = transport\n\n\treturn proxy\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/pkg/upstream/http.go",
+        "SourceLineNum": 153,
+        "ParentFunction": "newReverseProxy (target *net/url.URL, upstream github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options.Upstream, errorHandler github.com/oauth2-proxy/oauth2-proxy/v7/pkg/upstream.ProxyErrorHandler) net/http.Handler"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/pkg/upstream/http.go",
+          "SourceLineNum": 153,
+          "ParentFunction": "newReverseProxy (target *net/url.URL, upstream github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options.Upstream, errorHandler github.com/oauth2-proxy/oauth2-proxy/v7/pkg/upstream.ProxyErrorHandler) net/http.Handler"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Validate",
+    "file_path": "/analysis/repo/pkg/validation/options.go",
+    "line_number": 35,
+    "full_implementation": "func Validate(o *options.Options) error {\n\tmsgs := validateCookie(o.Cookie)\n\tmsgs = append(msgs, validateSessionCookieMinimal(o)...)\n\tmsgs = append(msgs, validateRedisSessionStore(o)...)\n\tmsgs = append(msgs, prefixValues(\"injectRequestHeaders: \", validateHeaders(o.InjectRequestHeaders)...)...)\n\tmsgs = append(msgs, prefixValues(\"injectResponseHeaders: \", validateHeaders(o.InjectResponseHeaders)...)...)\n\tmsgs = append(msgs, validateProviders(o)...)\n\tmsgs = append(msgs, validateAPIRoutes(o)...)\n\tmsgs = configureLogger(o.Logging, msgs)\n\tmsgs = parseSignatureKey(o, msgs)\n\n\tif o.SSLInsecureSkipVerify {\n\t\ttransport := requests.DefaultTransport.(*http.Transport)\n\t\ttransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true} // #nosec G402 -- InsecureSkipVerify is a configurable option we allow\n\t} else if len(o.Providers[0].CAFiles) \u003e 0 {\n\t\tpool, err := util.GetCertPool(o.Providers[0].CAFiles, o.Providers[0].UseSystemTrustStore)\n\t\tif err == nil {\n\t\t\ttransport := requests.DefaultTransport.(*http.Transport)\n\t\t\ttransport.TLSClientConfig = \u0026tls.Config{\n\t\t\t\tRootCAs:    pool,\n\t\t\t\tMinVersion: tls.VersionTLS12,\n\t\t\t}\n\t\t} else {\n\t\t\tmsgs = append(msgs, fmt.Sprintf(\"unable to load provider CA file(s): %v\", err))\n\t\t}\n\t}\n\n\tif o.AuthenticatedEmailsFile == \"\" \u0026\u0026 len(o.EmailDomains) == 0 \u0026\u0026 o.HtpasswdFile == \"\" {\n\t\tmsgs = append(msgs, \"missing setting for email validation: email-domain or authenticated-emails-file required.\"+\n\t\t\t\"\\n      use email-domain=* to authorize all email addresses\")\n\t}\n\n\tif o.SkipJwtBearerTokens {\n\t\t// Configure extra issuers\n\t\tif len(o.ExtraJwtIssuers) \u003e 0 {\n\t\t\tvar jwtIssuers []jwtIssuer\n\t\t\tjwtIssuers, msgs = parseJwtIssuers(o.ExtraJwtIssuers, msgs)\n\t\t\tfor _, jwtIssuer := range jwtIssuers {\n\t\t\t\tverifier, err := newVerifierFromJwtIssuer(\n\t\t\t\t\to.Providers[0].OIDCConfig.AudienceClaims,\n\t\t\t\t\to.Providers[0].OIDCConfig.ExtraAudiences,\n\t\t\t\t\tjwtIssuer,\n\t\t\t\t)\n\t\t\t\tif err != nil {\n\t\t\t\t\tmsgs = append(msgs, fmt.Sprintf(\"error building verifiers: %s\", err))\n\t\t\t\t}\n\t\t\t\to.SetJWTBearerVerifiers(append(o.GetJWTBearerVerifiers(), verifier))\n\t\t\t}\n\t\t}\n\t}\n\n\tvar redirectURL *url.URL\n\tredirectURL, msgs = parseURL(o.RawRedirectURL, \"redirect\", msgs)\n\to.SetRedirectURL(redirectURL)\n\tif o.RawRedirectURL == \"\" \u0026\u0026 !o.Cookie.Secure \u0026\u0026 !o.ReverseProxy {\n\t\tlogger.Print(\"WARNING: no explicit redirect URL: redirects will default to insecure HTTP\")\n\t}\n\n\tmsgs = append(msgs, validateUpstreams(o.UpstreamServers)...)\n\n\tif o.ReverseProxy {\n\t\tparser, err := ip.GetRealClientIPParser(o.RealClientIPHeader)\n\t\tif err != nil {\n\t\t\tmsgs = append(msgs, fmt.Sprintf(\"real_client_ip_header (%s) not accepted parameter value: %v\", o.RealClientIPHeader, err))\n\t\t}\n\t\to.SetRealClientIPParser(parser)\n\n\t\t// Allow the logger to get client IPs\n\t\tlogger.SetGetClientFunc(func(r *http.Request) string {\n\t\t\treturn ip.GetClientString(o.GetRealClientIPParser(), r, false)\n\t\t})\n\t}\n\n\t// Do this after ReverseProxy validation for TrustedIP coordinated checks\n\tmsgs = append(msgs, validateAllowlists(o)...)\n\n\tif len(msgs) != 0 {\n\t\treturn fmt.Errorf(\"invalid configuration:\\n  %s\",\n\t\t\tstrings.Join(msgs, \"\\n  \"))\n\t}\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "transport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true} // #nosec G402 -- InsecureSkipVerify is a configurable option we allow",
+        "SourceFilename": "/analysis/repo/pkg/validation/options.go",
+        "SourceLineNum": 35,
+        "ParentFunction": "Validate (o *github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options.Options) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "transport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true} // #nosec G402 -- InsecureSkipVerify is a configurable option we allow",
+          "SourceFilename": "/analysis/repo/pkg/validation/options.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "Validate (o *github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/options.Options) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

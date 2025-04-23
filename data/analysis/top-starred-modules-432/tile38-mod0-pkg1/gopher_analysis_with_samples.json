@@ -1,0 +1,56 @@
+[
+  {
+    "function_name": "Sha1Sum",
+    "file_path": "/analysis/repo/cmd/tile38-luamemtest/main.go",
+    "line_number": 19,
+    "full_implementation": "func Sha1Sum(s string) string {\n\th := sha1.New()\n\th.Write([]byte(s))\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/cmd/tile38-luamemtest/main.go",
+        "SourceLineNum": 19,
+        "ParentFunction": "Sha1Sum (s string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "checksum",
+    "file_path": "/analysis/repo/internal/server/checksum.go",
+    "line_number": 26,
+    "full_implementation": "func (s *Server) checksum(pos, size int64) (sum string, err error) {\n\tif pos+size \u003e int64(s.aofsz) {\n\t\treturn \"\", io.EOF\n\t}\n\tvar f *os.File\n\tf, err = os.Open(s.aof.Name())\n\tif err != nil {\n\t\treturn\n\t}\n\tdefer f.Close()\n\tsumr := md5.New()\n\terr = func() error {\n\t\tif size == 0 {\n\t\t\tn, err := f.Seek(int64(s.aofsz), 0)\n\t\t\tif err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\tif pos \u003e= n {\n\t\t\t\treturn io.EOF\n\t\t\t}\n\t\t\treturn nil\n\t\t}\n\t\t_, err = f.Seek(pos, 0)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\t_, err = io.CopyN(sumr, f, size)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\treturn nil\n\t}()\n\tif err != nil {\n\t\tif err == io.ErrUnexpectedEOF {\n\t\t\terr = io.EOF\n\t\t}\n\t\treturn \"\", err\n\t}\n\treturn fmt.Sprintf(\"%x\", sumr.Sum(nil)), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sumr := md5.New()",
+        "SourceFilename": "/analysis/repo/internal/server/checksum.go",
+        "SourceLineNum": 26,
+        "ParentFunction": "checksum (pos int64, size int64) (sum string, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Sha1Sum",
+    "file_path": "/analysis/repo/internal/server/scripts.go",
+    "line_number": 400,
+    "full_implementation": "func Sha1Sum(s string) string {\n\th := sha1.New()\n\th.Write([]byte(s))\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/internal/server/scripts.go",
+        "SourceLineNum": 400,
+        "ParentFunction": "Sha1Sum (s string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

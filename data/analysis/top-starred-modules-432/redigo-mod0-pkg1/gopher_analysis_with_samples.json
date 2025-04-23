@@ -1,0 +1,38 @@
+[
+  {
+    "function_name": "initSentinel",
+    "file_path": "/analysis/repo/redis/pool.go",
+    "line_number": 454,
+    "full_implementation": "func initSentinel() {\n\tp := make([]byte, 64)\n\tif _, err := rand.Read(p); err == nil {\n\t\tsentinel = p\n\t} else {\n\t\th := sha1.New()\n\t\tio.WriteString(h, \"Oops, rand failed. Use time instead.\")       // nolint: errcheck\n\t\tio.WriteString(h, strconv.FormatInt(time.Now().UnixNano(), 10)) // nolint: errcheck\n\t\tsentinel = h.Sum(nil)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/redis/pool.go",
+        "SourceLineNum": 454,
+        "ParentFunction": "initSentinel ()"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewScript",
+    "file_path": "/analysis/repo/redis/script.go",
+    "line_number": 39,
+    "full_implementation": "func NewScript(keyCount int, src string) *Script {\n\th := sha1.New()\n\tio.WriteString(h, src) // nolint: errcheck\n\treturn \u0026Script{keyCount, src, hex.EncodeToString(h.Sum(nil))}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/redis/script.go",
+        "SourceLineNum": 39,
+        "ParentFunction": "NewScript (keyCount int, src string) *github.com/gomodule/redigo/redis.Script"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

@@ -1,0 +1,328 @@
+[
+  {
+    "function_name": "validate",
+    "file_path": "/analysis/repo/keygen/keygen.go",
+    "line_number": 152,
+    "full_implementation": "func validate(apikey string, hmacSaltB64 string) int {\n\tvar version uint8\n\tvar deprecated uint32\n\tvar sequence uint16\n\tvar isRoot uint8\n\n\tvar strIsRoot string\n\n\thmacSalt, err := base64.URLEncoding.DecodeString(hmacSaltB64)\n\tif err != nil {\n\t\t// Try standard base64 decoding.\n\t\thmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)\n\t}\n\tif err != nil {\n\t\tlog.Println(\"Error: Failed to decode HMAC salt\", err)\n\n\t\treturn 1\n\t}\n\n\tif declen := base64.URLEncoding.DecodedLen(len(apikey)); declen != APIKEY_LENGTH {\n\t\tlog.Printf(\"Error: Invalid key length %d, expecting %d\", declen, APIKEY_LENGTH)\n\n\t\treturn 1\n\t}\n\n\tdata, err := base64.URLEncoding.DecodeString(apikey)\n\tif err != nil {\n\t\tlog.Println(\"Error: Failed to decode key as base64-URL-encoded\", err)\n\n\t\treturn 1\n\t}\n\n\tbuf := bytes.NewReader(data)\n\tbinary.Read(buf, binary.LittleEndian, \u0026version)\n\n\tif version != 1 {\n\t\tlog.Println(\"Error: Unknown signature algorithm \", version)\n\n\t\treturn 1\n\t}\n\n\thasher := hmac.New(md5.New, hmacSalt)\n\thasher.Write(data[:APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO])\n\n\tif signature := hasher.Sum(nil); !bytes.Equal(data[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO:], signature) {\n\t\tlog.Println(\"Error: Invalid signature \", data, signature)\n\n\t\treturn 1\n\t}\n\t// [1:algorithm version][4:deprecated][2:key sequence][1:isRoot]\n\tbinary.Read(buf, binary.LittleEndian, \u0026deprecated)\n\tbinary.Read(buf, binary.LittleEndian, \u0026sequence)\n\tbinary.Read(buf, binary.LittleEndian, \u0026isRoot)\n\n\tif isRoot == 1 {\n\t\tstrIsRoot = \"ROOT\"\n\t} else {\n\t\tstrIsRoot = \"ordinary\"\n\t}\n\n\tfmt.Printf(\"Valid v%d seq%d, [%s]\\n\", version, sequence, strIsRoot)\n\n\treturn 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+        "SourceFilename": "/analysis/repo/keygen/keygen.go",
+        "SourceLineNum": 152,
+        "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 152,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        }
+      ],
+      "Predicate_Type": "SECURE_HMAC_HASH"
+    }
+  },
+  {
+    "function_name": "generate",
+    "file_path": "/analysis/repo/keygen/keygen.go",
+    "line_number": 92,
+    "full_implementation": "func generate(sequence, isRoot int, hmacSaltB64 string) int {\n\tvar data [APIKEY_LENGTH]byte\n\tvar hmacSalt []byte\n\n\tif hmacSaltB64 == \"\" {\n\t\thmacSalt = make([]byte, 32)\n\t\t_, err := rand.Read(hmacSalt)\n\t\tif err != nil {\n\t\t\tlog.Println(\"Error: Failed to generate HMAC salt\", err)\n\n\t\t\treturn 1\n\t\t}\n\t} else {\n\t\tvar err error\n\t\thmacSalt, err = base64.URLEncoding.DecodeString(hmacSaltB64)\n\t\tif err != nil {\n\t\t\t// Try standard base64 decoding\n\t\t\thmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)\n\t\t}\n\t\tif err != nil {\n\t\t\tlog.Println(\"Error: Failed to decode HMAC salt\", err)\n\n\t\t\treturn 1\n\t\t}\n\t}\n\t// Make sure the salt is base64std encoded: tinode.conf requires std encoding.\n\thmacSaltB64 = base64.StdEncoding.EncodeToString(hmacSalt)\n\n\t// [1:algorithm version][4:appid][2:key sequence][1:isRoot]\n\tdata[0] = 1 // default algorithm\n\t// deprecated\n\tbinary.LittleEndian.PutUint32(data[APIKEY_VERSION:], uint32(0))\n\tbinary.LittleEndian.PutUint16(data[APIKEY_VERSION+APIKEY_APPID:], uint16(sequence))\n\tdata[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE] = uint8(isRoot)\n\n\thasher := hmac.New(md5.New, hmacSalt)\n\thasher.Write(data[:APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO])\n\tsignature := hasher.Sum(nil)\n\n\tcopy(data[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO:], signature)\n\n\tvar strIsRoot string\n\tif isRoot == 1 {\n\t\tstrIsRoot = \"ROOT\"\n\t} else {\n\t\tstrIsRoot = \"ordinary\"\n\t}\n\n\tfmt.Printf(\"API key v%d seq%d [%s]: %s\\nHMAC salt: %s\\n\", 1, sequence, strIsRoot,\n\t\tbase64.URLEncoding.EncodeToString(data[:]), hmacSaltB64)\n\n\treturn 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+        "SourceFilename": "/analysis/repo/keygen/keygen.go",
+        "SourceLineNum": 92,
+        "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 152,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        }
+      ],
+      "Predicate_Type": "SECURE_HMAC_HASH"
+    }
+  },
+  {
+    "function_name": "validate",
+    "file_path": "/analysis/repo/keygen/keygen.go",
+    "line_number": 152,
+    "full_implementation": "func validate(apikey string, hmacSaltB64 string) int {\n\tvar version uint8\n\tvar deprecated uint32\n\tvar sequence uint16\n\tvar isRoot uint8\n\n\tvar strIsRoot string\n\n\thmacSalt, err := base64.URLEncoding.DecodeString(hmacSaltB64)\n\tif err != nil {\n\t\t// Try standard base64 decoding.\n\t\thmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)\n\t}\n\tif err != nil {\n\t\tlog.Println(\"Error: Failed to decode HMAC salt\", err)\n\n\t\treturn 1\n\t}\n\n\tif declen := base64.URLEncoding.DecodedLen(len(apikey)); declen != APIKEY_LENGTH {\n\t\tlog.Printf(\"Error: Invalid key length %d, expecting %d\", declen, APIKEY_LENGTH)\n\n\t\treturn 1\n\t}\n\n\tdata, err := base64.URLEncoding.DecodeString(apikey)\n\tif err != nil {\n\t\tlog.Println(\"Error: Failed to decode key as base64-URL-encoded\", err)\n\n\t\treturn 1\n\t}\n\n\tbuf := bytes.NewReader(data)\n\tbinary.Read(buf, binary.LittleEndian, \u0026version)\n\n\tif version != 1 {\n\t\tlog.Println(\"Error: Unknown signature algorithm \", version)\n\n\t\treturn 1\n\t}\n\n\thasher := hmac.New(md5.New, hmacSalt)\n\thasher.Write(data[:APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO])\n\n\tif signature := hasher.Sum(nil); !bytes.Equal(data[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO:], signature) {\n\t\tlog.Println(\"Error: Invalid signature \", data, signature)\n\n\t\treturn 1\n\t}\n\t// [1:algorithm version][4:deprecated][2:key sequence][1:isRoot]\n\tbinary.Read(buf, binary.LittleEndian, \u0026deprecated)\n\tbinary.Read(buf, binary.LittleEndian, \u0026sequence)\n\tbinary.Read(buf, binary.LittleEndian, \u0026isRoot)\n\n\tif isRoot == 1 {\n\t\tstrIsRoot = \"ROOT\"\n\t} else {\n\t\tstrIsRoot = \"ordinary\"\n\t}\n\n\tfmt.Printf(\"Valid v%d seq%d, [%s]\\n\", version, sequence, strIsRoot)\n\n\treturn 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+        "SourceFilename": "/analysis/repo/keygen/keygen.go",
+        "SourceLineNum": 152,
+        "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hmacSalt, err := base64.URLEncoding.DecodeString(hmacSaltB64)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 119,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "hmacSalt, err := base64.URLEncoding.DecodeString(hmacSaltB64)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 119,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "func validate(apikey string, hmacSaltB64 string) int {",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 111,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "os.Exit(validate(*apikey, *hmacSalt))",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 36,
+          "ParentFunction": "main ()"
+        },
+        {
+          "SourceCode": "hmacSalt := flag.String(\"salt\", \"\", \"HMAC salt, 32 random bytes base64-encoded\")",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 27,
+          "ParentFunction": "main ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "validate",
+    "file_path": "/analysis/repo/keygen/keygen.go",
+    "line_number": 152,
+    "full_implementation": "func validate(apikey string, hmacSaltB64 string) int {\n\tvar version uint8\n\tvar deprecated uint32\n\tvar sequence uint16\n\tvar isRoot uint8\n\n\tvar strIsRoot string\n\n\thmacSalt, err := base64.URLEncoding.DecodeString(hmacSaltB64)\n\tif err != nil {\n\t\t// Try standard base64 decoding.\n\t\thmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)\n\t}\n\tif err != nil {\n\t\tlog.Println(\"Error: Failed to decode HMAC salt\", err)\n\n\t\treturn 1\n\t}\n\n\tif declen := base64.URLEncoding.DecodedLen(len(apikey)); declen != APIKEY_LENGTH {\n\t\tlog.Printf(\"Error: Invalid key length %d, expecting %d\", declen, APIKEY_LENGTH)\n\n\t\treturn 1\n\t}\n\n\tdata, err := base64.URLEncoding.DecodeString(apikey)\n\tif err != nil {\n\t\tlog.Println(\"Error: Failed to decode key as base64-URL-encoded\", err)\n\n\t\treturn 1\n\t}\n\n\tbuf := bytes.NewReader(data)\n\tbinary.Read(buf, binary.LittleEndian, \u0026version)\n\n\tif version != 1 {\n\t\tlog.Println(\"Error: Unknown signature algorithm \", version)\n\n\t\treturn 1\n\t}\n\n\thasher := hmac.New(md5.New, hmacSalt)\n\thasher.Write(data[:APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO])\n\n\tif signature := hasher.Sum(nil); !bytes.Equal(data[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO:], signature) {\n\t\tlog.Println(\"Error: Invalid signature \", data, signature)\n\n\t\treturn 1\n\t}\n\t// [1:algorithm version][4:deprecated][2:key sequence][1:isRoot]\n\tbinary.Read(buf, binary.LittleEndian, \u0026deprecated)\n\tbinary.Read(buf, binary.LittleEndian, \u0026sequence)\n\tbinary.Read(buf, binary.LittleEndian, \u0026isRoot)\n\n\tif isRoot == 1 {\n\t\tstrIsRoot = \"ROOT\"\n\t} else {\n\t\tstrIsRoot = \"ordinary\"\n\t}\n\n\tfmt.Printf(\"Valid v%d seq%d, [%s]\\n\", version, sequence, strIsRoot)\n\n\treturn 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+        "SourceFilename": "/analysis/repo/keygen/keygen.go",
+        "SourceLineNum": 152,
+        "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hmacSalt, err := base64.URLEncoding.DecodeString(hmacSaltB64)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 119,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "hmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 122,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "func validate(apikey string, hmacSaltB64 string) int {",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 111,
+          "ParentFunction": "validate (apikey string, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "os.Exit(validate(*apikey, *hmacSalt))",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 36,
+          "ParentFunction": "main ()"
+        },
+        {
+          "SourceCode": "hmacSalt := flag.String(\"salt\", \"\", \"HMAC salt, 32 random bytes base64-encoded\")",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 27,
+          "ParentFunction": "main ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "generate",
+    "file_path": "/analysis/repo/keygen/keygen.go",
+    "line_number": 92,
+    "full_implementation": "func generate(sequence, isRoot int, hmacSaltB64 string) int {\n\tvar data [APIKEY_LENGTH]byte\n\tvar hmacSalt []byte\n\n\tif hmacSaltB64 == \"\" {\n\t\thmacSalt = make([]byte, 32)\n\t\t_, err := rand.Read(hmacSalt)\n\t\tif err != nil {\n\t\t\tlog.Println(\"Error: Failed to generate HMAC salt\", err)\n\n\t\t\treturn 1\n\t\t}\n\t} else {\n\t\tvar err error\n\t\thmacSalt, err = base64.URLEncoding.DecodeString(hmacSaltB64)\n\t\tif err != nil {\n\t\t\t// Try standard base64 decoding\n\t\t\thmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)\n\t\t}\n\t\tif err != nil {\n\t\t\tlog.Println(\"Error: Failed to decode HMAC salt\", err)\n\n\t\t\treturn 1\n\t\t}\n\t}\n\t// Make sure the salt is base64std encoded: tinode.conf requires std encoding.\n\thmacSaltB64 = base64.StdEncoding.EncodeToString(hmacSalt)\n\n\t// [1:algorithm version][4:appid][2:key sequence][1:isRoot]\n\tdata[0] = 1 // default algorithm\n\t// deprecated\n\tbinary.LittleEndian.PutUint32(data[APIKEY_VERSION:], uint32(0))\n\tbinary.LittleEndian.PutUint16(data[APIKEY_VERSION+APIKEY_APPID:], uint16(sequence))\n\tdata[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE] = uint8(isRoot)\n\n\thasher := hmac.New(md5.New, hmacSalt)\n\thasher.Write(data[:APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO])\n\tsignature := hasher.Sum(nil)\n\n\tcopy(data[APIKEY_VERSION+APIKEY_APPID+APIKEY_SEQUENCE+APIKEY_WHO:], signature)\n\n\tvar strIsRoot string\n\tif isRoot == 1 {\n\t\tstrIsRoot = \"ROOT\"\n\t} else {\n\t\tstrIsRoot = \"ordinary\"\n\t}\n\n\tfmt.Printf(\"API key v%d seq%d [%s]: %s\\nHMAC salt: %s\\n\", 1, sequence, strIsRoot,\n\t\tbase64.URLEncoding.EncodeToString(data[:]), hmacSaltB64)\n\n\treturn 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := hmac.New(md5.New, hmacSalt)",
+        "SourceFilename": "/analysis/repo/keygen/keygen.go",
+        "SourceLineNum": 92,
+        "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hmacSaltB64 = base64.StdEncoding.EncodeToString(hmacSalt)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 83,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "var hmacSalt []byte",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "hmacSalt, err = base64.URLEncoding.DecodeString(hmacSaltB64)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 71,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "func generate(sequence, isRoot int, hmacSaltB64 string) int {",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 57,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "os.Exit(validate(*apikey, *hmacSalt))",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 36,
+          "ParentFunction": "main ()"
+        },
+        {
+          "SourceCode": "hmacSalt := flag.String(\"salt\", \"\", \"HMAC salt, 32 random bytes base64-encoded\")",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 27,
+          "ParentFunction": "main ()"
+        },
+        {
+          "SourceCode": "var hmacSalt []byte",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "hmacSalt, err = base64.StdEncoding.DecodeString(hmacSaltB64)",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 74,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "func generate(sequence, isRoot int, hmacSaltB64 string) int {",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 57,
+          "ParentFunction": "generate (sequence int, isRoot int, hmacSaltB64 string) int"
+        },
+        {
+          "SourceCode": "os.Exit(validate(*apikey, *hmacSalt))",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 36,
+          "ParentFunction": "main ()"
+        },
+        {
+          "SourceCode": "hmacSalt := flag.String(\"salt\", \"\", \"HMAC salt, 32 random bytes base64-encoded\")",
+          "SourceFilename": "/analysis/repo/keygen/keygen.go",
+          "SourceLineNum": 27,
+          "ParentFunction": "main ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "Init",
+    "file_path": "/analysis/repo/server/store/types/uidgen.go",
+    "line_number": 26,
+    "full_implementation": "func (ug *UidGenerator) Init(workerID uint, key []byte) error {\n\tvar err error\n\n\tif ug.seq == nil {\n\t\tug.seq, err = sf.NewSnowFlake(uint32(workerID))\n\t}\n\tif ug.cipher == nil {\n\t\tug.cipher, err = xtea.NewCipher(key)\n\t}\n\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/xtea.NewCipher",
+      "Message": "XTEA - Sweet32: Birthday attacks on 64-bit block ciphers in TLS and OpenVPN.",
+      "Slicing_Criteria": {
+        "SourceCode": "ug.cipher, err = xtea.NewCipher(key)",
+        "SourceFilename": "/analysis/repo/server/store/types/uidgen.go",
+        "SourceLineNum": 26,
+        "ParentFunction": "Init (workerID uint, key []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "UpdateRecord",
+    "file_path": "/analysis/repo/server/auth/basic/auth_basic.go",
+    "line_number": 186,
+    "full_implementation": "func (a *authenticator) UpdateRecord(rec *auth.Rec, secret []byte, remoteAddr string) (*auth.Rec, error) {\n\tuname, password, err := parseSecret(secret)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tlogin, authLevel, _, _, err := store.Users.GetAuthRecord(rec.Uid, a.name)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\t// User does not have a record.\n\tif login == \"\" {\n\t\treturn nil, types.ErrNotFound\n\t}\n\n\tif uname == \"\" || uname == login {\n\t\t// User is changing just the password.\n\t\tuname = login\n\t} else if err = a.checkLoginPolicy(uname); err != nil {\n\t\treturn nil, err\n\t} else if uid, _, _, _, err := store.Users.GetAuthUniqueRecord(a.name, uname); err != nil {\n\t\treturn nil, err\n\t} else if !uid.IsZero() {\n\t\t// The (new) user name already exists. Report an error.\n\t\treturn nil, types.ErrDuplicate\n\t}\n\n\tif err = a.checkPasswordPolicy(password); err != nil {\n\t\treturn nil, err\n\t}\n\n\tpasshash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn nil, types.ErrInternal\n\t}\n\tvar expires time.Time\n\tif rec.Lifetime \u003e 0 {\n\t\texpires = types.TimeNow().Add(time.Duration(rec.Lifetime))\n\t}\n\terr = store.Users.UpdateAuthRecord(rec.Uid, authLevel, a.name, uname, passhash, expires)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// Remove old tag from the list of tags\n\toldTag := a.name + \":\" + login\n\tfor i, tag := range rec.Tags {\n\t\tif tag == oldTag {\n\t\t\trec.Tags[i] = rec.Tags[len(rec.Tags)-1]\n\t\t\trec.Tags = rec.Tags[:len(rec.Tags)-1]\n\n\t\t\tbreak\n\t\t}\n\t}\n\t// Add new tag\n\trec.Tags = append(rec.Tags, a.name+\":\"+uname)\n\n\treturn rec, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "passhash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/server/auth/basic/auth_basic.go",
+        "SourceLineNum": 186,
+        "ParentFunction": "UpdateRecord (rec *github.com/tinode/chat/server/auth.Rec, secret []byte, remoteAddr string) (*github.com/tinode/chat/server/auth.Rec, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "passhash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/server/auth/basic/auth_basic.go",
+          "SourceLineNum": 186,
+          "ParentFunction": "UpdateRecord (rec *github.com/tinode/chat/server/auth.Rec, secret []byte, remoteAddr string) (*github.com/tinode/chat/server/auth.Rec, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "AddRecord",
+    "file_path": "/analysis/repo/server/auth/basic/auth_basic.go",
+    "line_number": 128,
+    "full_implementation": "func (a *authenticator) AddRecord(rec *auth.Rec, secret []byte, remoteAddr string) (*auth.Rec, error) {\n\tuname, password, err := parseSecret(secret)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tif err = a.checkLoginPolicy(uname); err != nil {\n\t\treturn nil, err\n\t}\n\n\tif err = a.checkPasswordPolicy(password); err != nil {\n\t\treturn nil, err\n\t}\n\n\tpasshash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tvar expires time.Time\n\tif rec.Lifetime \u003e 0 {\n\t\texpires = time.Now().Add(time.Duration(rec.Lifetime)).UTC().Round(time.Millisecond)\n\t}\n\n\tauthLevel := rec.AuthLevel\n\tif authLevel == auth.LevelNone {\n\t\tauthLevel = auth.LevelAuth\n\t}\n\n\terr = store.Users.AddAuthRecord(rec.Uid, authLevel, a.name, uname, passhash, expires)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\trec.AuthLevel = authLevel\n\tif a.addToTags {\n\t\trec.Tags = append(rec.Tags, a.name+\":\"+uname)\n\t}\n\treturn rec, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "passhash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/server/auth/basic/auth_basic.go",
+        "SourceLineNum": 128,
+        "ParentFunction": "AddRecord (rec *github.com/tinode/chat/server/auth.Rec, secret []byte, remoteAddr string) (*github.com/tinode/chat/server/auth.Rec, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "passhash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/server/auth/basic/auth_basic.go",
+          "SourceLineNum": 128,
+          "ParentFunction": "AddRecord (rec *github.com/tinode/chat/server/auth.Rec, secret []byte, remoteAddr string) (*github.com/tinode/chat/server/auth.Rec, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "checkAPIKey",
+    "file_path": "/analysis/repo/server/api_key.go",
+    "line_number": 61,
+    "full_implementation": "func checkAPIKey(apikey string) (isValid, isRoot bool) {\n\tif declen := base64.URLEncoding.DecodedLen(len(apikey)); declen != apikeyLength {\n\t\treturn\n\t}\n\n\tdata, err := base64.URLEncoding.DecodeString(apikey)\n\tif err != nil {\n\t\tlogs.Warn.Println(\"failed to decode.base64 appid \", err)\n\t\treturn\n\t}\n\tif data[0] != 1 {\n\t\tlogs.Warn.Println(\"unknown appid signature algorithm \", data[0])\n\t\treturn\n\t}\n\n\thasher := hmac.New(md5.New, globals.apiKeySalt)\n\thasher.Write(data[:apikeyVersion+apikeyAppID+apikeySequence+apikeyWho])\n\tcheck := hasher.Sum(nil)\n\tif !bytes.Equal(data[apikeyVersion+apikeyAppID+apikeySequence+apikeyWho:], check) {\n\t\tlogs.Warn.Println(\"invalid apikey signature\")\n\t\treturn\n\t}\n\n\tisRoot = (data[apikeyVersion+apikeyAppID+apikeySequence] == 1)\n\n\tisValid = true\n\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := hmac.New(md5.New, globals.apiKeySalt)",
+        "SourceFilename": "/analysis/repo/server/api_key.go",
+        "SourceLineNum": 61,
+        "ParentFunction": "checkAPIKey (apikey string) (isValid bool, isRoot bool)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hasher := hmac.New(md5.New, globals.apiKeySalt)",
+          "SourceFilename": "/analysis/repo/server/api_key.go",
+          "SourceLineNum": 61,
+          "ParentFunction": "checkAPIKey (apikey string) (isValid bool, isRoot bool)"
+        }
+      ],
+      "Predicate_Type": "SECURE_HMAC_HASH"
+    }
+  }
+]

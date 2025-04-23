@@ -1,0 +1,63 @@
+[
+  {
+    "function_name": "generateKey",
+    "file_path": "/analysis/repo/cert.go",
+    "line_number": 173,
+    "full_implementation": "func (m *mkcert) generateKey(rootCA bool) (crypto.PrivateKey, error) {\n\tif m.ecdsa {\n\t\treturn ecdsa.GenerateKey(elliptic.P256(), rand.Reader)\n\t}\n\tif rootCA {\n\t\treturn rsa.GenerateKey(rand.Reader, 3072)\n\t}\n\treturn rsa.GenerateKey(rand.Reader, 2048)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/cert.go",
+        "SourceLineNum": 173,
+        "ParentFunction": "generateKey (rootCA bool) (crypto.PrivateKey, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "return rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/cert.go",
+          "SourceLineNum": 173,
+          "ParentFunction": "generateKey (rootCA bool) (crypto.PrivateKey, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "checkJava",
+    "file_path": "/analysis/repo/truststore_java.go",
+    "line_number": 77,
+    "full_implementation": "func (m *mkcert) checkJava() bool {\n\tif !hasKeytool {\n\t\treturn false\n\t}\n\n\t// exists returns true if the given x509.Certificate's fingerprint\n\t// is in the keytool -list output\n\texists := func(c *x509.Certificate, h hash.Hash, keytoolOutput []byte) bool {\n\t\th.Write(c.Raw)\n\t\tfp := strings.ToUpper(hex.EncodeToString(h.Sum(nil)))\n\t\treturn bytes.Contains(keytoolOutput, []byte(fp))\n\t}\n\n\tkeytoolOutput, err := exec.Command(keytoolPath, \"-list\", \"-keystore\", cacertsPath, \"-storepass\", storePass).CombinedOutput()\n\tfatalIfCmdErr(err, \"keytool -list\", keytoolOutput)\n\t// keytool outputs SHA1 and SHA256 (Java 9+) certificates in uppercase hex\n\t// with each octet pair delimitated by \":\". Drop them from the keytool output\n\tkeytoolOutput = bytes.Replace(keytoolOutput, []byte(\":\"), nil, -1)\n\n\t// pre-Java 9 uses SHA1 fingerprints\n\ts1, s256 := sha1.New(), sha256.New()\n\treturn exists(m.caCert, s1, keytoolOutput) || exists(m.caCert, s256, keytoolOutput)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "s1, s256 := sha1.New(), sha256.New()",
+        "SourceFilename": "/analysis/repo/truststore_java.go",
+        "SourceLineNum": 77,
+        "ParentFunction": "checkJava () bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newCA",
+    "file_path": "/analysis/repo/cert.go",
+    "line_number": 325,
+    "full_implementation": "func (m *mkcert) newCA() {\n\tpriv, err := m.generateKey(true)\n\tfatalIfErr(err, \"failed to generate the CA key\")\n\tpub := priv.(crypto.Signer).Public()\n\n\tspkiASN1, err := x509.MarshalPKIXPublicKey(pub)\n\tfatalIfErr(err, \"failed to encode public key\")\n\n\tvar spki struct {\n\t\tAlgorithm        pkix.AlgorithmIdentifier\n\t\tSubjectPublicKey asn1.BitString\n\t}\n\t_, err = asn1.Unmarshal(spkiASN1, \u0026spki)\n\tfatalIfErr(err, \"failed to decode public key\")\n\n\tskid := sha1.Sum(spki.SubjectPublicKey.Bytes)\n\n\ttpl := \u0026x509.Certificate{\n\t\tSerialNumber: randomSerialNumber(),\n\t\tSubject: pkix.Name{\n\t\t\tOrganization:       []string{\"mkcert development CA\"},\n\t\t\tOrganizationalUnit: []string{userAndHostname},\n\n\t\t\t// The CommonName is required by iOS to show the certificate in the\n\t\t\t// \"Certificate Trust Settings\" menu.\n\t\t\t// https://github.com/FiloSottile/mkcert/issues/47\n\t\t\tCommonName: \"mkcert \" + userAndHostname,\n\t\t},\n\t\tSubjectKeyId: skid[:],\n\n\t\tNotAfter:  time.Now().AddDate(10, 0, 0),\n\t\tNotBefore: time.Now(),\n\n\t\tKeyUsage: x509.KeyUsageCertSign,\n\n\t\tBasicConstraintsValid: true,\n\t\tIsCA:                  true,\n\t\tMaxPathLenZero:        true,\n\t}\n\n\tcert, err := x509.CreateCertificate(rand.Reader, tpl, tpl, pub, priv)\n\tfatalIfErr(err, \"failed to generate CA certificate\")\n\n\tprivDER, err := x509.MarshalPKCS8PrivateKey(priv)\n\tfatalIfErr(err, \"failed to encode CA key\")\n\terr = ioutil.WriteFile(filepath.Join(m.CAROOT, rootKeyName), pem.EncodeToMemory(\n\t\t\u0026pem.Block{Type: \"PRIVATE KEY\", Bytes: privDER}), 0400)\n\tfatalIfErr(err, \"failed to save CA key\")\n\n\terr = ioutil.WriteFile(filepath.Join(m.CAROOT, rootName), pem.EncodeToMemory(\n\t\t\u0026pem.Block{Type: \"CERTIFICATE\", Bytes: cert}), 0644)\n\tfatalIfErr(err, \"failed to save CA certificate\")\n\n\tlog.Printf(\"Created a new local CA 💥\\n\")\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "skid := sha1.Sum(spki.SubjectPublicKey.Bytes)",
+        "SourceFilename": "/analysis/repo/cert.go",
+        "SourceLineNum": 325,
+        "ParentFunction": "newCA ()"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

@@ -1,0 +1,144 @@
+[
+  {
+    "function_name": "Ripemd160H",
+    "file_path": "/analysis/repo/input/script_utils.go",
+    "line_number": 294,
+    "full_implementation": "func Ripemd160H(d []byte) []byte {\n\th := ripemd160.New()\n\th.Write(d)\n\treturn h.Sum(nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ripemd160.New",
+      "Message": "Mendel et al. On the Collision Resistance of RIPEMD-160. \nDeprecated: RIPEMD-160 is a legacy hash and should not be used for new applications. Also, this package does not and will not provide an optimized implementation. Instead, use a modern hash like SHA-256 (from crypto/sha256).",
+      "Slicing_Criteria": {
+        "SourceCode": "h := ripemd160.New()",
+        "SourceFilename": "/analysis/repo/input/script_utils.go",
+        "SourceLineNum": 294,
+        "ParentFunction": "Ripemd160H (d []byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "DeriveMusig2Shachain",
+    "file_path": "/analysis/repo/channeldb/channel.go",
+    "line_number": 1707,
+    "full_implementation": "func DeriveMusig2Shachain(revRoot shachain.Producer) (shachain.Producer, error) { //nolint:lll\n\t// In order to obtain the revocation root hash to create the taproot\n\t// revocation, we'll encode the producer into a buffer, then use that\n\t// to derive the shachain root needed.\n\tvar rootHashBuf bytes.Buffer\n\tif err := revRoot.Encode(\u0026rootHashBuf); err != nil {\n\t\treturn nil, fmt.Errorf(\"unable to encode producer: %w\", err)\n\t}\n\n\trevRootHash := chainhash.HashH(rootHashBuf.Bytes())\n\n\t// For taproot channel types, we'll also generate a distinct shachain\n\t// root using the same seed information. We'll use this to generate\n\t// verification nonces for the channel. We'll bind with this a simple\n\t// hmac.\n\ttaprootRevHmac := hmac.New(sha256.New, taprootRevRootKey)\n\tif _, err := taprootRevHmac.Write(revRootHash[:]); err != nil {\n\t\treturn nil, err\n\t}\n\n\ttaprootRevRoot := taprootRevHmac.Sum(nil)\n\n\t// Once we have the root, we can then generate our shachain producer\n\t// and from that generate the per-commitment point.\n\treturn shachain.NewRevocationProducerFromBytes(\n\t\ttaprootRevRoot,\n\t)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+      "Slicing_Criteria": {
+        "SourceCode": "taprootRevHmac := hmac.New(sha256.New, taprootRevRootKey)",
+        "SourceFilename": "/analysis/repo/channeldb/channel.go",
+        "SourceLineNum": 1707,
+        "ParentFunction": "DeriveMusig2Shachain (revRoot github.com/lightningnetwork/lnd/shachain.Producer) (github.com/lightningnetwork/lnd/shachain.Producer, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "taprootRevHmac := hmac.New(sha256.New, taprootRevRootKey)",
+          "SourceFilename": "/analysis/repo/channeldb/channel.go",
+          "SourceLineNum": 1707,
+          "ParentFunction": "DeriveMusig2Shachain (revRoot github.com/lightningnetwork/lnd/shachain.Producer) (github.com/lightningnetwork/lnd/shachain.Producer, error)"
+        },
+        {
+          "SourceCode": "taprootRevRootKey = []byte(\"taproot-rev-root\")",
+          "SourceFilename": "/analysis/repo/channeldb/channel.go",
+          "SourceLineNum": 1687,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "decipherCipherSeed",
+    "file_path": "/analysis/repo/aezeed/cipherseed.go",
+    "line_number": 520,
+    "full_implementation": "func decipherCipherSeed(cipherSeedBytes [EncipheredCipherSeedSize]byte,\n\tpass []byte) ([DecipheredCipherSeedSize]byte, [SaltSize]byte, error) {\n\n\tvar (\n\t\tplainSeed [DecipheredCipherSeedSize]byte\n\t\tsalt      [SaltSize]byte\n\t)\n\n\t// Before we do anything, we'll ensure that the version is one that we\n\t// understand. Otherwise, we won't be able to decrypt, or even parse\n\t// the cipher seed.\n\tif cipherSeedBytes[0] != CipherSeedVersion {\n\t\treturn plainSeed, salt, ErrIncorrectVersion\n\t}\n\n\t// Next, we'll slice off the salt from the pass cipher seed, then\n\t// snip off the end of the cipher seed, ignoring the version, and\n\t// finally the checksum.\n\tcopy(salt[:], cipherSeedBytes[saltOffset:saltOffset+SaltSize])\n\tcipherSeed := cipherSeedBytes[1:saltOffset]\n\tchecksum := cipherSeedBytes[checkSumOffset:]\n\n\t// Before we perform any crypto operations, we'll re-create and verify\n\t// the checksum to ensure that the user input the proper set of words.\n\tfreshChecksum := crc32.Checksum(\n\t\tcipherSeedBytes[:checkSumOffset], crcTable,\n\t)\n\tif freshChecksum != binary.BigEndian.Uint32(checksum) {\n\t\treturn plainSeed, salt, ErrIncorrectMnemonic\n\t}\n\n\t// With the salt separated from the cipher text, we'll now obtain the\n\t// key used for encryption.\n\tkey, err := scrypt.Key(pass, salt[:], scryptN, scryptR, scryptP, keyLen)\n\tif err != nil {\n\t\treturn plainSeed, salt, err\n\t}\n\n\t// We'll also extract the AD that will be required to properly pass the\n\t// MAC check.\n\tad := extractAD(cipherSeedBytes)\n\n\t// With the key, we'll attempt to decrypt the plaintext. If the\n\t// ciphertext was altered, or the passphrase is incorrect, then we'll\n\t// error out.\n\tplainSeedBytes, ok := aez.Decrypt(\n\t\tkey, nil, [][]byte{ad[:]}, CipherTextExpansion, cipherSeed, nil,\n\t)\n\tif !ok {\n\t\treturn plainSeed, salt, ErrInvalidPass\n\t}\n\tcopy(plainSeed[:], plainSeedBytes)\n\n\treturn plainSeed, salt, nil\n\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/scrypt.Key",
+      "Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\nWe Found: 32768",
+      "Slicing_Criteria": {
+        "SourceCode": "key, err := scrypt.Key(pass, salt[:], scryptN, scryptR, scryptP, keyLen)",
+        "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+        "SourceLineNum": 520,
+        "ParentFunction": "decipherCipherSeed (cipherSeedBytes [33]byte, pass []byte) ([19]byte, [5]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "key, err := scrypt.Key(pass, salt[:], scryptN, scryptR, scryptP, keyLen)",
+          "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+          "SourceLineNum": 520,
+          "ParentFunction": "decipherCipherSeed (cipherSeedBytes [33]byte, pass []byte) ([19]byte, [5]byte, error)"
+        },
+        {
+          "SourceCode": "scryptN = 32768",
+          "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+          "SourceLineNum": 108,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "encipher",
+    "file_path": "/analysis/repo/aezeed/cipherseed.go",
+    "line_number": 325,
+    "full_implementation": "func (c *CipherSeed) encipher(pass []byte) ([EncipheredCipherSeedSize]byte,\n\terror) {\n\n\tvar cipherSeedBytes [EncipheredCipherSeedSize]byte\n\n\t// If the passphrase wasn't provided, then we'll use the string\n\t// \"aezeed\" in place.\n\tpassphrase := pass\n\tif len(passphrase) == 0 {\n\t\tpassphrase = defaultPassphrase\n\t}\n\n\t// With our salt pre-generated, we'll now run the password through a\n\t// KDF to obtain the key we'll use for encryption.\n\tkey, err := scrypt.Key(\n\t\tpassphrase, c.salt[:], scryptN, scryptR, scryptP, keyLen,\n\t)\n\tif err != nil {\n\t\treturn cipherSeedBytes, err\n\t}\n\n\t// Next, we'll encode the serialized plaintext cipher seed into a buffer\n\t// that we'll use for encryption.\n\tvar seedBytes bytes.Buffer\n\tif err := c.encode(\u0026seedBytes); err != nil {\n\t\treturn cipherSeedBytes, err\n\t}\n\n\t// With our plaintext seed encoded, we'll now construct the AD that\n\t// will be passed to the encryption operation. This ensures to\n\t// authenticate both the salt and the external version.\n\tad := encodeAD(CipherSeedVersion, c.salt)\n\n\t// With all items assembled, we'll now encipher the plaintext seed\n\t// with our AD, key, and MAC size.\n\tcipherSeed := seedBytes.Bytes()\n\tcipherText := aez.Encrypt(\n\t\tkey, nil, [][]byte{ad[:]}, CipherTextExpansion, cipherSeed, nil,\n\t)\n\n\t// Finally, we'll pack the {version || ciphertext || salt || checksum}\n\t// seed into a byte slice for encoding as a mnemonic.\n\tcipherSeedBytes[0] = CipherSeedVersion\n\tcopy(cipherSeedBytes[1:saltOffset], cipherText)\n\tcopy(cipherSeedBytes[saltOffset:], c.salt[:])\n\n\t// With the seed mostly assembled, we'll now compute a checksum all the\n\t// contents.\n\tcheckSum := crc32.Checksum(cipherSeedBytes[:checkSumOffset], crcTable)\n\n\t// With our checksum computed, we can finish encoding the full cipher\n\t// seed.\n\tvar checkSumBytes [4]byte\n\tbinary.BigEndian.PutUint32(checkSumBytes[:], checkSum)\n\tcopy(cipherSeedBytes[checkSumOffset:], checkSumBytes[:])\n\n\treturn cipherSeedBytes, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/scrypt.Key",
+      "Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\nWe Found: 32768",
+      "Slicing_Criteria": {
+        "SourceCode": "key, err := scrypt.Key(",
+        "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+        "SourceLineNum": 325,
+        "ParentFunction": "encipher (pass []byte) ([33]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "passphrase, c.salt[:], scryptN, scryptR, scryptP, keyLen,",
+          "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+          "SourceLineNum": 326,
+          "ParentFunction": "encipher (pass []byte) ([33]byte, error)"
+        },
+        {
+          "SourceCode": "key, err := scrypt.Key(pass, salt[:], scryptN, scryptR, scryptP, keyLen)",
+          "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+          "SourceLineNum": 520,
+          "ParentFunction": "decipherCipherSeed (cipherSeedBytes [33]byte, pass []byte) ([19]byte, [5]byte, error)"
+        },
+        {
+          "SourceCode": "scryptN = 32768",
+          "SourceFilename": "/analysis/repo/aezeed/cipherseed.go",
+          "SourceLineNum": 108,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "getConfig",
+    "file_path": "/analysis/repo/tls_manager.go",
+    "line_number": 152,
+    "full_implementation": "func (t *TLSManager) getConfig() ([]grpc.ServerOption, []grpc.DialOption,\n\tfunc(net.Addr) (net.Listener, error), func(), error) {\n\n\tvar (\n\t\tkeyBytes, certBytes []byte\n\t\terr                 error\n\t)\n\tif t.ephemeralKey != nil {\n\t\tkeyBytes = t.ephemeralKey\n\t\tcertBytes = t.ephemeralCert\n\t} else {\n\t\tcertBytes, keyBytes, err = cert.GetCertBytesFromPath(\n\t\t\tt.cfg.TLSCertPath, t.cfg.TLSKeyPath,\n\t\t)\n\t\tif err != nil {\n\t\t\treturn nil, nil, nil, nil, err\n\t\t}\n\t}\n\n\tcertData, _, err := cert.LoadCertFromBytes(certBytes, keyBytes)\n\tif err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t}\n\n\tif t.tlsReloader == nil {\n\t\ttlsr, err := cert.NewTLSReloader(certBytes, keyBytes)\n\t\tif err != nil {\n\t\t\treturn nil, nil, nil, nil, err\n\t\t}\n\t\tt.tlsReloader = tlsr\n\t}\n\n\ttlsCfg := cert.TLSConfFromCert(certData)\n\ttlsCfg.GetCertificate = t.tlsReloader.GetCertificateFunc()\n\n\t// If Let's Encrypt is enabled, we need to set up the autocert manager\n\t// and override the TLS config's GetCertificate function.\n\tcleanUp := t.setUpLetsEncrypt(\u0026certData, tlsCfg)\n\n\t// Now that we know that we have a certificate, let's generate the\n\t// required config options.\n\tserverCreds := credentials.NewTLS(tlsCfg)\n\tserverOpts := []grpc.ServerOption{grpc.Creds(serverCreds)}\n\n\t// For our REST dial options, we skip TLS verification, and we also\n\t// increase the max message size that we'll decode to allow clients to\n\t// hit endpoints which return more data such as the DescribeGraph call.\n\t// We set this to 200MiB atm. Should be the same value as maxMsgRecvSize\n\t// in cmd/lncli/main.go.\n\trestDialOpts := []grpc.DialOption{\n\t\t// We are forwarding the requests directly to the address of our\n\t\t// own local listener. To not need to mess with the TLS\n\t\t// certificate (which might be tricky if we're using Let's\n\t\t// Encrypt or if the ephemeral tls cert is being used), we just\n\t\t// skip the certificate verification. Injecting a malicious\n\t\t// hostname into the listener address will result in an error\n\t\t// on startup so this should be quite safe.\n\t\tgrpc.WithTransportCredentials(credentials.NewTLS(\n\t\t\t\u0026tls.Config{InsecureSkipVerify: true},\n\t\t)),\n\t\tgrpc.WithDefaultCallOptions(\n\t\t\tgrpc.MaxCallRecvMsgSize(lnrpc.MaxGrpcMsgSize),\n\t\t),\n\t}\n\n\t// Return a function closure that can be used to listen on a given\n\t// address with the current TLS config.\n\trestListen := func(addr net.Addr) (net.Listener, error) {\n\t\t// For restListen we will call ListenOnAddress if TLS is\n\t\t// disabled.\n\t\tif t.cfg.DisableRestTLS {\n\t\t\treturn lncfg.ListenOnAddress(addr)\n\t\t}\n\n\t\treturn lncfg.TLSListenOnAddress(addr, tlsCfg)\n\t}\n\n\treturn serverOpts, restDialOpts, restListen, cleanUp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "\u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/tls_manager.go",
+        "SourceLineNum": 152,
+        "ParentFunction": "getConfig () ([]google.golang.org/grpc.ServerOption, []google.golang.org/grpc.DialOption, "
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "\u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/tls_manager.go",
+          "SourceLineNum": 152,
+          "ParentFunction": "getConfig () ([]google.golang.org/grpc.ServerOption, []google.golang.org/grpc.DialOption, "
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

@@ -1,0 +1,99 @@
+[
+  {
+    "function_name": "MD5FromStringHexEncoded",
+    "file_path": "/analysis/repo/common/hashing/hashing.go",
+    "line_number": 72,
+    "full_implementation": "func MD5FromStringHexEncoded(f string) string {\n\th := md5.New()\n\th.Write([]byte(f))\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/common/hashing/hashing.go",
+        "SourceLineNum": 72,
+        "ParentFunction": "MD5FromStringHexEncoded (f string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "MD5",
+    "file_path": "/analysis/repo/tpl/crypto/crypto.go",
+    "line_number": 47,
+    "full_implementation": "func (ns *Namespace) MD5(v any) (string, error) {\n\tconv, err := cast.ToStringE(v)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\thash := md5.Sum([]byte(conv))\n\treturn hex.EncodeToString(hash[:]), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := md5.Sum([]byte(conv))",
+        "SourceFilename": "/analysis/repo/tpl/crypto/crypto.go",
+        "SourceLineNum": 47,
+        "ParentFunction": "MD5 (v any) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "SHA1",
+    "file_path": "/analysis/repo/tpl/crypto/crypto.go",
+    "line_number": 58,
+    "full_implementation": "func (ns *Namespace) SHA1(v any) (string, error) {\n\tconv, err := cast.ToStringE(v)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\thash := sha1.Sum([]byte(conv))\n\treturn hex.EncodeToString(hash[:]), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum([]byte(conv))",
+        "SourceFilename": "/analysis/repo/tpl/crypto/crypto.go",
+        "SourceLineNum": 58,
+        "ParentFunction": "SHA1 (v any) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "HMAC",
+    "file_path": "/analysis/repo/tpl/crypto/crypto.go",
+    "line_number": 117,
+    "full_implementation": "func (ns *Namespace) HMAC(h any, k any, m any, e ...any) (string, error) {\n\tha, err := cast.ToStringE(h)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tvar hash func() hash.Hash\n\tswitch ha {\n\tcase \"md5\":\n\t\thash = md5.New\n\tcase \"sha1\":\n\t\thash = sha1.New\n\tcase \"sha256\":\n\t\thash = sha256.New\n\tcase \"sha512\":\n\t\thash = sha512.New\n\tdefault:\n\t\treturn \"\", fmt.Errorf(\"hmac: %s is not a supported hash function\", ha)\n\t}\n\n\tmsg, err := cast.ToStringE(m)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tkey, err := cast.ToStringE(k)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tmac := hmac.New(hash, []byte(key))\n\t_, err = mac.Write([]byte(msg))\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\tencoding := \"hex\"\n\tif len(e) \u003e 0 \u0026\u0026 e[0] != nil {\n\t\tencoding, err = cast.ToStringE(e[0])\n\t\tif err != nil {\n\t\t\treturn \"\", err\n\t\t}\n\t}\n\n\tswitch encoding {\n\tcase \"binary\":\n\t\treturn string(mac.Sum(nil)[:]), nil\n\tcase \"hex\":\n\t\treturn hex.EncodeToString(mac.Sum(nil)[:]), nil\n\tdefault:\n\t\treturn \"\", fmt.Errorf(\"%q is not a supported encoding method\", encoding)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(hash, []byte(key))",
+        "SourceFilename": "/analysis/repo/tpl/crypto/crypto.go",
+        "SourceLineNum": 117,
+        "ParentFunction": "HMAC (h any, k any, m any, e ...any) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "var hash func() hash.Hash",
+          "SourceFilename": "/analysis/repo/tpl/crypto/crypto.go",
+          "SourceLineNum": 93,
+          "ParentFunction": "HMAC (h any, k any, m any, e ...any) (string, error)"
+        }
+      ],
+      "Predicate_Type": "SECURE_HMAC_HASH"
+    }
+  },
+  {
+    "function_name": "newHash",
+    "file_path": "/analysis/repo/resources/resource_transformers/integrity/integrity.go",
+    "line_number": 86,
+    "full_implementation": "func newHash(algo string) (hash.Hash, error) {\n\tswitch algo {\n\tcase \"md5\":\n\t\treturn md5.New(), nil\n\tcase \"sha256\":\n\t\treturn sha256.New(), nil\n\tcase \"sha384\":\n\t\treturn sha512.New384(), nil\n\tcase \"sha512\":\n\t\treturn sha512.New(), nil\n\tdefault:\n\t\treturn nil, fmt.Errorf(\"unsupported hash algorithm: %q, use either md5, sha256, sha384 or sha512\", algo)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "return md5.New(), nil",
+        "SourceFilename": "/analysis/repo/resources/resource_transformers/integrity/integrity.go",
+        "SourceLineNum": 86,
+        "ParentFunction": "newHash (algo string) (hash.Hash, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

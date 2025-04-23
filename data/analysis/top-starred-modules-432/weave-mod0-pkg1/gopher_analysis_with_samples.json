@@ -1,0 +1,45 @@
+[
+  {
+    "function_name": "shortName",
+    "file_path": "/analysis/repo/npc/shortname.go",
+    "line_number": 23,
+    "full_implementation": "func shortName(arbitrary string) string {\n\tsymbols := []byte(ShortNameSymbols)\n\tsum := sha1.Sum([]byte(arbitrary))\n\ti := big.NewInt(0).SetBytes(sum[:])\n\tbase := big.NewInt(int64(len(symbols)))\n\tzero := big.NewInt(0)\n\tresult := make([]byte, 0)\n\n\tfor i.Cmp(zero) \u003e 0 {\n\t\tremainder := new(big.Int).Mod(i, base)\n\t\ti.Sub(i, remainder)\n\t\ti.Div(i, base)\n\t\tresult = append(result, symbols[remainder.Int64()])\n\t}\n\n\treturn string(result)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := sha1.Sum([]byte(arbitrary))",
+        "SourceFilename": "/analysis/repo/npc/shortname.go",
+        "SourceLineNum": 23,
+        "ParentFunction": "shortName (arbitrary string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "LoadCerts",
+    "file_path": "/analysis/repo/proxy/tls.go",
+    "line_number": 52,
+    "full_implementation": "func (c *TLSConfig) LoadCerts() error {\n\tif !c.IsEnabled() {\n\t\treturn nil\n\t}\n\n\tdockerCertPath := os.Getenv(\"DOCKER_CERT_PATH\")\n\tif dockerCertPath == \"\" {\n\t\tdockerCertPath = filepath.Join(homedir.Get(), \".docker\")\n\t}\n\n\tif c.CACert == \"\" {\n\t\tc.CACert = filepath.Join(dockerCertPath, defaultCaFile)\n\t}\n\tif c.Cert == \"\" {\n\t\tc.Cert = filepath.Join(dockerCertPath, defaultCertFile)\n\t}\n\tif c.Key == \"\" {\n\t\tc.Key = filepath.Join(dockerCertPath, defaultKeyFile)\n\t}\n\n\ttlsConfig := \u0026tls.Config{\n\t\tNextProtos: []string{\"http/1.1\"},\n\t\t// Avoid fallback on insecure SSL protocols\n\t\tMinVersion: tls.VersionTLS10,\n\t}\n\n\tif c.Verify {\n\t\tcertPool := x509.NewCertPool()\n\t\tfile, err := ioutil.ReadFile(c.CACert)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"Couldn't read CA certificate: %v\", err)\n\t\t}\n\t\tcertPool.AppendCertsFromPEM(file)\n\t\ttlsConfig.ClientAuth = tls.RequireAndVerifyClientCert\n\t\ttlsConfig.ClientCAs = certPool\n\t}\n\n\t_, errCert := os.Stat(c.Cert)\n\t_, errKey := os.Stat(c.Key)\n\tif errCert == nil \u0026\u0026 errKey == nil {\n\t\tcert, err := tls.LoadX509KeyPair(c.Cert, c.Key)\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"Couldn't load X509 key pair: %q. Make sure the key is encrypted\", err)\n\t\t}\n\t\ttlsConfig.Certificates = []tls.Certificate{cert}\n\t}\n\n\tc.Config = tlsConfig\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::MinVersion",
+      "Message": "Insecure TLS Version\nWe Found: 769",
+      "Slicing_Criteria": {
+        "SourceCode": "MinVersion: tls.VersionTLS10,",
+        "SourceFilename": "/analysis/repo/proxy/tls.go",
+        "SourceLineNum": 52,
+        "ParentFunction": "LoadCerts () error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "MinVersion: tls.VersionTLS10,",
+          "SourceFilename": "/analysis/repo/proxy/tls.go",
+          "SourceLineNum": 52,
+          "ParentFunction": "LoadCerts () error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

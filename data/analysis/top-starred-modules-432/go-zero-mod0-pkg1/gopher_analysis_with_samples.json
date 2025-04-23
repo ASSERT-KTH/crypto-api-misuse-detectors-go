@@ -1,0 +1,38 @@
+[
+  {
+    "function_name": "Md5",
+    "file_path": "/analysis/repo/core/hash/hash.go",
+    "line_number": 17,
+    "full_implementation": "func Md5(data []byte) []byte {\n\tdigest := md5.New()\n\tdigest.Write(data)\n\treturn digest.Sum(nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "digest := md5.New()",
+        "SourceFilename": "/analysis/repo/core/hash/hash.go",
+        "SourceLineNum": 17,
+        "ParentFunction": "Md5 (data []byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "rsaEncryptBlock",
+    "file_path": "/analysis/repo/core/codec/rsa.go",
+    "line_number": 155,
+    "full_implementation": "func rsaEncryptBlock(publicKey *rsa.PublicKey, msg []byte) ([]byte, error) {\n\treturn rsa.EncryptPKCS1v15(rand.Reader, publicKey, msg)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.EncryptPKCS1v15",
+      "Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.EncryptPKCS1v15(rand.Reader, publicKey, msg)",
+        "SourceFilename": "/analysis/repo/core/codec/rsa.go",
+        "SourceLineNum": 155,
+        "ParentFunction": "rsaEncryptBlock (publicKey *crypto/rsa.PublicKey, msg []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

@@ -1,0 +1,88 @@
+[
+  {
+    "function_name": "newSso",
+    "file_path": "/analysis/repo/server/auth/sso/sso.go",
+    "line_number": 134,
+    "full_implementation": "func newSso(\n\tfactory providerFactory,\n\tc Config,\n\tsecretsIf corev1.SecretInterface,\n\tbaseHRef string,\n\tsecure bool,\n) (Interface, error) {\n\tif c.Issuer == \"\" {\n\t\treturn nil, fmt.Errorf(\"issuer empty\")\n\t}\n\tif c.ClientID.Name == \"\" || c.ClientID.Key == \"\" {\n\t\treturn nil, fmt.Errorf(\"clientID empty\")\n\t}\n\tif c.ClientSecret.Name == \"\" || c.ClientSecret.Key == \"\" {\n\t\treturn nil, fmt.Errorf(\"clientSecret empty\")\n\t}\n\tctx := context.Background()\n\tclientSecretObj, err := secretsIf.Get(ctx, c.ClientSecret.Name, metav1.GetOptions{})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\t// Create http client with TLSConfig to allow skipping of CA validation if InsecureSkipVerify is set.\n\thttpClient := \u0026http.Client{Transport: \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: c.InsecureSkipVerify}, Proxy: http.ProxyFromEnvironment}}\n\toidcContext := oidc.ClientContext(ctx, httpClient)\n\t// Some offspec providers like Azure, Oracle IDCS have oidc discovery url different from issuer url which causes issuerValidation to fail\n\t// This providerCtx will allow the Verifier to succeed if the alternate/alias URL is in the config\n\tif c.IssuerAlias != \"\" {\n\t\toidcContext = oidc.InsecureIssuerURLContext(oidcContext, c.IssuerAlias)\n\t}\n\n\tprovider, err := factory(oidcContext, c.Issuer)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tvar clientIDObj *apiv1.Secret\n\tif c.ClientID.Name == c.ClientSecret.Name {\n\t\tclientIDObj = clientSecretObj\n\t} else {\n\t\tclientIDObj, err = secretsIf.Get(ctx, c.ClientID.Name, metav1.GetOptions{})\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\tgeneratedKey, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to generate key: %w\", err)\n\t}\n\t// whoa - are you ignoring errors - yes - we don't care if it fails -\n\t// if it fails, then the get will fail, and the pod restart\n\t// it may fail due to race condition with another pod - which is fine,\n\t// when it restart it'll get the new key\n\t_, err = secretsIf.Create(ctx, \u0026apiv1.Secret{\n\t\tObjectMeta: metav1.ObjectMeta{Name: secretName},\n\t\tData:       map[string][]byte{cookieEncryptionPrivateKeySecretKey: x509.MarshalPKCS1PrivateKey(generatedKey)},\n\t}, metav1.CreateOptions{})\n\tisSecretAlreadyExists := false\n\tif err != nil {\n\t\tisSecretAlreadyExists = apierr.IsAlreadyExists(err)\n\t\tif !isSecretAlreadyExists {\n\t\t\treturn nil, fmt.Errorf(\"failed to create secret: %w\", err)\n\t\t}\n\t}\n\tsecret, err := secretsIf.Get(ctx, secretName, metav1.GetOptions{})\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to read secret: %w\", err)\n\t}\n\tprivateKey, err := x509.ParsePKCS1PrivateKey(secret.Data[cookieEncryptionPrivateKeySecretKey])\n\tif err != nil {\n\t\tif isSecretAlreadyExists {\n\t\t\treturn nil, fmt.Errorf(\"failed to parse private key. If you have already defined a Secret named %s, delete it and retry: %w\", secretName, err)\n\t\t} else {\n\t\t\treturn nil, fmt.Errorf(\"failed to parse private key: %w\", err)\n\t\t}\n\t}\n\n\tclientID := clientIDObj.Data[c.ClientID.Key]\n\tif clientID == nil {\n\t\treturn nil, fmt.Errorf(\"key %s missing in secret %s\", c.ClientID.Key, c.ClientID.Name)\n\t}\n\tclientSecret := clientSecretObj.Data[c.ClientSecret.Key]\n\tif clientSecret == nil {\n\t\treturn nil, fmt.Errorf(\"key %s missing in secret %s\", c.ClientSecret.Key, c.ClientSecret.Name)\n\t}\n\tconfig := \u0026oauth2.Config{\n\t\tClientID:     string(clientID),\n\t\tClientSecret: string(clientSecret),\n\t\tRedirectURL:  c.RedirectURL,\n\t\tEndpoint:     provider.Endpoint(),\n\t\tScopes:       append(c.Scopes, oidc.ScopeOpenID),\n\t}\n\tidTokenVerifier := provider.Verifier(\u0026oidc.Config{ClientID: config.ClientID})\n\tencrypter, err := jose.NewEncrypter(jose.A256GCM, jose.Recipient{Algorithm: jose.RSA_OAEP_256, Key: privateKey.Public()}, \u0026jose.EncrypterOptions{Compression: jose.DEFLATE})\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to create JWT encrpytor: %w\", err)\n\t}\n\n\tvar filterGroupsRegex []*regexp.Regexp\n\tif len(c.FilterGroupsRegex) \u003e 0 {\n\t\tfor _, regex := range c.FilterGroupsRegex {\n\t\t\tcompiledRegex, err := regexp.Compile(regex)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to compile sso.filterGroupRegex: %s %w\", regex, err)\n\t\t\t}\n\t\t\tfilterGroupsRegex = append(filterGroupsRegex, compiledRegex)\n\t\t}\n\t}\n\n\tlf := log.Fields{\"redirectUrl\": config.RedirectURL, \"issuer\": c.Issuer, \"issuerAlias\": \"DISABLED\", \"clientId\": c.ClientID, \"scopes\": config.Scopes, \"insecureSkipVerify\": c.InsecureSkipVerify, \"filterGroupsRegex\": c.FilterGroupsRegex}\n\tif c.IssuerAlias != \"\" {\n\t\tlf[\"issuerAlias\"] = c.IssuerAlias\n\t}\n\tlog.WithFields(lf).Info(\"SSO configuration\")\n\n\treturn \u0026sso{\n\t\tconfig:            config,\n\t\tidTokenVerifier:   idTokenVerifier,\n\t\tbaseHRef:          baseHRef,\n\t\thttpClient:        httpClient,\n\t\tsecure:            secure,\n\t\tprivateKey:        privateKey,\n\t\tencrypter:         encrypter,\n\t\trbacConfig:        c.RBAC,\n\t\texpiry:            c.GetSessionExpiry(),\n\t\tcustomClaimName:   c.CustomGroupClaimName,\n\t\tuserInfoPath:      c.UserInfoPath,\n\t\tissuer:            c.Issuer,\n\t\tfilterGroupsRegex: filterGroupsRegex,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/server/auth/sso/sso.go",
+        "SourceLineNum": 134,
+        "ParentFunction": "newSso (factory github.com/argoproj/argo-workflows/v3/server/auth/sso.providerFactory, c github.com/argoproj/argo-workflows/v3/config.SSOConfig, secretsIf k8s.io/client-go/kubernetes/typed/core/v1.SecretInterface, baseHRef string, secure bool) (github.com/argoproj/argo-workflows/v3/server/auth/sso.Interface, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "generatedKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/server/auth/sso/sso.go",
+          "SourceLineNum": 134,
+          "ParentFunction": "newSso (factory github.com/argoproj/argo-workflows/v3/server/auth/sso.providerFactory, c github.com/argoproj/argo-workflows/v3/config.SSOConfig, secretsIf k8s.io/client-go/kubernetes/typed/core/v1.SecretInterface, baseHRef string, secure bool) (github.com/argoproj/argo-workflows/v3/server/auth/sso.Interface, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "GenerateX509KeyPairTLSConfig",
+    "file_path": "/analysis/repo/util/tls/tls.go",
+    "line_number": 127,
+    "full_implementation": "func GenerateX509KeyPairTLSConfig(tlsMinVersion uint16) (*tls.Config, error) {\n\n\tcer, err := GenerateX509KeyPair()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn \u0026tls.Config{\n\t\tCertificates:       []tls.Certificate{*cer},\n\t\tMinVersion:         uint16(tlsMinVersion),\n\t\tInsecureSkipVerify: true,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/util/tls/tls.go",
+        "SourceLineNum": 127,
+        "ParentFunction": "GenerateX509KeyPairTLSConfig (tlsMinVersion uint16) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/util/tls/tls.go",
+          "SourceLineNum": 127,
+          "ParentFunction": "GenerateX509KeyPairTLSConfig (tlsMinVersion uint16) (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "auth",
+    "file_path": "/analysis/repo/workflow/artifacts/git/git.go",
+    "line_number": 63,
+    "full_implementation": "func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, error) {\n\tif g.SSHPrivateKey != \"\" {\n\t\tsigner, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))\n\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t\tprivateKeyFile, err := os.CreateTemp(\"\", \"id_rsa.\")\n\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t\terr = os.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)\n\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t\tauth := \u0026ssh2.PublicKeys{User: sshUser, Signer: signer}\n\t\tif g.InsecureIgnoreHostKey {\n\t\t\tauth.HostKeyCallback = ssh.InsecureIgnoreHostKey()\n\t\t}\n\t\tif g.InsecureIgnoreHostKey {\n\t\t\tauth.HostKeyCallback = ssh.InsecureIgnoreHostKey()\n\t\t}\n\t\treturn func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil\n\t}\n\tif g.Username != \"\" || g.Password != \"\" {\n\t\treturn func() {}, \u0026http.BasicAuth{Username: g.Username, Password: g.Password}, nil\n\t}\n\treturn func() {}, nil, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()",
+        "SourceFilename": "/analysis/repo/workflow/artifacts/git/git.go",
+        "SourceLineNum": 63,
+        "ParentFunction": "auth (sshUser string) ("
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "auth",
+    "file_path": "/analysis/repo/workflow/artifacts/git/git.go",
+    "line_number": 66,
+    "full_implementation": "func (g *ArtifactDriver) auth(sshUser string) (func(), transport.AuthMethod, error) {\n\tif g.SSHPrivateKey != \"\" {\n\t\tsigner, err := ssh.ParsePrivateKey([]byte(g.SSHPrivateKey))\n\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t\tprivateKeyFile, err := os.CreateTemp(\"\", \"id_rsa.\")\n\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t\terr = os.WriteFile(privateKeyFile.Name(), []byte(g.SSHPrivateKey), 0o600)\n\t\tif err != nil {\n\t\t\treturn nil, nil, err\n\t\t}\n\t\tauth := \u0026ssh2.PublicKeys{User: sshUser, Signer: signer}\n\t\tif g.InsecureIgnoreHostKey {\n\t\t\tauth.HostKeyCallback = ssh.InsecureIgnoreHostKey()\n\t\t}\n\t\tif g.InsecureIgnoreHostKey {\n\t\t\tauth.HostKeyCallback = ssh.InsecureIgnoreHostKey()\n\t\t}\n\t\treturn func() { _ = os.Remove(privateKeyFile.Name()) }, auth, nil\n\t}\n\tif g.Username != \"\" || g.Password != \"\" {\n\t\treturn func() {}, \u0026http.BasicAuth{Username: g.Username, Password: g.Password}, nil\n\t}\n\treturn func() {}, nil, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "auth.HostKeyCallback = ssh.InsecureIgnoreHostKey()",
+        "SourceFilename": "/analysis/repo/workflow/artifacts/git/git.go",
+        "SourceLineNum": 66,
+        "ParentFunction": "auth (sshUser string) ("
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

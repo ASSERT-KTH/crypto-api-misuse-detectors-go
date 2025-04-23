@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "initAcceptFromNonce",
+    "file_path": "/analysis/repo/nonce.go",
+    "line_number": 66,
+    "full_implementation": "func initAcceptFromNonce(accept, nonce []byte) {\n\tconst magic = \"258EAFA5-E914-47DA-95CA-C5AB0DC85B11\"\n\n\tif len(accept) != acceptSize {\n\t\tpanic(\"accept buffer is invalid\")\n\t}\n\tif len(nonce) != nonceSize {\n\t\tpanic(\"nonce is invalid\")\n\t}\n\n\tp := make([]byte, nonceSize+len(magic))\n\tcopy(p[:nonceSize], nonce)\n\tcopy(p[nonceSize:], magic)\n\n\tsum := sha1.Sum(p)\n\tbase64.StdEncoding.Encode(accept, sum[:])\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := sha1.Sum(p)",
+        "SourceFilename": "/analysis/repo/nonce.go",
+        "SourceLineNum": 66,
+        "ParentFunction": "initAcceptFromNonce (accept []byte, nonce []byte)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

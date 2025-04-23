@@ -1,0 +1,39 @@
+[
+  {
+    "function_name": "flushChunk",
+    "file_path": "/analysis/repo/internal/stream/stream.go",
+    "line_number": 225,
+    "full_implementation": "func (w *Writer) flushChunk(last bool) error {\n\tif !last \u0026\u0026 len(w.unwritten) != ChunkSize {\n\t\tpanic(\"stream: internal error: flush called with partial chunk\")\n\t}\n\n\tif last {\n\t\tsetLastChunkFlag(\u0026w.nonce)\n\t}\n\tbuf := w.a.Seal(w.buf[:0], w.nonce[:], w.unwritten, nil)\n\t_, err := w.dst.Write(buf)\n\tw.unwritten = w.buf[:0]\n\tincNonce(\u0026w.nonce)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "(crypto/cipher.AEAD).Seal",
+      "Message": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.",
+      "Slicing_Criteria": {
+        "SourceCode": "buf := w.a.Seal(w.buf[:0], w.nonce[:], w.unwritten, nil)",
+        "SourceFilename": "/analysis/repo/internal/stream/stream.go",
+        "SourceLineNum": 225,
+        "ParentFunction": "flushChunk (last bool) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "buf := w.a.Seal(w.buf[:0], w.nonce[:], w.unwritten, nil)",
+          "SourceFilename": "/analysis/repo/internal/stream/stream.go",
+          "SourceLineNum": 225,
+          "ParentFunction": "flushChunk (last bool) error"
+        },
+        {
+          "SourceCode": "buf := w.a.Seal(w.buf[:0], w.nonce[:], w.unwritten, nil)",
+          "SourceFilename": "/analysis/repo/internal/stream/stream.go",
+          "SourceLineNum": 225,
+          "ParentFunction": "flushChunk (last bool) error"
+        },
+        {
+          "SourceCode": "nonce[len(nonce)-1] = lastChunkFlag",
+          "SourceFilename": "/analysis/repo/internal/stream/stream.go",
+          "SourceLineNum": 142,
+          "ParentFunction": "setLastChunkFlag (nonce *[12]byte)"
+        }
+      ],
+      "Predicate_Type": "NOT_CONST"
+    }
+  }
+]

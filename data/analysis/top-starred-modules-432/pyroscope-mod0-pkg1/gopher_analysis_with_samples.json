@@ -1,0 +1,63 @@
+[
+  {
+    "function_name": "ShuffleShardSeed",
+    "file_path": "/analysis/repo/pkg/util/shard.go",
+    "line_number": 25,
+    "full_implementation": "func ShuffleShardSeed(identifier, zone string) int64 {\n\t// Use the identifier to compute an hash we'll use to seed the random.\n\thasher := md5.New()\n\thasher.Write(YoloBuf(identifier)) // nolint:errcheck\n\tif zone != \"\" {\n\t\thasher.Write(seedSeparator) // nolint:errcheck\n\t\thasher.Write(YoloBuf(zone)) // nolint:errcheck\n\t}\n\tchecksum := hasher.Sum(nil)\n\n\t// Generate the seed based on the first 64 bits of the checksum.\n\treturn int64(binary.BigEndian.Uint64(checksum))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/pkg/util/shard.go",
+        "SourceLineNum": 25,
+        "ParentFunction": "ShuffleShardSeed (identifier string, zone string) int64"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "relabelBuilder",
+    "file_path": "/analysis/repo/pkg/model/relabel/relabel.go",
+    "line_number": 98,
+    "full_implementation": "func relabelBuilder(cfg *Config, lb *phlaremodel.LabelsBuilder) (keep bool) {\n\tvar va [16]string\n\tvalues := va[:0]\n\tif len(cfg.SourceLabels) \u003e cap(values) {\n\t\tvalues = make([]string, 0, len(cfg.SourceLabels))\n\t}\n\tfor _, ln := range cfg.SourceLabels {\n\t\tvalues = append(values, lb.Get(string(ln)))\n\t}\n\tval := strings.Join(values, cfg.Separator)\n\n\tswitch cfg.Action {\n\tcase relabel.Drop:\n\t\tif cfg.Regex.MatchString(val) {\n\t\t\treturn false\n\t\t}\n\tcase relabel.Keep:\n\t\tif !cfg.Regex.MatchString(val) {\n\t\t\treturn false\n\t\t}\n\tcase relabel.DropEqual:\n\t\tif lb.Get(cfg.TargetLabel) == val {\n\t\t\treturn false\n\t\t}\n\tcase relabel.KeepEqual:\n\t\tif lb.Get(cfg.TargetLabel) != val {\n\t\t\treturn false\n\t\t}\n\tcase relabel.Replace:\n\t\tindexes := cfg.Regex.FindStringSubmatchIndex(val)\n\t\t// If there is no match no replacement must take place.\n\t\tif indexes == nil {\n\t\t\tbreak\n\t\t}\n\t\ttarget := model.LabelName(cfg.Regex.ExpandString([]byte{}, cfg.TargetLabel, val, indexes))\n\t\tif !target.IsValid() {\n\t\t\tbreak\n\t\t}\n\t\tres := cfg.Regex.ExpandString([]byte{}, cfg.Replacement, val, indexes)\n\t\tif len(res) == 0 {\n\t\t\tlb.Del(string(target))\n\t\t\tbreak\n\t\t}\n\t\tlb.Set(string(target), string(res))\n\tcase relabel.Lowercase:\n\t\tlb.Set(cfg.TargetLabel, strings.ToLower(val))\n\tcase relabel.Uppercase:\n\t\tlb.Set(cfg.TargetLabel, strings.ToUpper(val))\n\tcase relabel.HashMod:\n\t\thash := md5.Sum([]byte(val))\n\t\t// Use only the last 8 bytes of the hash to give the same result as earlier versions of this code.\n\t\tmod := binary.BigEndian.Uint64(hash[8:]) % cfg.Modulus\n\t\tlb.Set(cfg.TargetLabel, strconv.FormatUint(mod, 10))\n\tcase relabel.LabelMap:\n\t\tlb.Range(func(l *typesv1.LabelPair) {\n\t\t\tif cfg.Regex.MatchString(l.Name) {\n\t\t\t\tres := cfg.Regex.ReplaceAllString(l.Name, cfg.Replacement)\n\t\t\t\tlb.Set(res, l.Value)\n\t\t\t}\n\t\t})\n\tcase relabel.LabelDrop:\n\t\tlb.Range(func(l *typesv1.LabelPair) {\n\t\t\tif cfg.Regex.MatchString(l.Name) {\n\t\t\t\tlb.Del(l.Name)\n\t\t\t}\n\t\t})\n\tcase relabel.LabelKeep:\n\t\tlb.Range(func(l *typesv1.LabelPair) {\n\t\t\tif !cfg.Regex.MatchString(l.Name) {\n\t\t\t\tlb.Del(l.Name)\n\t\t\t}\n\t\t})\n\tdefault:\n\t\tpanic(fmt.Errorf(\"relabel: unknown relabel action type %q\", cfg.Action))\n\t}\n\n\treturn true\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := md5.Sum([]byte(val))",
+        "SourceFilename": "/analysis/repo/pkg/model/relabel/relabel.go",
+        "SourceLineNum": 98,
+        "ParentFunction": "relabelBuilder (cfg *github.com/prometheus/prometheus/model/relabel.Config, lb *github.com/grafana/pyroscope/pkg/model.LabelsBuilder) (keep bool)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewInClusterK8sClient",
+    "file_path": "/analysis/repo/pkg/experiment/metastore/discovery/kuberesolver/kubernetes.go",
+    "line_number": 88,
+    "full_implementation": "func NewInClusterK8sClient() (K8sClient, error) {\n\thost, port := os.Getenv(\"KUBERNETES_SERVICE_HOST\"), os.Getenv(\"KUBERNETES_SERVICE_PORT\")\n\tif len(host) == 0 || len(port) == 0 {\n\t\treturn nil, fmt.Errorf(\"unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined\")\n\t}\n\ttoken, err := os.ReadFile(serviceAccountToken)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tca, err := os.ReadFile(serviceAccountCACert)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tcertPool := x509.NewCertPool()\n\tcertPool.AppendCertsFromPEM(ca)\n\ttransport := \u0026http.Transport{TLSClientConfig: \u0026tls.Config{\n\t\tMinVersion: tls.VersionTLS10,\n\t\tRootCAs:    certPool,\n\t}}\n\thttpClient := \u0026http.Client{Transport: transport, Timeout: time.Nanosecond * 0}\n\n\tclient := \u0026k8sClient{\n\t\thost:       \"https://\" + net.JoinHostPort(host, port),\n\t\ttoken:      string(token),\n\t\thttpClient: httpClient,\n\t}\n\n\t// Create a new file watcher to listen for new Service Account tokens\n\twatcher, err := fsnotify.NewWatcher()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tgo func() {\n\t\tfor {\n\t\t\tselect {\n\t\t\tcase event, ok := \u003c-watcher.Events:\n\t\t\t\tif !ok {\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\t// k8s configmaps uses symlinks, we need this workaround.\n\t\t\t\t// original configmap file is removed\n\t\t\t\tif event.Op.Has(fsnotify.Remove) || event.Op.Has(fsnotify.Chmod) {\n\t\t\t\t\t// remove watcher since the file is removed\n\t\t\t\t\twatcher.Remove(event.Name)\n\t\t\t\t\t// add a new watcher pointing to the new symlink/file\n\t\t\t\t\twatcher.Add(serviceAccountToken)\n\t\t\t\t\ttoken, err := os.ReadFile(serviceAccountToken)\n\t\t\t\t\tif err == nil {\n\t\t\t\t\t\tclient.setToken(string(token))\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif event.Has(fsnotify.Write) {\n\t\t\t\t\ttoken, err := os.ReadFile(serviceAccountToken)\n\t\t\t\t\tif err == nil {\n\t\t\t\t\t\tclient.setToken(string(token))\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\tcase _, ok := \u003c-watcher.Errors:\n\t\t\t\tif !ok {\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}()\n\n\terr = watcher.Add(serviceAccountToken)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn client, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::MinVersion",
+      "Message": "Insecure TLS Version\nWe Found: 769",
+      "Slicing_Criteria": {
+        "SourceCode": "MinVersion: tls.VersionTLS10,",
+        "SourceFilename": "/analysis/repo/pkg/experiment/metastore/discovery/kuberesolver/kubernetes.go",
+        "SourceLineNum": 88,
+        "ParentFunction": "NewInClusterK8sClient () (github.com/grafana/pyroscope/pkg/experiment/metastore/discovery/kuberesolver.K8sClient, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "MinVersion: tls.VersionTLS10,",
+          "SourceFilename": "/analysis/repo/pkg/experiment/metastore/discovery/kuberesolver/kubernetes.go",
+          "SourceLineNum": 88,
+          "ParentFunction": "NewInClusterK8sClient () (github.com/grafana/pyroscope/pkg/experiment/metastore/discovery/kuberesolver.K8sClient, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

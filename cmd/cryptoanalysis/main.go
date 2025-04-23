@@ -51,6 +51,13 @@ func run() error {
 		fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
 	}
 
+	// Cleanup function
+	defer func() {	
+		if err := compose.StopCompose(composeFilePath); err != nil {
+			fmt.Printf("Warning: cleanup failed: %v\n", err)
+		}
+	}()
+
 	// Run Docker Compose
 	if err := composer.RunCompose(composeFilePath); err != nil {
 		return fmt.Errorf("failed to run Docker Compose: %w", err)
@@ -58,7 +65,6 @@ func run() error {
 	return nil
 }
 
-// main is the entry point for the tool.
 func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)

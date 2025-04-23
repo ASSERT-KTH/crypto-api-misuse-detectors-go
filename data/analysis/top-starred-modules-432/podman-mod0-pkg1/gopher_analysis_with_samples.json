@@ -1,0 +1,120 @@
+[
+  {
+    "function_name": "validatePlugin",
+    "file_path": "/analysis/repo/libpod/plugin/volume_api.go",
+    "line_number": 78,
+    "full_implementation": "func validatePlugin(newPlugin *VolumePlugin) error {\n\t// It's a socket. Is it a plugin?\n\t// Hit the Activate endpoint to find out if it is, and if so what kind\n\treq, err := http.NewRequest(http.MethodPost, \"http://plugin\"+activatePath, nil)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"making request to volume plugin %s activation endpoint: %w\", newPlugin.Name, err)\n\t}\n\n\treq.Header.Set(\"Host\", newPlugin.getURI())\n\treq.Header.Set(\"Content-Type\", sdk.DefaultContentTypeV1_1)\n\n\tresp, err := newPlugin.Client.Do(req)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"sending request to plugin %s activation endpoint: %w\", newPlugin.Name, err)\n\t}\n\tdefer resp.Body.Close()\n\n\t// Response code MUST be 200. Anything else, we have to assume it's not\n\t// a valid plugin.\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn fmt.Errorf(\"got status code %d from activation endpoint for plugin %s: %w\", resp.StatusCode, newPlugin.Name, ErrNotPlugin)\n\t}\n\n\t// Read and decode the body so we can tell if this is a volume plugin.\n\trespBytes, err := io.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"reading activation response body from plugin %s: %w\", newPlugin.Name, err)\n\t}\n\n\trespStruct := new(activateResponse)\n\tif err := json.Unmarshal(respBytes, respStruct); err != nil {\n\t\treturn fmt.Errorf(\"unmarshalling plugin %s activation response: %w\", newPlugin.Name, err)\n\t}\n\n\tfoundVolume := false\n\tfor _, pluginType := range respStruct.Implements {\n\t\tif pluginType == volumePluginType {\n\t\t\tfoundVolume = true\n\t\t\tbreak\n\t\t}\n\t}\n\n\tif !foundVolume {\n\t\treturn fmt.Errorf(\"plugin %s does not implement volume plugin, instead provides %s: %w\", newPlugin.Name, strings.Join(respStruct.Implements, \", \"), ErrNotVolumePlugin)\n\t}\n\n\tif plugins == nil {\n\t\tplugins = make(map[string]*VolumePlugin)\n\t}\n\n\tplugins[newPlugin.Name] = newPlugin\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+activatePath, nil)",
+        "SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+        "SourceLineNum": 78,
+        "ParentFunction": "validatePlugin (newPlugin *github.com/containers/podman/v5/libpod/plugin.VolumePlugin) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+activatePath, nil)",
+          "SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+          "SourceLineNum": 78,
+          "ParentFunction": "validatePlugin (newPlugin *github.com/containers/podman/v5/libpod/plugin.VolumePlugin) error"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "sendRequest",
+    "file_path": "/analysis/repo/libpod/plugin/volume_api.go",
+    "line_number": 220,
+    "full_implementation": "func (p *VolumePlugin) sendRequest(toJSON interface{}, endpoint string) (*http.Response, error) {\n\tvar (\n\t\treqJSON []byte\n\t\terr     error\n\t)\n\n\tif toJSON != nil {\n\t\treqJSON, err = json.Marshal(toJSON)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"marshalling request JSON for volume plugin %s endpoint %s: %w\", p.Name, endpoint, err)\n\t\t}\n\t}\n\n\treq, err := http.NewRequest(http.MethodPost, \"http://plugin\"+endpoint, bytes.NewReader(reqJSON))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"making request to volume plugin %s endpoint %s: %w\", p.Name, endpoint, err)\n\t}\n\n\treq.Header.Set(\"Host\", p.getURI())\n\treq.Header.Set(\"Content-Type\", sdk.DefaultContentTypeV1_1)\n\n\tresp, err := p.Client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"sending request to volume plugin %s endpoint %s: %w\", p.Name, endpoint, err)\n\t}\n\t// We are *deliberately not closing* response here. It is the\n\t// responsibility of the caller to do so after reading the response.\n\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+endpoint, bytes.NewReader(reqJSON))",
+        "SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+        "SourceLineNum": 220,
+        "ParentFunction": "sendRequest (toJSON interface{}, endpoint string) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+endpoint, bytes.NewReader(reqJSON))",
+          "SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+          "SourceLineNum": 220,
+          "ParentFunction": "sendRequest (toJSON interface{}, endpoint string) (*net/http.Response, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "setUpClusterClient",
+    "file_path": "/analysis/repo/pkg/domain/infra/abi/apply.go",
+    "line_number": 145,
+    "full_implementation": "func setUpClusterClient(kconfig k8sAPI.Config, applyOptions entities.ApplyOptions) (*http.Client, error) {\n\tvar (\n\t\tclientCert tls.Certificate\n\t\terr        error\n\t)\n\n\t// Load client certificate and key\n\t// This information will always be in the kubeconfig\n\tif kconfig.AuthInfos[0].AuthInfo.ClientCertificate != \"\" \u0026\u0026 kconfig.AuthInfos[0].AuthInfo.ClientKey != \"\" {\n\t\tclientCert, err = tls.LoadX509KeyPair(kconfig.AuthInfos[0].AuthInfo.ClientCertificate, kconfig.AuthInfos[0].AuthInfo.ClientKey)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t} else if len(kconfig.AuthInfos[0].AuthInfo.ClientCertificateData) \u003e 0 \u0026\u0026 len(kconfig.AuthInfos[0].AuthInfo.ClientKeyData) \u003e 0 {\n\t\tclientCert, err = tls.X509KeyPair(kconfig.AuthInfos[0].AuthInfo.ClientCertificateData, kconfig.AuthInfos[0].AuthInfo.ClientKeyData)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\t// Load CA cert\n\t// The CA cert may not always be in the kubeconfig and could be in a separate file.\n\t// The CA cert file can be passed on here by setting the --ca-cert-file flag. If that is not set\n\t// check the kubeconfig to see if it has the CA cert data.\n\tvar caCert []byte\n\tinsecureSkipVerify := false\n\tcaCertFile := applyOptions.CACertFile\n\tcaCertPool := x509.NewCertPool()\n\n\t// Be insecure if user sets ca-cert-file flag to insecure\n\tif strings.ToLower(caCertFile) == \"insecure\" {\n\t\tinsecureSkipVerify = true\n\t} else if caCertFile == \"\" {\n\t\tcaCertFile = kconfig.Clusters[0].Cluster.CertificateAuthority\n\t}\n\n\t// Get the caCert data if we are running secure\n\tif caCertFile != \"\" \u0026\u0026 !insecureSkipVerify {\n\t\tcaCert, err = os.ReadFile(caCertFile)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t} else if len(kconfig.Clusters[0].Cluster.CertificateAuthorityData) \u003e 0 \u0026\u0026 !insecureSkipVerify {\n\t\tcaCert = kconfig.Clusters[0].Cluster.CertificateAuthorityData\n\t}\n\tif len(caCert) \u003e 0 {\n\t\tcaCertPool.AppendCertsFromPEM(caCert)\n\t}\n\n\t// Create transport with ca and client certs\n\ttr := \u0026http.Transport{\n\t\tTLSClientConfig: \u0026tls.Config{RootCAs: caCertPool, Certificates: []tls.Certificate{clientCert}, InsecureSkipVerify: insecureSkipVerify},\n\t}\n\treturn \u0026http.Client{Transport: tr}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig: \u0026tls.Config{RootCAs: caCertPool, Certificates: []tls.Certificate{clientCert}, InsecureSkipVerify: insecureSkipVerify},",
+        "SourceFilename": "/analysis/repo/pkg/domain/infra/abi/apply.go",
+        "SourceLineNum": 145,
+        "ParentFunction": "setUpClusterClient (kconfig github.com/containers/podman/v5/pkg/k8s.io/api/core/v1.Config, applyOptions github.com/containers/podman/v5/pkg/domain/entities.ApplyOptions) (*net/http.Client, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "insecureSkipVerify := false",
+          "SourceFilename": "/analysis/repo/pkg/domain/infra/abi/apply.go",
+          "SourceLineNum": 119,
+          "ParentFunction": "setUpClusterClient (kconfig github.com/containers/podman/v5/pkg/k8s.io/api/core/v1.Config, applyOptions github.com/containers/podman/v5/pkg/domain/entities.ApplyOptions) (*net/http.Client, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "WaitAndPingAPI",
+    "file_path": "/analysis/repo/pkg/machine/config.go",
+    "line_number": 265,
+    "full_implementation": "func WaitAndPingAPI(sock string) {\n\tclient := http.Client{\n\t\tTransport: \u0026http.Transport{\n\t\t\tDialContext: func(context.Context, string, string) (net.Conn, error) {\n\t\t\t\tcon, err := dialSocket(sock, apiUpTimeout)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t\tif err := con.SetDeadline(time.Now().Add(apiUpTimeout)); err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t\treturn con, nil\n\t\t\t},\n\t\t},\n\t}\n\n\tresp, err := client.Get(\"http://host/_ping\")\n\tif err == nil {\n\t\tdefer resp.Body.Close()\n\t}\n\tif err != nil || resp.StatusCode != http.StatusOK {\n\t\tlogrus.Warn(\"API socket failed ping test\")\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "(*net/http.Client).Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "resp, err := client.Get(\"http://host/_ping\")",
+        "SourceFilename": "/analysis/repo/pkg/machine/config.go",
+        "SourceLineNum": 265,
+        "ParentFunction": "WaitAndPingAPI (sock string)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "resp, err := client.Get(\"http://host/_ping\")",
+          "SourceFilename": "/analysis/repo/pkg/machine/config.go",
+          "SourceLineNum": 265,
+          "ParentFunction": "WaitAndPingAPI (sock string)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "createConfig",
+    "file_path": "/analysis/repo/pkg/machine/ssh.go",
+    "line_number": 108,
+    "full_implementation": "func createConfig(user string, identityPath string) (*ssh.ClientConfig, error) {\n\tkey, err := os.ReadFile(identityPath)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tsigner, err := ssh.ParsePrivateKey(key)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn \u0026ssh.ClientConfig{\n\t\tUser:            user,\n\t\tAuth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/pkg/machine/ssh.go",
+        "SourceLineNum": 108,
+        "ParentFunction": "createConfig (user string, identityPath string) (*golang.org/x/crypto/ssh.ClientConfig, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

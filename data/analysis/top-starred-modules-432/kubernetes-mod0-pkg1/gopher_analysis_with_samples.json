@@ -1,0 +1,587 @@
+[
+  {
+    "function_name": "GetCSIAttachLimitKey",
+    "file_path": "/analysis/repo/pkg/volume/util/attach_limit.go",
+    "line_number": 63,
+    "full_implementation": "func GetCSIAttachLimitKey(driverName string) string {\n\tcsiPrefixLength := len(CSIAttachLimitPrefix)\n\ttotalkeyLength := csiPrefixLength + len(driverName)\n\tif totalkeyLength \u003e= ResourceNameLengthLimit {\n\t\tcharsFromDriverName := driverName[:23]\n\t\thash := sha1.New()\n\t\thash.Write([]byte(driverName))\n\t\thashed := hex.EncodeToString(hash.Sum(nil))\n\t\thashed = hashed[:16]\n\t\treturn CSIAttachLimitPrefix + charsFromDriverName + hashed\n\t}\n\treturn CSIAttachLimitPrefix + driverName\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.New()",
+        "SourceFilename": "/analysis/repo/pkg/volume/util/attach_limit.go",
+        "SourceLineNum": 63,
+        "ParentFunction": "GetCSIAttachLimitKey (driverName string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "hashAddresses",
+    "file_path": "/analysis/repo/pkg/api/v1/endpoints/util.go",
+    "line_number": 157,
+    "full_implementation": "func hashAddresses(addrs addressSet) string {\n\t// Flatten the list of addresses into a string so it can be used as a\n\t// map key.  Unfortunately, DeepHashObject is implemented in terms of\n\t// spew, and spew does not handle non-primitive map keys well.  So\n\t// first we collapse it into a slice, sort the slice, then hash that.\n\tslice := make([]addrReady, 0, len(addrs))\n\tfor k, ready := range addrs {\n\t\tslice = append(slice, addrReady{k, ready})\n\t}\n\tsort.Sort(addrsReady(slice))\n\thasher := md5.New()\n\thashutil.DeepHashObject(hasher, slice)\n\treturn hex.EncodeToString(hasher.Sum(nil)[0:])\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/pkg/api/v1/endpoints/util.go",
+        "SourceLineNum": 157,
+        "ParentFunction": "hashAddresses (addrs k8s.io/kubernetes/pkg/api/v1/endpoints.addressSet) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Less",
+    "file_path": "/analysis/repo/pkg/api/v1/endpoints/util.go",
+    "line_number": 213,
+    "full_implementation": "func (sl subsetsByHash) Less(i, j int) bool {\n\thasher := md5.New()\n\th1 := hashObject(hasher, sl[i])\n\th2 := hashObject(hasher, sl[j])\n\treturn bytes.Compare(h1, h2) \u003c 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/pkg/api/v1/endpoints/util.go",
+        "SourceLineNum": 213,
+        "ParentFunction": "Less (i int, j int) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Less",
+    "file_path": "/analysis/repo/pkg/api/v1/endpoints/util.go",
+    "line_number": 232,
+    "full_implementation": "func (sl portsByHash) Less(i, j int) bool {\n\thasher := md5.New()\n\th1 := hashObject(hasher, sl[i])\n\th2 := hashObject(hasher, sl[j])\n\treturn bytes.Compare(h1, h2) \u003c 0\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/pkg/api/v1/endpoints/util.go",
+        "SourceLineNum": 232,
+        "ParentFunction": "Less (i int, j int) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "New",
+    "file_path": "/analysis/repo/pkg/probe/http/http.go",
+    "line_number": 41,
+    "full_implementation": "func New(followNonLocalRedirects bool) Prober {\n\ttlsConfig := \u0026tls.Config{InsecureSkipVerify: true}\n\treturn NewWithTLSConfig(tlsConfig, followNonLocalRedirects)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig := \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/pkg/probe/http/http.go",
+        "SourceLineNum": 41,
+        "ParentFunction": "New (followNonLocalRedirects bool) k8s.io/kubernetes/pkg/probe/http.Prober"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig := \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/pkg/probe/http/http.go",
+          "SourceLineNum": 41,
+          "ParentFunction": "New (followNonLocalRedirects bool) k8s.io/kubernetes/pkg/probe/http.Prober"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "CreateProxyTransport",
+    "file_path": "/analysis/repo/pkg/controlplane/apiserver/config.go",
+    "line_number": 401,
+    "full_implementation": "func CreateProxyTransport() *http.Transport {\n\tvar proxyDialerFn utilnet.DialFunc\n\t// Proxying to pods and services is IP-based... don't expect to be able to verify the hostname\n\tproxyTLSClientConfig := \u0026tls.Config{InsecureSkipVerify: true}\n\tproxyTransport := utilnet.SetTransportDefaults(\u0026http.Transport{\n\t\tDialContext:     proxyDialerFn,\n\t\tTLSClientConfig: proxyTLSClientConfig,\n\t})\n\treturn proxyTransport\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "proxyTLSClientConfig := \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/pkg/controlplane/apiserver/config.go",
+        "SourceLineNum": 401,
+        "ParentFunction": "CreateProxyTransport () *net/http.Transport"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "proxyTLSClientConfig := \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/pkg/controlplane/apiserver/config.go",
+          "SourceLineNum": 401,
+          "ParentFunction": "CreateProxyTransport () *net/http.Transport"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "applyDefaults",
+    "file_path": "/analysis/repo/pkg/kubelet/config/common.go",
+    "line_number": 59,
+    "full_implementation": "func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName types.NodeName) error {\n\tif len(pod.UID) == 0 {\n\t\thasher := md5.New()\n\t\thash.DeepHashObject(hasher, pod)\n\t\t// DeepHashObject resets the hash, so we should write the pod source\n\t\t// information AFTER it.\n\t\tif isFile {\n\t\t\tfmt.Fprintf(hasher, \"host:%s\", nodeName)\n\t\t\tfmt.Fprintf(hasher, \"file:%s\", source)\n\t\t} else {\n\t\t\tfmt.Fprintf(hasher, \"url:%s\", source)\n\t\t}\n\t\tpod.UID = types.UID(hex.EncodeToString(hasher.Sum(nil)[0:]))\n\t\tklog.V(5).InfoS(\"Generated UID\", \"pod\", klog.KObj(pod), \"podUID\", pod.UID, \"source\", source)\n\t}\n\n\tpod.Name = generatePodName(pod.Name, nodeName)\n\tklog.V(5).InfoS(\"Generated pod name\", \"pod\", klog.KObj(pod), \"podUID\", pod.UID, \"source\", source)\n\n\tif pod.Namespace == \"\" {\n\t\tpod.Namespace = metav1.NamespaceDefault\n\t}\n\tklog.V(5).InfoS(\"Set namespace for pod\", \"pod\", klog.KObj(pod), \"source\", source)\n\n\t// Set the Host field to indicate this pod is scheduled on the current node.\n\tpod.Spec.NodeName = string(nodeName)\n\n\tif pod.Annotations == nil {\n\t\tpod.Annotations = make(map[string]string)\n\t}\n\t// The generated UID is the hash of the file.\n\tpod.Annotations[kubetypes.ConfigHashAnnotationKey] = string(pod.UID)\n\n\tif isFile {\n\t\t// Applying the default Taint tolerations to static pods,\n\t\t// so they are not evicted when there are node problems.\n\t\thelper.AddOrUpdateTolerationInPod(pod, \u0026api.Toleration{\n\t\t\tOperator: \"Exists\",\n\t\t\tEffect:   api.TaintEffectNoExecute,\n\t\t})\n\t}\n\n\t// Set the default status to pending.\n\tpod.Status.Phase = api.PodPending\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/pkg/kubelet/config/common.go",
+        "SourceLineNum": 59,
+        "ParentFunction": "applyDefaults (pod *k8s.io/kubernetes/pkg/apis/core.Pod, source string, isFile bool, nodeName k8s.io/apimachinery/pkg/types.NodeName) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GeneratePrivateKey",
+    "file_path": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+    "line_number": 589,
+    "full_implementation": "func GeneratePrivateKey(keyType kubeadmapi.EncryptionAlgorithmType) (crypto.Signer, error) {\n\tif keyType == kubeadmapi.EncryptionAlgorithmECDSAP256 {\n\t\treturn ecdsa.GenerateKey(elliptic.P256(), cryptorand.Reader)\n\t}\n\n\trsaKeySize := rsaKeySizeFromAlgorithmType(keyType)\n\tif rsaKeySize == 0 {\n\t\treturn nil, errors.Errorf(\"cannot obtain key size from unknown RSA algorithm: %q\", keyType)\n\t}\n\treturn rsa.GenerateKey(cryptorand.Reader, rsaKeySize)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)",
+        "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+        "SourceLineNum": 589,
+        "ParentFunction": "GeneratePrivateKey (keyType k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm.EncryptionAlgorithmType) (crypto.Signer, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "rsaKeySize := rsaKeySizeFromAlgorithmType(keyType)",
+          "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+          "SourceLineNum": 585,
+          "ParentFunction": "GeneratePrivateKey (keyType k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm.EncryptionAlgorithmType) (crypto.Signer, error)"
+        },
+        {
+          "SourceCode": "return 2048",
+          "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+          "SourceLineNum": 569,
+          "ParentFunction": "rsaKeySizeFromAlgorithmType (keyType k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm.EncryptionAlgorithmType) int"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "GeneratePrivateKey",
+    "file_path": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+    "line_number": 589,
+    "full_implementation": "func GeneratePrivateKey(keyType kubeadmapi.EncryptionAlgorithmType) (crypto.Signer, error) {\n\tif keyType == kubeadmapi.EncryptionAlgorithmECDSAP256 {\n\t\treturn ecdsa.GenerateKey(elliptic.P256(), cryptorand.Reader)\n\t}\n\n\trsaKeySize := rsaKeySizeFromAlgorithmType(keyType)\n\tif rsaKeySize == 0 {\n\t\treturn nil, errors.Errorf(\"cannot obtain key size from unknown RSA algorithm: %q\", keyType)\n\t}\n\treturn rsa.GenerateKey(cryptorand.Reader, rsaKeySize)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)",
+        "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+        "SourceLineNum": 589,
+        "ParentFunction": "GeneratePrivateKey (keyType k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm.EncryptionAlgorithmType) (crypto.Signer, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "rsaKeySize := rsaKeySizeFromAlgorithmType(keyType)",
+          "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+          "SourceLineNum": 585,
+          "ParentFunction": "GeneratePrivateKey (keyType k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm.EncryptionAlgorithmType) (crypto.Signer, error)"
+        },
+        {
+          "SourceCode": "return 0",
+          "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/pkiutil/pki_helpers.go",
+          "SourceLineNum": 575,
+          "ParentFunction": "rsaKeySizeFromAlgorithmType (keyType k8s.io/kubernetes/cmd/kubeadm/app/apis/kubeadm.EncryptionAlgorithmType) int"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "ManifestFilesAreEqual",
+    "file_path": "/analysis/repo/cmd/kubeadm/app/util/staticpod/utils.go",
+    "line_number": 353,
+    "full_implementation": "func ManifestFilesAreEqual(path1, path2 string) (bool, string, error) {\n\tpod1, err := ReadStaticPodFromDisk(path1)\n\tif err != nil {\n\t\treturn false, \"\", err\n\t}\n\tpod2, err := ReadStaticPodFromDisk(path2)\n\tif err != nil {\n\t\treturn false, \"\", err\n\t}\n\n\thasher := md5.New()\n\tDeepHashObject(hasher, pod1)\n\thash1 := hasher.Sum(nil)[0:]\n\tDeepHashObject(hasher, pod2)\n\thash2 := hasher.Sum(nil)[0:]\n\tif bytes.Equal(hash1, hash2) {\n\t\treturn true, \"\", nil\n\t}\n\n\tmanifest1, err := kubeadmutil.MarshalToYaml(pod1, v1.SchemeGroupVersion)\n\tif err != nil {\n\t\treturn false, \"\", errors.Wrapf(err, \"failed to marshal Pod manifest for %q to YAML\", path1)\n\t}\n\n\tmanifest2, err := kubeadmutil.MarshalToYaml(pod2, v1.SchemeGroupVersion)\n\tif err != nil {\n\t\treturn false, \"\", errors.Wrapf(err, \"failed to marshal Pod manifest for %q to YAML\", path2)\n\t}\n\n\tdiff := difflib.UnifiedDiff{\n\t\tA: difflib.SplitLines(string(manifest1)),\n\t\tB: difflib.SplitLines(string(manifest2)),\n\t}\n\n\tdiffStr, err := difflib.GetUnifiedDiffString(diff)\n\tif err != nil {\n\t\treturn false, \"\", errors.Wrapf(err, \"failed to generate the differences between manifest %q and manifest %q\", path1, path2)\n\t}\n\n\treturn false, diffStr, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := md5.New()",
+        "SourceFilename": "/analysis/repo/cmd/kubeadm/app/util/staticpod/utils.go",
+        "SourceLineNum": 353,
+        "ParentFunction": "ManifestFilesAreEqual (path1 string, path2 string) (bool, string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewMainKubelet",
+    "file_path": "/analysis/repo/pkg/kubelet/kubelet.go",
+    "line_number": 561,
+    "full_implementation": "func NewMainKubelet(kubeCfg *kubeletconfiginternal.KubeletConfiguration,\n\tkubeDeps *Dependencies,\n\tcrOptions *config.ContainerRuntimeOptions,\n\thostname string,\n\thostnameOverridden bool,\n\tnodeName types.NodeName,\n\tnodeIPs []net.IP,\n\tproviderID string,\n\tcloudProvider string,\n\tcertDirectory string,\n\trootDirectory string,\n\tpodLogsDirectory string,\n\timageCredentialProviderConfigFile string,\n\timageCredentialProviderBinDir string,\n\tregisterNode bool,\n\tregisterWithTaints []v1.Taint,\n\tallowedUnsafeSysctls []string,\n\texperimentalMounterPath string,\n\tkernelMemcgNotification bool,\n\texperimentalNodeAllocatableIgnoreEvictionThreshold bool,\n\tminimumGCAge metav1.Duration,\n\tmaxPerPodContainerCount int32,\n\tmaxContainerCount int32,\n\tregisterSchedulable bool,\n\tnodeLabels map[string]string,\n\tnodeStatusMaxImages int32,\n\tseccompDefault bool,\n) (*Kubelet, error) {\n\tctx := context.Background()\n\tlogger := klog.TODO()\n\n\tif rootDirectory == \"\" {\n\t\treturn nil, fmt.Errorf(\"invalid root directory %q\", rootDirectory)\n\t}\n\tif podLogsDirectory == \"\" {\n\t\treturn nil, errors.New(\"pod logs root directory is empty\")\n\t}\n\tif kubeCfg.SyncFrequency.Duration \u003c= 0 {\n\t\treturn nil, fmt.Errorf(\"invalid sync frequency %d\", kubeCfg.SyncFrequency.Duration)\n\t}\n\n\tif !cloudprovider.IsExternal(cloudProvider) \u0026\u0026 len(cloudProvider) != 0 {\n\t\tcloudprovider.DisableWarningForProvider(cloudProvider)\n\t\treturn nil, fmt.Errorf(\"cloud provider %q was specified, but built-in cloud providers are disabled. Please set --cloud-provider=external and migrate to an external cloud provider\", cloudProvider)\n\t}\n\n\tvar nodeHasSynced cache.InformerSynced\n\tvar nodeLister corelisters.NodeLister\n\n\t// If kubeClient == nil, we are running in standalone mode (i.e. no API servers)\n\t// If not nil, we are running as part of a cluster and should sync w/API\n\tif kubeDeps.KubeClient != nil {\n\t\tkubeInformers := informers.NewSharedInformerFactoryWithOptions(kubeDeps.KubeClient, 0, informers.WithTweakListOptions(func(options *metav1.ListOptions) {\n\t\t\toptions.FieldSelector = fields.Set{metav1.ObjectNameField: string(nodeName)}.String()\n\t\t}))\n\t\tnodeLister = kubeInformers.Core().V1().Nodes().Lister()\n\t\tnodeHasSynced = func() bool {\n\t\t\treturn kubeInformers.Core().V1().Nodes().Informer().HasSynced()\n\t\t}\n\t\tkubeInformers.Start(wait.NeverStop)\n\t\tklog.InfoS(\"Attempting to sync node with API server\")\n\t} else {\n\t\t// we don't have a client to sync!\n\t\tnodeIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})\n\t\tnodeLister = corelisters.NewNodeLister(nodeIndexer)\n\t\tnodeHasSynced = func() bool { return true }\n\t\tklog.InfoS(\"Kubelet is running in standalone mode, will skip API server sync\")\n\t}\n\n\tif kubeDeps.PodConfig == nil {\n\t\tvar err error\n\t\tkubeDeps.PodConfig, err = makePodSourceConfig(kubeCfg, kubeDeps, nodeName, nodeHasSynced)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\tcontainerGCPolicy := kubecontainer.GCPolicy{\n\t\tMinAge:             minimumGCAge.Duration,\n\t\tMaxPerPodContainer: int(maxPerPodContainerCount),\n\t\tMaxContainers:      int(maxContainerCount),\n\t}\n\n\tdaemonEndpoints := \u0026v1.NodeDaemonEndpoints{\n\t\tKubeletEndpoint: v1.DaemonEndpoint{Port: kubeCfg.Port},\n\t}\n\n\timageGCPolicy := images.ImageGCPolicy{\n\t\tMinAge:               kubeCfg.ImageMinimumGCAge.Duration,\n\t\tHighThresholdPercent: int(kubeCfg.ImageGCHighThresholdPercent),\n\t\tLowThresholdPercent:  int(kubeCfg.ImageGCLowThresholdPercent),\n\t}\n\n\tif utilfeature.DefaultFeatureGate.Enabled(features.ImageMaximumGCAge) {\n\t\timageGCPolicy.MaxAge = kubeCfg.ImageMaximumGCAge.Duration\n\t} else if kubeCfg.ImageMaximumGCAge.Duration != 0 {\n\t\tklog.InfoS(\"ImageMaximumGCAge flag enabled, but corresponding feature gate is not enabled. Ignoring flag.\")\n\t}\n\n\tenforceNodeAllocatable := kubeCfg.EnforceNodeAllocatable\n\tif experimentalNodeAllocatableIgnoreEvictionThreshold {\n\t\t// Do not provide kubeCfg.EnforceNodeAllocatable to eviction threshold parsing if we are not enforcing Evictions\n\t\tenforceNodeAllocatable = []string{}\n\t}\n\tthresholds, err := eviction.ParseThresholdConfig(enforceNodeAllocatable, kubeCfg.EvictionHard, kubeCfg.EvictionSoft, kubeCfg.EvictionSoftGracePeriod, kubeCfg.EvictionMinimumReclaim)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tevictionConfig := eviction.Config{\n\t\tPressureTransitionPeriod: kubeCfg.EvictionPressureTransitionPeriod.Duration,\n\t\tMaxPodGracePeriodSeconds: int64(kubeCfg.EvictionMaxPodGracePeriod),\n\t\tThresholds:               thresholds,\n\t\tKernelMemcgNotification:  kernelMemcgNotification,\n\t\tPodCgroupRoot:            kubeDeps.ContainerManager.GetPodCgroupRoot(),\n\t}\n\n\tvar serviceLister corelisters.ServiceLister\n\tvar serviceHasSynced cache.InformerSynced\n\tif kubeDeps.KubeClient != nil {\n\t\t// don't watch headless services, they are not needed since this informer is only used to create the environment variables for pods.\n\t\t// See https://issues.k8s.io/122394\n\t\tkubeInformers := informers.NewSharedInformerFactoryWithOptions(kubeDeps.KubeClient, 0, informers.WithTweakListOptions(func(options *metav1.ListOptions) {\n\t\t\toptions.FieldSelector = fields.OneTermNotEqualSelector(\"spec.clusterIP\", v1.ClusterIPNone).String()\n\t\t}))\n\t\tserviceLister = kubeInformers.Core().V1().Services().Lister()\n\t\tserviceHasSynced = kubeInformers.Core().V1().Services().Informer().HasSynced\n\t\tkubeInformers.Start(wait.NeverStop)\n\t} else {\n\t\tserviceIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})\n\t\tserviceLister = corelisters.NewServiceLister(serviceIndexer)\n\t\tserviceHasSynced = func() bool { return true }\n\t}\n\n\t// construct a node reference used for events\n\tnodeRef := \u0026v1.ObjectReference{\n\t\tKind:      \"Node\",\n\t\tName:      string(nodeName),\n\t\tUID:       types.UID(nodeName),\n\t\tNamespace: \"\",\n\t}\n\n\toomWatcher, err := oomwatcher.NewWatcher(kubeDeps.Recorder)\n\tif err != nil {\n\t\tif inuserns.RunningInUserNS() {\n\t\t\tif utilfeature.DefaultFeatureGate.Enabled(features.KubeletInUserNamespace) {\n\t\t\t\t// oomwatcher.NewWatcher returns \"open /dev/kmsg: operation not permitted\" error,\n\t\t\t\t// when running in a user namespace with sysctl value `kernel.dmesg_restrict=1`.\n\t\t\t\tklog.V(2).InfoS(\"Failed to create an oomWatcher (running in UserNS, ignoring)\", \"err\", err)\n\t\t\t\toomWatcher = nil\n\t\t\t} else {\n\t\t\t\tklog.ErrorS(err, \"Failed to create an oomWatcher (running in UserNS, Hint: enable KubeletInUserNamespace feature flag to ignore the error)\")\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t} else {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\tclusterDNS := make([]net.IP, 0, len(kubeCfg.ClusterDNS))\n\tfor _, ipEntry := range kubeCfg.ClusterDNS {\n\t\tip := netutils.ParseIPSloppy(ipEntry)\n\t\tif ip == nil {\n\t\t\tklog.InfoS(\"Invalid clusterDNS IP\", \"IP\", ipEntry)\n\t\t} else {\n\t\t\tclusterDNS = append(clusterDNS, ip)\n\t\t}\n\t}\n\n\t// A TLS transport is needed to make HTTPS-based container lifecycle requests,\n\t// but we do not have the information necessary to do TLS verification.\n\t//\n\t// This client must not be modified to include credentials, because it is\n\t// critical that credentials not leak from the client to arbitrary hosts.\n\tinsecureContainerLifecycleHTTPClient := \u0026http.Client{\n\t\tTransport: \u0026http.Transport{\n\t\t\tTLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},\n\t\t},\n\t\tCheckRedirect: httpprobe.RedirectChecker(false),\n\t}\n\n\ttracer := kubeDeps.TracerProvider.Tracer(instrumentationScope)\n\n\tklet := \u0026Kubelet{\n\t\thostname:                       hostname,\n\t\thostnameOverridden:             hostnameOverridden,\n\t\tnodeName:                       nodeName,\n\t\tkubeClient:                     kubeDeps.KubeClient,\n\t\theartbeatClient:                kubeDeps.HeartbeatClient,\n\t\tonRepeatedHeartbeatFailure:     kubeDeps.OnHeartbeatFailure,\n\t\trootDirectory:                  filepath.Clean(rootDirectory),\n\t\tpodLogsDirectory:               podLogsDirectory,\n\t\tresyncInterval:                 kubeCfg.SyncFrequency.Duration,\n\t\tsourcesReady:                   config.NewSourcesReady(kubeDeps.PodConfig.SeenAllSources),\n\t\tregisterNode:                   registerNode,\n\t\tregisterWithTaints:             registerWithTaints,\n\t\tregisterSchedulable:            registerSchedulable,\n\t\tdnsConfigurer:                  dns.NewConfigurer(kubeDeps.Recorder, nodeRef, nodeIPs, clusterDNS, kubeCfg.ClusterDomain, kubeCfg.ResolverConfig),\n\t\tserviceLister:                  serviceLister,\n\t\tserviceHasSynced:               serviceHasSynced,\n\t\tnodeLister:                     nodeLister,\n\t\tnodeHasSynced:                  nodeHasSynced,\n\t\tstreamingConnectionIdleTimeout: kubeCfg.StreamingConnectionIdleTimeout.Duration,\n\t\trecorder:                       kubeDeps.Recorder,\n\t\tcadvisor:                       kubeDeps.CAdvisorInterface,\n\t\tcloud:                          kubeDeps.Cloud,\n\t\texternalCloudProvider:          cloudprovider.IsExternal(cloudProvider),\n\t\tproviderID:                     providerID,\n\t\tnodeRef:                        nodeRef,\n\t\tnodeLabels:                     nodeLabels,\n\t\tnodeStatusUpdateFrequency:      kubeCfg.NodeStatusUpdateFrequency.Duration,\n\t\tnodeStatusReportFrequency:      kubeCfg.NodeStatusReportFrequency.Duration,\n\t\tos:                             kubeDeps.OSInterface,\n\t\toomWatcher:                     oomWatcher,\n\t\tcgroupsPerQOS:                  kubeCfg.CgroupsPerQOS,\n\t\tcgroupRoot:                     kubeCfg.CgroupRoot,\n\t\tmounter:                        kubeDeps.Mounter,\n\t\thostutil:                       kubeDeps.HostUtil,\n\t\tsubpather:                      kubeDeps.Subpather,\n\t\tmaxPods:                        int(kubeCfg.MaxPods),\n\t\tpodsPerCore:                    int(kubeCfg.PodsPerCore),\n\t\tsyncLoopMonitor:                atomic.Value{},\n\t\tdaemonEndpoints:                daemonEndpoints,\n\t\tcontainerManager:               kubeDeps.ContainerManager,\n\t\tnodeIPs:                        nodeIPs,\n\t\tnodeIPValidator:                validateNodeIP,\n\t\tclock:                          clock.RealClock{},\n\t\tenableControllerAttachDetach:   kubeCfg.EnableControllerAttachDetach,\n\t\tmakeIPTablesUtilChains:         kubeCfg.MakeIPTablesUtilChains,\n\t\tnodeStatusMaxImages:            nodeStatusMaxImages,\n\t\ttracer:                         tracer,\n\t\tnodeStartupLatencyTracker:      kubeDeps.NodeStartupLatencyTracker,\n\t}\n\n\tif klet.cloud != nil {\n\t\tklet.cloudResourceSyncManager = cloudresource.NewSyncManager(klet.cloud, nodeName, klet.nodeStatusUpdateFrequency)\n\t}\n\n\tvar secretManager secret.Manager\n\tvar configMapManager configmap.Manager\n\tif klet.kubeClient != nil {\n\t\tswitch kubeCfg.ConfigMapAndSecretChangeDetectionStrategy {\n\t\tcase kubeletconfiginternal.WatchChangeDetectionStrategy:\n\t\t\tsecretManager = secret.NewWatchingSecretManager(klet.kubeClient, klet.resyncInterval)\n\t\t\tconfigMapManager = configmap.NewWatchingConfigMapManager(klet.kubeClient, klet.resyncInterval)\n\t\tcase kubeletconfiginternal.TTLCacheChangeDetectionStrategy:\n\t\t\tsecretManager = secret.NewCachingSecretManager(\n\t\t\t\tklet.kubeClient, manager.GetObjectTTLFromNodeFunc(klet.GetNode))\n\t\t\tconfigMapManager = configmap.NewCachingConfigMapManager(\n\t\t\t\tklet.kubeClient, manager.GetObjectTTLFromNodeFunc(klet.GetNode))\n\t\tcase kubeletconfiginternal.GetChangeDetectionStrategy:\n\t\t\tsecretManager = secret.NewSimpleSecretManager(klet.kubeClient)\n\t\t\tconfigMapManager = configmap.NewSimpleConfigMapManager(klet.kubeClient)\n\t\tdefault:\n\t\t\treturn nil, fmt.Errorf(\"unknown configmap and secret manager mode: %v\", kubeCfg.ConfigMapAndSecretChangeDetectionStrategy)\n\t\t}\n\n\t\tklet.secretManager = secretManager\n\t\tklet.configMapManager = configMapManager\n\t}\n\n\tmachineInfo, err := klet.cadvisor.MachineInfo()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\t// Avoid collector collects it as a timestamped metric\n\t// See PR #95210 and #97006 for more details.\n\tmachineInfo.Timestamp = time.Time{}\n\tklet.setCachedMachineInfo(machineInfo)\n\n\timageBackOff := flowcontrol.NewBackOff(imageBackOffPeriod, MaxImageBackOff)\n\n\tklet.livenessManager = proberesults.NewManager()\n\tklet.readinessManager = proberesults.NewManager()\n\tklet.startupManager = proberesults.NewManager()\n\tklet.podCache = kubecontainer.NewCache()\n\n\tklet.mirrorPodClient = kubepod.NewBasicMirrorClient(klet.kubeClient, string(nodeName), nodeLister)\n\tklet.podManager = kubepod.NewBasicPodManager()\n\n\tklet.statusManager = status.NewManager(klet.kubeClient, klet.podManager, klet, kubeDeps.PodStartupLatencyTracker, klet.getRootDir())\n\n\tklet.resourceAnalyzer = serverstats.NewResourceAnalyzer(klet, kubeCfg.VolumeStatsAggPeriod.Duration, kubeDeps.Recorder)\n\n\tklet.runtimeService = kubeDeps.RemoteRuntimeService\n\n\tif kubeDeps.KubeClient != nil {\n\t\tklet.runtimeClassManager = runtimeclass.NewManager(kubeDeps.KubeClient)\n\t}\n\n\t// setup containerLogManager for CRI container runtime\n\tcontainerLogManager, err := logs.NewContainerLogManager(\n\t\tklet.runtimeService,\n\t\tkubeDeps.OSInterface,\n\t\tkubeCfg.ContainerLogMaxSize,\n\t\tint(kubeCfg.ContainerLogMaxFiles),\n\t\tint(kubeCfg.ContainerLogMaxWorkers),\n\t\tkubeCfg.ContainerLogMonitorInterval,\n\t)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to initialize container log manager: %v\", err)\n\t}\n\tklet.containerLogManager = containerLogManager\n\n\tklet.reasonCache = NewReasonCache()\n\tklet.workQueue = queue.NewBasicWorkQueue(klet.clock)\n\tklet.podWorkers = newPodWorkers(\n\t\tklet,\n\t\tkubeDeps.Recorder,\n\t\tklet.workQueue,\n\t\tklet.resyncInterval,\n\t\tbackOffPeriod,\n\t\tklet.podCache,\n\t)\n\n\tvar singleProcessOOMKill *bool\n\tif sysruntime.GOOS == \"linux\" {\n\t\tif !util.IsCgroup2UnifiedMode() {\n\t\t\t// This is a default behavior for cgroups v1.\n\t\t\tsingleProcessOOMKill = ptr.To(true)\n\t\t} else {\n\t\t\tif kubeCfg.SingleProcessOOMKill == nil {\n\t\t\t\tsingleProcessOOMKill = ptr.To(false)\n\t\t\t} else {\n\t\t\t\tsingleProcessOOMKill = kubeCfg.SingleProcessOOMKill\n\t\t\t}\n\t\t}\n\t}\n\n\truntime, err := kuberuntime.NewKubeGenericRuntimeManager(\n\t\tkubecontainer.FilterEventRecorder(kubeDeps.Recorder),\n\t\tklet.livenessManager,\n\t\tklet.readinessManager,\n\t\tklet.startupManager,\n\t\trootDirectory,\n\t\tpodLogsDirectory,\n\t\tmachineInfo,\n\t\tklet.podWorkers,\n\t\tkubeDeps.OSInterface,\n\t\tklet,\n\t\tinsecureContainerLifecycleHTTPClient,\n\t\timageBackOff,\n\t\tkubeCfg.SerializeImagePulls,\n\t\tkubeCfg.MaxParallelImagePulls,\n\t\tfloat32(kubeCfg.RegistryPullQPS),\n\t\tint(kubeCfg.RegistryBurst),\n\t\timageCredentialProviderConfigFile,\n\t\timageCredentialProviderBinDir,\n\t\tsingleProcessOOMKill,\n\t\tkubeCfg.CPUCFSQuota,\n\t\tkubeCfg.CPUCFSQuotaPeriod,\n\t\tkubeDeps.RemoteRuntimeService,\n\t\tkubeDeps.RemoteImageService,\n\t\tkubeDeps.ContainerManager,\n\t\tklet.containerLogManager,\n\t\tklet.runtimeClassManager,\n\t\tseccompDefault,\n\t\tkubeCfg.MemorySwap.SwapBehavior,\n\t\tkubeDeps.ContainerManager.GetNodeAllocatableAbsolute,\n\t\t*kubeCfg.MemoryThrottlingFactor,\n\t\tkubeDeps.PodStartupLatencyTracker,\n\t\tkubeDeps.TracerProvider,\n\t)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tklet.containerRuntime = runtime\n\tklet.streamingRuntime = runtime\n\tklet.runner = runtime\n\n\truntimeCache, err := kubecontainer.NewRuntimeCache(klet.containerRuntime, runtimeCacheRefreshPeriod)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tklet.runtimeCache = runtimeCache\n\n\t// common provider to get host file system usage associated with a pod managed by kubelet\n\thostStatsProvider := stats.NewHostStatsProvider(kubecontainer.RealOS{}, func(podUID types.UID) string {\n\t\treturn getEtcHostsPath(klet.getPodDir(podUID))\n\t}, podLogsDirectory)\n\tif kubeDeps.useLegacyCadvisorStats {\n\t\tklet.StatsProvider = stats.NewCadvisorStatsProvider(\n\t\t\tklet.cadvisor,\n\t\t\tklet.resourceAnalyzer,\n\t\t\tklet.podManager,\n\t\t\tklet.runtimeCache,\n\t\t\tklet.containerRuntime,\n\t\t\tklet.statusManager,\n\t\t\thostStatsProvider)\n\t} else {\n\t\tklet.StatsProvider = stats.NewCRIStatsProvider(\n\t\t\tklet.cadvisor,\n\t\t\tklet.resourceAnalyzer,\n\t\t\tklet.podManager,\n\t\t\tklet.runtimeCache,\n\t\t\tkubeDeps.RemoteRuntimeService,\n\t\t\tkubeDeps.RemoteImageService,\n\t\t\thostStatsProvider,\n\t\t\tutilfeature.DefaultFeatureGate.Enabled(features.PodAndContainerStatsFromCRI))\n\t}\n\n\teventChannel := make(chan *pleg.PodLifecycleEvent, plegChannelCapacity)\n\n\tif utilfeature.DefaultFeatureGate.Enabled(features.EventedPLEG) {\n\t\t// adjust Generic PLEG relisting period and threshold to higher value when Evented PLEG is turned on\n\t\tgenericRelistDuration := \u0026pleg.RelistDuration{\n\t\t\tRelistPeriod:    eventedPlegRelistPeriod,\n\t\t\tRelistThreshold: eventedPlegRelistThreshold,\n\t\t}\n\t\tklet.pleg = pleg.NewGenericPLEG(logger, klet.containerRuntime, eventChannel, genericRelistDuration, klet.podCache, clock.RealClock{})\n\t\t// In case Evented PLEG has to fall back on Generic PLEG due to an error,\n\t\t// Evented PLEG should be able to reset the Generic PLEG relisting duration\n\t\t// to the default value.\n\t\teventedRelistDuration := \u0026pleg.RelistDuration{\n\t\t\tRelistPeriod:    genericPlegRelistPeriod,\n\t\t\tRelistThreshold: genericPlegRelistThreshold,\n\t\t}\n\t\tklet.eventedPleg, err = pleg.NewEventedPLEG(logger, klet.containerRuntime, klet.runtimeService, eventChannel,\n\t\t\tklet.podCache, klet.pleg, eventedPlegMaxStreamRetries, eventedRelistDuration, clock.RealClock{})\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t} else {\n\t\tgenericRelistDuration := \u0026pleg.RelistDuration{\n\t\t\tRelistPeriod:    genericPlegRelistPeriod,\n\t\t\tRelistThreshold: genericPlegRelistThreshold,\n\t\t}\n\t\tklet.pleg = pleg.NewGenericPLEG(logger, klet.containerRuntime, eventChannel, genericRelistDuration, klet.podCache, clock.RealClock{})\n\t}\n\n\tklet.runtimeState = newRuntimeState(maxWaitForContainerRuntime)\n\tklet.runtimeState.addHealthCheck(\"PLEG\", klet.pleg.Healthy)\n\tif utilfeature.DefaultFeatureGate.Enabled(features.EventedPLEG) {\n\t\tklet.runtimeState.addHealthCheck(\"EventedPLEG\", klet.eventedPleg.Healthy)\n\t}\n\tif _, err := klet.updatePodCIDR(ctx, kubeCfg.PodCIDR); err != nil {\n\t\tklog.ErrorS(err, \"Pod CIDR update failed\")\n\t}\n\n\t// setup containerGC\n\tcontainerGC, err := kubecontainer.NewContainerGC(klet.containerRuntime, containerGCPolicy, klet.sourcesReady)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tklet.containerGC = containerGC\n\tklet.containerDeletor = newPodContainerDeletor(klet.containerRuntime, max(containerGCPolicy.MaxPerPodContainer, minDeadContainerInPod))\n\n\t// setup imageManager\n\timageManager, err := images.NewImageGCManager(klet.containerRuntime, klet.StatsProvider, kubeDeps.Recorder, nodeRef, imageGCPolicy, kubeDeps.TracerProvider)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to initialize image manager: %v\", err)\n\t}\n\tklet.imageManager = imageManager\n\n\tif kubeDeps.TLSOptions != nil {\n\t\tif kubeCfg.ServerTLSBootstrap \u0026\u0026 utilfeature.DefaultFeatureGate.Enabled(features.RotateKubeletServerCertificate) {\n\t\t\tklet.serverCertificateManager, err = kubeletcertificate.NewKubeletServerCertificateManager(klet.kubeClient, kubeCfg, klet.nodeName, klet.getLastObservedNodeAddresses, certDirectory)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to initialize certificate manager: %w\", err)\n\t\t\t}\n\n\t\t} else if kubeDeps.TLSOptions.CertFile != \"\" \u0026\u0026 kubeDeps.TLSOptions.KeyFile != \"\" \u0026\u0026 utilfeature.DefaultFeatureGate.Enabled(features.ReloadKubeletServerCertificateFile) {\n\t\t\tklet.serverCertificateManager, err = kubeletcertificate.NewKubeletServerCertificateDynamicFileManager(kubeDeps.TLSOptions.CertFile, kubeDeps.TLSOptions.KeyFile)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, fmt.Errorf(\"failed to initialize file based certificate manager: %w\", err)\n\t\t\t}\n\t\t}\n\n\t\tif klet.serverCertificateManager != nil {\n\t\t\tkubeDeps.TLSOptions.Config.GetCertificate = func(*tls.ClientHelloInfo) (*tls.Certificate, error) {\n\t\t\t\tcert := klet.serverCertificateManager.Current()\n\t\t\t\tif cert == nil {\n\t\t\t\t\treturn nil, fmt.Errorf(\"no serving certificate available for the kubelet\")\n\t\t\t\t}\n\t\t\t\treturn cert, nil\n\t\t\t}\n\t\t}\n\t}\n\n\tif kubeDeps.ProbeManager != nil {\n\t\tklet.probeManager = kubeDeps.ProbeManager\n\t} else {\n\t\tklet.probeManager = prober.NewManager(\n\t\t\tklet.statusManager,\n\t\t\tklet.livenessManager,\n\t\t\tklet.readinessManager,\n\t\t\tklet.startupManager,\n\t\t\tklet.runner,\n\t\t\tkubeDeps.Recorder)\n\t}\n\n\ttokenManager := token.NewManager(kubeDeps.KubeClient)\n\n\tvar clusterTrustBundleManager clustertrustbundle.Manager\n\tif kubeDeps.KubeClient != nil \u0026\u0026 utilfeature.DefaultFeatureGate.Enabled(features.ClusterTrustBundleProjection) {\n\t\tkubeInformers := informers.NewSharedInformerFactoryWithOptions(kubeDeps.KubeClient, 0)\n\t\tclusterTrustBundleManager, err = clustertrustbundle.NewInformerManager(ctx, kubeInformers.Certificates().V1alpha1().ClusterTrustBundles(), 2*int(kubeCfg.MaxPods), 5*time.Minute)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"while starting informer-based ClusterTrustBundle manager: %w\", err)\n\t\t}\n\t\tkubeInformers.Start(wait.NeverStop)\n\t\tklog.InfoS(\"Started ClusterTrustBundle informer\")\n\t} else {\n\t\t// In static kubelet mode, use a no-op manager.\n\t\tclusterTrustBundleManager = \u0026clustertrustbundle.NoopManager{}\n\t\tklog.InfoS(\"Not starting ClusterTrustBundle informer because we are in static kubelet mode\")\n\t}\n\n\t// NewInitializedVolumePluginMgr initializes some storageErrors on the Kubelet runtimeState (in csi_plugin.go init)\n\t// which affects node ready status. This function must be called before Kubelet is initialized so that the Node\n\t// ReadyState is accurate with the storage state.\n\tklet.volumePluginMgr, err =\n\t\tNewInitializedVolumePluginMgr(klet, secretManager, configMapManager, tokenManager, clusterTrustBundleManager, kubeDeps.VolumePlugins, kubeDeps.DynamicPluginProber)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tklet.pluginManager = pluginmanager.NewPluginManager(\n\t\tklet.getPluginsRegistrationDir(), /* sockDir */\n\t\tkubeDeps.Recorder,\n\t)\n\n\t// If the experimentalMounterPathFlag is set, we do not want to\n\t// check node capabilities since the mount path is not the default\n\tif len(experimentalMounterPath) != 0 {\n\t\t// Replace the nameserver in containerized-mounter's rootfs/etc/resolv.conf with kubelet.ClusterDNS\n\t\t// so that service name could be resolved\n\t\tklet.dnsConfigurer.SetupDNSinContainerizedMounter(experimentalMounterPath)\n\t}\n\n\t// setup volumeManager\n\tklet.volumeManager = volumemanager.NewVolumeManager(\n\t\tkubeCfg.EnableControllerAttachDetach,\n\t\tnodeName,\n\t\tklet.podManager,\n\t\tklet.podWorkers,\n\t\tklet.kubeClient,\n\t\tklet.volumePluginMgr,\n\t\tklet.containerRuntime,\n\t\tkubeDeps.Mounter,\n\t\tkubeDeps.HostUtil,\n\t\tklet.getPodsDir(),\n\t\tkubeDeps.Recorder,\n\t\tvolumepathhandler.NewBlockVolumePathHandler())\n\n\tboMax := MaxContainerBackOff\n\tbase := containerBackOffPeriod\n\tif utilfeature.DefaultFeatureGate.Enabled(features.KubeletCrashLoopBackOffMax) {\n\t\tboMax = kubeCfg.CrashLoopBackOff.MaxContainerRestartPeriod.Duration\n\t\tif boMax \u003c containerBackOffPeriod {\n\t\t\tbase = boMax\n\t\t}\n\t}\n\tklet.backOff = flowcontrol.NewBackOff(base, boMax)\n\tklet.backOff.HasExpiredFunc = func(eventTime time.Time, lastUpdate time.Time, maxDuration time.Duration) bool {\n\t\treturn eventTime.Sub(lastUpdate) \u003e 600*time.Second\n\t}\n\n\t// setup eviction manager\n\tevictionManager, evictionAdmitHandler := eviction.NewManager(klet.resourceAnalyzer, evictionConfig,\n\t\tkillPodNow(klet.podWorkers, kubeDeps.Recorder), klet.imageManager, klet.containerGC, kubeDeps.Recorder, nodeRef, klet.clock, kubeCfg.LocalStorageCapacityIsolation)\n\n\tklet.evictionManager = evictionManager\n\tklet.admitHandlers.AddPodAdmitHandler(evictionAdmitHandler)\n\n\t// Safe, allowed sysctls can always be used as unsafe sysctls in the spec.\n\t// Hence, we concatenate those two lists.\n\tsafeAndUnsafeSysctls := append(sysctl.SafeSysctlAllowlist(), allowedUnsafeSysctls...)\n\tsysctlsAllowlist, err := sysctl.NewAllowlist(safeAndUnsafeSysctls)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tklet.admitHandlers.AddPodAdmitHandler(sysctlsAllowlist)\n\n\t// enable active deadline handler\n\tactiveDeadlineHandler, err := newActiveDeadlineHandler(klet.statusManager, kubeDeps.Recorder, klet.clock)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tklet.AddPodSyncLoopHandler(activeDeadlineHandler)\n\tklet.AddPodSyncHandler(activeDeadlineHandler)\n\n\tklet.admitHandlers.AddPodAdmitHandler(klet.containerManager.GetAllocateResourcesPodAdmitHandler())\n\n\tcriticalPodAdmissionHandler := preemption.NewCriticalPodAdmissionHandler(klet.GetActivePods, killPodNow(klet.podWorkers, kubeDeps.Recorder), kubeDeps.Recorder)\n\tklet.admitHandlers.AddPodAdmitHandler(lifecycle.NewPredicateAdmitHandler(klet.getNodeAnyWay, criticalPodAdmissionHandler, klet.containerManager.UpdatePluginResources))\n\t// apply functional Option's\n\tfor _, opt := range kubeDeps.Options {\n\t\topt(klet)\n\t}\n\n\tif goos == \"linux\" {\n\t\t// AppArmor is a Linux kernel security module and it does not support other operating systems.\n\t\tklet.appArmorValidator = apparmor.NewValidator()\n\t\tklet.admitHandlers.AddPodAdmitHandler(lifecycle.NewAppArmorAdmitHandler(klet.appArmorValidator))\n\t}\n\n\tleaseDuration := time.Duration(kubeCfg.NodeLeaseDurationSeconds) * time.Second\n\trenewInterval := time.Duration(float64(leaseDuration) * nodeLeaseRenewIntervalFraction)\n\tklet.nodeLeaseController = lease.NewController(\n\t\tklet.clock,\n\t\tklet.heartbeatClient,\n\t\tstring(klet.nodeName),\n\t\tkubeCfg.NodeLeaseDurationSeconds,\n\t\tklet.onRepeatedHeartbeatFailure,\n\t\trenewInterval,\n\t\tstring(klet.nodeName),\n\t\tv1.NamespaceNodeLease,\n\t\tutil.SetNodeOwnerFunc(klet.heartbeatClient, string(klet.nodeName)))\n\n\t// setup node shutdown manager\n\tshutdownManager := nodeshutdown.NewManager(\u0026nodeshutdown.Config{\n\t\tLogger:                           logger,\n\t\tProbeManager:                     klet.probeManager,\n\t\tVolumeManager:                    klet.volumeManager,\n\t\tRecorder:                         kubeDeps.Recorder,\n\t\tNodeRef:                          nodeRef,\n\t\tGetPodsFunc:                      klet.GetActivePods,\n\t\tKillPodFunc:                      killPodNow(klet.podWorkers, kubeDeps.Recorder),\n\t\tSyncNodeStatusFunc:               klet.syncNodeStatus,\n\t\tShutdownGracePeriodRequested:     kubeCfg.ShutdownGracePeriod.Duration,\n\t\tShutdownGracePeriodCriticalPods:  kubeCfg.ShutdownGracePeriodCriticalPods.Duration,\n\t\tShutdownGracePeriodByPodPriority: kubeCfg.ShutdownGracePeriodByPodPriority,\n\t\tStateDirectory:                   rootDirectory,\n\t})\n\tklet.shutdownManager = shutdownManager\n\tklet.usernsManager, err = userns.MakeUserNsManager(klet)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"create user namespace manager: %w\", err)\n\t}\n\tklet.admitHandlers.AddPodAdmitHandler(shutdownManager)\n\n\t// Finally, put the most recent version of the config on the Kubelet, so\n\t// people can see how it was configured.\n\tklet.kubeletConfiguration = *kubeCfg\n\n\t// Generating the status funcs should be the last thing we do,\n\t// since this relies on the rest of the Kubelet having been constructed.\n\tklet.setNodeStatusFuncs = klet.defaultNodeStatusFuncs()\n\n\tif utilfeature.DefaultFeatureGate.Enabled(features.SystemdWatchdog) {\n\t\t// NewHealthChecker returns an error indicating that the watchdog is configured but the configuration is incorrect,\n\t\t// the kubelet will not be started.\n\t\tcheckers := klet.containerManager.GetHealthCheckers()\n\t\tklet.healthChecker, err = watchdog.NewHealthChecker(klet, watchdog.WithExtendedCheckers(checkers))\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"create health checker: %w\", err)\n\t\t}\n\t}\n\treturn klet, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/pkg/kubelet/kubelet.go",
+        "SourceLineNum": 561,
+        "ParentFunction": "NewMainKubelet (kubeCfg *k8s.io/kubernetes/pkg/kubelet/apis/config.KubeletConfiguration, kubeDeps *k8s.io/kubernetes/pkg/kubelet.Dependencies, crOptions *k8s.io/kubernetes/pkg/kubelet/config.ContainerRuntimeOptions, hostname string, hostnameOverridden bool, nodeName k8s.io/apimachinery/pkg/types.NodeName, nodeIPs []net.IP, providerID string, cloudProvider string, certDirectory string, rootDirectory string, podLogsDirectory string, imageCredentialProviderConfigFile string, imageCredentialProviderBinDir string, registerNode bool, registerWithTaints []k8s.io/api/core/v1.Taint, allowedUnsafeSysctls []string, experimentalMounterPath string, kernelMemcgNotification bool, experimentalNodeAllocatableIgnoreEvictionThreshold bool, minimumGCAge k8s.io/apimachinery/pkg/apis/meta/v1.Duration, maxPerPodContainerCount int32, maxContainerCount int32, registerSchedulable bool, nodeLabels map[string]string, nodeStatusMaxImages int32, seccompDefault bool) (*k8s.io/kubernetes/pkg/kubelet.Kubelet, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/pkg/kubelet/kubelet.go",
+          "SourceLineNum": 561,
+          "ParentFunction": "NewMainKubelet (kubeCfg *k8s.io/kubernetes/pkg/kubelet/apis/config.KubeletConfiguration, kubeDeps *k8s.io/kubernetes/pkg/kubelet.Dependencies, crOptions *k8s.io/kubernetes/pkg/kubelet/config.ContainerRuntimeOptions, hostname string, hostnameOverridden bool, nodeName k8s.io/apimachinery/pkg/types.NodeName, nodeIPs []net.IP, providerID string, cloudProvider string, certDirectory string, rootDirectory string, podLogsDirectory string, imageCredentialProviderConfigFile string, imageCredentialProviderBinDir string, registerNode bool, registerWithTaints []k8s.io/api/core/v1.Taint, allowedUnsafeSysctls []string, experimentalMounterPath string, kernelMemcgNotification bool, experimentalNodeAllocatableIgnoreEvictionThreshold bool, minimumGCAge k8s.io/apimachinery/pkg/apis/meta/v1.Duration, maxPerPodContainerCount int32, maxContainerCount int32, registerSchedulable bool, nodeLabels map[string]string, nodeStatusMaxImages int32, seccompDefault bool) (*k8s.io/kubernetes/pkg/kubelet.Kubelet, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "NewPrivateKey",
+    "file_path": "/analysis/repo/test/utils/pki_helpers.go",
+    "line_number": 42,
+    "full_implementation": "func NewPrivateKey() (*rsa.PrivateKey, error) {\n\treturn rsa.GenerateKey(cryptorand.Reader, rsaKeySize)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)",
+        "SourceFilename": "/analysis/repo/test/utils/pki_helpers.go",
+        "SourceLineNum": 42,
+        "ParentFunction": "NewPrivateKey () (*crypto/rsa.PrivateKey, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)",
+          "SourceFilename": "/analysis/repo/test/utils/pki_helpers.go",
+          "SourceLineNum": 42,
+          "ParentFunction": "NewPrivateKey () (*crypto/rsa.PrivateKey, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Sign",
+    "file_path": "/analysis/repo/pkg/serviceaccount/externaljwt/plugin/testing/v1alpha1/externalsigner_mock.go",
+    "line_number": 133,
+    "full_implementation": "func (m *MockSigner) Sign(ctx context.Context, req *v1alpha1.SignJWTRequest) (*v1alpha1.SignJWTResponse, error) {\n\n\theader := \u0026struct {\n\t\tAlgorithm string `json:\"alg,omitempty\"`\n\t\tKeyID     string `json:\"kid,omitempty\"`\n\t\tType      string `json:\"typ,omitempty\"`\n\t}{\n\t\tType:      m.TokenType,\n\t\tAlgorithm: m.SigningAlg,\n\t\tKeyID:     m.SigningKeyID,\n\t}\n\n\theaderJSON, err := json.Marshal(header)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to create header for JWT response\")\n\t}\n\n\tbase64Header := base64.RawURLEncoding.EncodeToString(headerJSON)\n\n\ttoBeSignedHash := hashBytes([]byte(base64Header + \".\" + req.Claims))\n\n\tsignature, err := rsa.SignPKCS1v15(rand.Reader, m.SigningKey, crypto.SHA256, toBeSignedHash)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"unable to sign payload: %w\", err)\n\t}\n\n\treturn \u0026v1alpha1.SignJWTResponse{\n\t\tHeader:    base64Header,\n\t\tSignature: base64.RawURLEncoding.EncodeToString(signature),\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.SignPKCS1v15",
+      "Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+      "Slicing_Criteria": {
+        "SourceCode": "signature, err := rsa.SignPKCS1v15(rand.Reader, m.SigningKey, crypto.SHA256, toBeSignedHash)",
+        "SourceFilename": "/analysis/repo/pkg/serviceaccount/externaljwt/plugin/testing/v1alpha1/externalsigner_mock.go",
+        "SourceLineNum": 133,
+        "ParentFunction": "Sign (ctx context.Context, req *k8s.io/externaljwt/apis/v1alpha1.SignJWTRequest) (*k8s.io/externaljwt/apis/v1alpha1.SignJWTResponse, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "generateKeyPair",
+    "file_path": "/analysis/repo/pkg/serviceaccount/externaljwt/plugin/testing/v1alpha1/externalsigner_mock.go",
+    "line_number": 276,
+    "full_implementation": "func generateKeyPair() (*rsa.PrivateKey, []byte, error) {\n\n\t// Generate a new private key\n\tprivateKey, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\tklog.Errorf(\"Error generating private key: %v\", err)\n\t\treturn nil, nil, err\n\t}\n\n\tpublicKeyBytes, err := x509.MarshalPKIXPublicKey(\u0026privateKey.PublicKey)\n\tif err != nil {\n\t\tklog.Errorf(\"Error marshaling public key: %v\", err)\n\t\treturn nil, nil, err\n\t}\n\n\treturn privateKey, publicKeyBytes, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/pkg/serviceaccount/externaljwt/plugin/testing/v1alpha1/externalsigner_mock.go",
+        "SourceLineNum": 276,
+        "ParentFunction": "generateKeyPair () (*crypto/rsa.PrivateKey, []byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/pkg/serviceaccount/externaljwt/plugin/testing/v1alpha1/externalsigner_mock.go",
+          "SourceLineNum": 276,
+          "ParentFunction": "generateKeyPair () (*crypto/rsa.PrivateKey, []byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "runSSHCommand",
+    "file_path": "/analysis/repo/test/e2e/framework/ssh/ssh.go",
+    "line_number": 248,
+    "full_implementation": "func runSSHCommand(ctx context.Context, cmd, user, host string, signer ssh.Signer) (string, string, int, error) {\n\tif user == \"\" {\n\t\tuser = os.Getenv(\"USER\")\n\t}\n\t// Setup the config, dial the server, and open a session.\n\tconfig := \u0026ssh.ClientConfig{\n\t\tUser:            user,\n\t\tAuth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t}\n\tclient, err := ssh.Dial(\"tcp\", host, config)\n\tif err != nil {\n\t\terr = wait.PollUntilContextTimeout(ctx, 5*time.Second, 20*time.Second, false, func(ctx context.Context) (bool, error) {\n\t\t\tfmt.Printf(\"error dialing %s@%s: '%v', retrying\\n\", user, host, err)\n\t\t\tif client, err = ssh.Dial(\"tcp\", host, config); err != nil {\n\t\t\t\treturn false, nil // retrying, error will be logged above\n\t\t\t}\n\t\t\treturn true, nil\n\t\t})\n\t}\n\tif err != nil {\n\t\treturn \"\", \"\", 0, fmt.Errorf(\"error getting SSH client to %s@%s: %w\", user, host, err)\n\t}\n\tdefer client.Close()\n\tsession, err := client.NewSession()\n\tif err != nil {\n\t\treturn \"\", \"\", 0, fmt.Errorf(\"error creating session to %s@%s: %w\", user, host, err)\n\t}\n\tdefer session.Close()\n\n\t// Run the command.\n\tcode := 0\n\tvar bout, berr bytes.Buffer\n\tsession.Stdout, session.Stderr = \u0026bout, \u0026berr\n\tif err = session.Run(cmd); err != nil {\n\t\t// Check whether the command failed to run or didn't complete.\n\t\tif exiterr, ok := err.(*ssh.ExitError); ok {\n\t\t\t// If we got an ExitError and the exit code is nonzero, we'll\n\t\t\t// consider the SSH itself successful (just that the command run\n\t\t\t// errored on the host).\n\t\t\tif code = exiterr.ExitStatus(); code != 0 {\n\t\t\t\terr = nil\n\t\t\t}\n\t\t} else {\n\t\t\t// Some other kind of error happened (e.g. an IOError); consider the\n\t\t\t// SSH unsuccessful.\n\t\t\terr = fmt.Errorf(\"failed running `%s` on %s@%s: %w\", cmd, user, host, err)\n\t\t}\n\t}\n\treturn bout.String(), berr.String(), code, err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/test/e2e/framework/ssh/ssh.go",
+        "SourceLineNum": 248,
+        "ParentFunction": "runSSHCommand (ctx context.Context, cmd string, user string, host string, signer golang.org/x/crypto/ssh.Signer) (string, string, int, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "runSSHCommandViaBastion",
+    "file_path": "/analysis/repo/test/e2e/framework/ssh/ssh.go",
+    "line_number": 301,
+    "full_implementation": "func runSSHCommandViaBastion(ctx context.Context, cmd, user, bastion, host string, signer ssh.Signer) (string, string, int, error) {\n\t// Setup the config, dial the server, and open a session.\n\tconfig := \u0026ssh.ClientConfig{\n\t\tUser:            user,\n\t\tAuth:            []ssh.AuthMethod{ssh.PublicKeys(signer)},\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t\tTimeout:         150 * time.Second,\n\t}\n\tbastionClient, err := ssh.Dial(\"tcp\", bastion, config)\n\tif err != nil {\n\t\terr = wait.PollUntilContextTimeout(ctx, 5*time.Second, 20*time.Second, false, func(ctx context.Context) (bool, error) {\n\t\t\tfmt.Printf(\"error dialing %s@%s: '%v', retrying\\n\", user, bastion, err)\n\t\t\tif bastionClient, err = ssh.Dial(\"tcp\", bastion, config); err != nil {\n\t\t\t\treturn false, err\n\t\t\t}\n\t\t\treturn true, nil\n\t\t})\n\t}\n\tif err != nil {\n\t\treturn \"\", \"\", 0, fmt.Errorf(\"error getting SSH client to %s@%s: %w\", user, bastion, err)\n\t}\n\tdefer bastionClient.Close()\n\n\tconn, err := bastionClient.Dial(\"tcp\", host)\n\tif err != nil {\n\t\treturn \"\", \"\", 0, fmt.Errorf(\"error dialing %s from bastion: %w\", host, err)\n\t}\n\tdefer conn.Close()\n\n\tncc, chans, reqs, err := ssh.NewClientConn(conn, host, config)\n\tif err != nil {\n\t\treturn \"\", \"\", 0, fmt.Errorf(\"error creating forwarding connection %s from bastion: %w\", host, err)\n\t}\n\tclient := ssh.NewClient(ncc, chans, reqs)\n\tdefer client.Close()\n\n\tsession, err := client.NewSession()\n\tif err != nil {\n\t\treturn \"\", \"\", 0, fmt.Errorf(\"error creating session to %s@%s from bastion: %w\", user, host, err)\n\t}\n\tdefer session.Close()\n\n\t// Run the command.\n\tcode := 0\n\tvar bout, berr bytes.Buffer\n\tsession.Stdout, session.Stderr = \u0026bout, \u0026berr\n\tif err = session.Run(cmd); err != nil {\n\t\t// Check whether the command failed to run or didn't complete.\n\t\tif exiterr, ok := err.(*ssh.ExitError); ok {\n\t\t\t// If we got an ExitError and the exit code is nonzero, we'll\n\t\t\t// consider the SSH itself successful (just that the command run\n\t\t\t// errored on the host).\n\t\t\tif code = exiterr.ExitStatus(); code != 0 {\n\t\t\t\terr = nil\n\t\t\t}\n\t\t} else {\n\t\t\t// Some other kind of error happened (e.g. an IOError); consider the\n\t\t\t// SSH unsuccessful.\n\t\t\terr = fmt.Errorf(\"failed running `%s` on %s@%s: %w\", cmd, user, host, err)\n\t\t}\n\t}\n\treturn bout.String(), berr.String(), code, err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/test/e2e/framework/ssh/ssh.go",
+        "SourceLineNum": 301,
+        "ParentFunction": "runSSHCommandViaBastion (ctx context.Context, cmd string, user string, bastion string, host string, signer golang.org/x/crypto/ssh.Signer) (string, string, int, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "httpGetNoConnectionPoolTimeout",
+    "file_path": "/analysis/repo/test/e2e/framework/network/utils.go",
+    "line_number": 1092,
+    "full_implementation": "func httpGetNoConnectionPoolTimeout(url string, timeout time.Duration) (*http.Response, error) {\n\ttr := utilnet.SetTransportDefaults(\u0026http.Transport{\n\t\tDisableKeepAlives: true,\n\t\tTLSClientConfig:   \u0026tls.Config{InsecureSkipVerify: true},\n\t})\n\tclient := \u0026http.Client{\n\t\tTransport: tr,\n\t\tTimeout:   timeout,\n\t}\n\n\treturn client.Get(url)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig:   \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/test/e2e/framework/network/utils.go",
+        "SourceLineNum": 1092,
+        "ParentFunction": "httpGetNoConnectionPoolTimeout (url string, timeout time.Duration) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSClientConfig:   \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/test/e2e/framework/network/utils.go",
+          "SourceLineNum": 1092,
+          "ParentFunction": "httpGetNoConnectionPoolTimeout (url string, timeout time.Duration) (*net/http.Response, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "GenerateRSACerts",
+    "file_path": "/analysis/repo/test/e2e/framework/ingress/ingress_utils.go",
+    "line_number": 295,
+    "full_implementation": "func GenerateRSACerts(host string, isCA bool) ([]byte, []byte, error) {\n\tif len(host) == 0 {\n\t\treturn nil, nil, fmt.Errorf(\"Require a non-empty host for client hello\")\n\t}\n\tpriv, err := rsa.GenerateKey(rand.Reader, rsaBits)\n\tif err != nil {\n\t\treturn nil, nil, fmt.Errorf(\"Failed to generate key: %w\", err)\n\t}\n\tnotBefore := time.Now()\n\tnotAfter := notBefore.Add(validFor)\n\n\tserialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)\n\tserialNumber, err := rand.Int(rand.Reader, serialNumberLimit)\n\n\tif err != nil {\n\t\treturn nil, nil, fmt.Errorf(\"failed to generate serial number: %w\", err)\n\t}\n\ttemplate := x509.Certificate{\n\t\tSerialNumber: serialNumber,\n\t\tSubject: pkix.Name{\n\t\t\tCommonName:   \"default\",\n\t\t\tOrganization: []string{\"Acme Co\"},\n\t\t},\n\t\tNotBefore: notBefore,\n\t\tNotAfter:  notAfter,\n\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t}\n\n\thosts := strings.Split(host, \",\")\n\tfor _, h := range hosts {\n\t\tif ip := netutils.ParseIPSloppy(h); ip != nil {\n\t\t\ttemplate.IPAddresses = append(template.IPAddresses, ip)\n\t\t} else {\n\t\t\ttemplate.DNSNames = append(template.DNSNames, h)\n\t\t}\n\t}\n\n\tif isCA {\n\t\ttemplate.IsCA = true\n\t\ttemplate.KeyUsage |= x509.KeyUsageCertSign\n\t}\n\n\tvar keyOut, certOut bytes.Buffer\n\tderBytes, err := x509.CreateCertificate(rand.Reader, \u0026template, \u0026template, \u0026priv.PublicKey, priv)\n\tif err != nil {\n\t\treturn nil, nil, fmt.Errorf(\"Failed to create certificate: %w\", err)\n\t}\n\tif err := pem.Encode(\u0026certOut, \u0026pem.Block{Type: \"CERTIFICATE\", Bytes: derBytes}); err != nil {\n\t\treturn nil, nil, fmt.Errorf(\"Failed creating cert: %w\", err)\n\t}\n\tif err := pem.Encode(\u0026keyOut, \u0026pem.Block{Type: \"RSA PRIVATE KEY\", Bytes: x509.MarshalPKCS1PrivateKey(priv)}); err != nil {\n\t\treturn nil, nil, fmt.Errorf(\"Failed creating key: %w\", err)\n\t}\n\treturn certOut.Bytes(), keyOut.Bytes(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, rsaBits)",
+        "SourceFilename": "/analysis/repo/test/e2e/framework/ingress/ingress_utils.go",
+        "SourceLineNum": 295,
+        "ParentFunction": "GenerateRSACerts (host string, isCA bool) ([]byte, []byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, rsaBits)",
+          "SourceFilename": "/analysis/repo/test/e2e/framework/ingress/ingress_utils.go",
+          "SourceLineNum": 295,
+          "ParentFunction": "GenerateRSACerts (host string, isCA bool) ([]byte, []byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "BuildInsecureClient",
+    "file_path": "/analysis/repo/test/e2e/framework/ingress/ingress_utils.go",
+    "line_number": 369,
+    "full_implementation": "func BuildInsecureClient(timeout time.Duration) *http.Client {\n\tt := \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}}\n\treturn \u0026http.Client{Timeout: timeout, Transport: utilnet.SetTransportDefaults(t)}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "t := \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}}",
+        "SourceFilename": "/analysis/repo/test/e2e/framework/ingress/ingress_utils.go",
+        "SourceLineNum": 369,
+        "ParentFunction": "BuildInsecureClient (timeout time.Duration) *net/http.Client"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "t := \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}}",
+          "SourceFilename": "/analysis/repo/test/e2e/framework/ingress/ingress_utils.go",
+          "SourceLineNum": 369,
+          "ParentFunction": "BuildInsecureClient (timeout time.Duration) *net/http.Client"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "curlTransport",
+    "file_path": "/analysis/repo/test/e2e/kubectl/kubectl.go",
+    "line_number": 2262,
+    "full_implementation": "func curlTransport(url string, transport *http.Transport) (string, error) {\n\tclient := \u0026http.Client{Transport: transport}\n\tresp, err := client.Get(url)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tdefer resp.Body.Close()\n\tbody, err := io.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\treturn string(body[:]), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*net/http.Client).Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "resp, err := client.Get(url)",
+        "SourceFilename": "/analysis/repo/test/e2e/kubectl/kubectl.go",
+        "SourceLineNum": 2262,
+        "ParentFunction": "curlTransport (url string, transport *net/http.Transport) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func curlTransport(url string, transport *http.Transport) (string, error) {",
+          "SourceFilename": "/analysis/repo/test/e2e/kubectl/kubectl.go",
+          "SourceLineNum": 2260,
+          "ParentFunction": "curlTransport (url string, transport *net/http.Transport) (string, error)"
+        },
+        {
+          "SourceCode": "func curlUnix(url string, path string) (string, error) {",
+          "SourceFilename": "/analysis/repo/test/e2e/kubectl/kubectl.go",
+          "SourceLineNum": 2249,
+          "ParentFunction": "curlUnix (url string, path string) (string, error)"
+        },
+        {
+          "SourceCode": "_, err = curlUnix(\"http://unused/api\", path)",
+          "SourceFilename": "/analysis/repo/test/e2e/kubectl/kubectl.go",
+          "SourceLineNum": 1888,
+          "ParentFunction": "init$5$28$2 (ctx context.Context)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "pollConfigz",
+    "file_path": "/analysis/repo/test/e2e_node/kubeletconfig/kubeletconfig.go",
+    "line_number": 154,
+    "full_implementation": "func pollConfigz(ctx context.Context, timeout time.Duration, pollInterval time.Duration, nodeName, namespace string, useProxy bool, standaloneMode bool) []byte {\n\tendpoint := \"\"\n\tif useProxy {\n\t\t// start local proxy, so we can send graceful deletion over query string, rather than body parameter\n\t\tframework.Logf(\"Opening proxy to cluster\")\n\t\ttk := e2ekubectl.NewTestKubeconfig(framework.TestContext.CertDir, framework.TestContext.Host, framework.TestContext.KubeConfig, framework.TestContext.KubeContext, framework.TestContext.KubectlPath, namespace)\n\t\tcmd := tk.KubectlCmd(\"proxy\", \"-p\", \"0\")\n\t\tstdout, stderr, err := framework.StartCmdAndStreamOutput(cmd)\n\t\tframework.ExpectNoError(err)\n\t\tdefer stdout.Close()\n\t\tdefer stderr.Close()\n\t\tdefer framework.TryKill(cmd)\n\n\t\tbuf := make([]byte, 128)\n\t\tvar n int\n\t\tn, err = stdout.Read(buf)\n\t\tframework.ExpectNoError(err)\n\t\toutput := string(buf[:n])\n\t\tproxyRegexp := regexp.MustCompile(\"Starting to serve on 127.0.0.1:([0-9]+)\")\n\t\tmatch := proxyRegexp.FindStringSubmatch(output)\n\t\tgomega.Expect(match).To(gomega.HaveLen(2))\n\t\tport, err := strconv.Atoi(match[1])\n\t\tframework.ExpectNoError(err)\n\t\tframework.Logf(\"http requesting node kubelet /configz\")\n\t\tendpoint = fmt.Sprintf(\"http://127.0.0.1:%d/api/v1/nodes/%s/proxy/configz\", port, nodeName)\n\t} else if !standaloneMode {\n\t\tendpoint = fmt.Sprintf(\"%s/api/v1/nodes/%s/proxy/configz\", framework.TestContext.Host, framework.TestContext.NodeName)\n\t} else {\n\t\tendpoint = fmt.Sprintf(\"https://127.0.0.1:%d/configz\", ports.KubeletPort)\n\t}\n\ttr := \u0026http.Transport{\n\t\tTLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},\n\t}\n\tclient := \u0026http.Client{Transport: tr}\n\treq, err := http.NewRequest(\"GET\", endpoint, nil)\n\tframework.ExpectNoError(err)\n\tif !useProxy {\n\t\treq.Header.Set(\"Authorization\", fmt.Sprintf(\"Bearer %s\", framework.TestContext.BearerToken))\n\t}\n\treq.Header.Add(\"Accept\", \"application/json\")\n\n\tvar respBody []byte\n\terr = wait.PollUntilContextTimeout(ctx, pollInterval, timeout, true, func(ctx context.Context) (bool, error) {\n\t\tresp, err := client.Do(req)\n\t\tif err != nil {\n\t\t\tframework.Logf(\"Failed to get /configz, retrying. Error: %v\", err)\n\t\t\treturn false, nil\n\t\t}\n\t\tdefer resp.Body.Close()\n\n\t\tif resp.StatusCode != 200 {\n\t\t\tframework.Logf(\"/configz response status not 200, retrying. Response was: %+v\", resp)\n\t\t\treturn false, nil\n\t\t}\n\n\t\trespBody, err = io.ReadAll(resp.Body)\n\t\tif err != nil {\n\t\t\tframework.Logf(\"failed to read body from /configz response, retrying. Error: %v\", err)\n\t\t\treturn false, nil\n\t\t}\n\n\t\treturn true, nil\n\t})\n\tframework.ExpectNoError(err, \"Failed to get successful response from /configz\")\n\n\treturn respBody\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/test/e2e_node/kubeletconfig/kubeletconfig.go",
+        "SourceLineNum": 154,
+        "ParentFunction": "pollConfigz (ctx context.Context, timeout time.Duration, pollInterval time.Duration, nodeName string, namespace string, useProxy bool, standaloneMode bool) []byte"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/test/e2e_node/kubeletconfig/kubeletconfig.go",
+          "SourceLineNum": 154,
+          "ParentFunction": "pollConfigz (ctx context.Context, timeout time.Duration, pollInterval time.Duration, nodeName string, namespace string, useProxy bool, standaloneMode bool) []byte"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "kubeletHealthCheck",
+    "file_path": "/analysis/repo/test/e2e_node/util.go",
+    "line_number": 466,
+    "full_implementation": "func kubeletHealthCheck(url string) bool {\n\tinsecureTransport := http.DefaultTransport.(*http.Transport).Clone()\n\tinsecureTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\tinsecureHTTPClient := \u0026http.Client{\n\t\tTransport: insecureTransport,\n\t}\n\n\treq, err := http.NewRequest(\"HEAD\", url, nil)\n\tif err != nil {\n\t\treturn false\n\t}\n\treq.Header.Set(\"Authorization\", fmt.Sprintf(\"Bearer %s\", framework.TestContext.BearerToken))\n\tresp, err := insecureHTTPClient.Do(req)\n\tif err != nil {\n\t\tklog.Warningf(\"Health check on %q failed, error=%v\", url, err)\n\t} else if resp.StatusCode != http.StatusOK {\n\t\tklog.Warningf(\"Health check on %q failed, status=%d\", url, resp.StatusCode)\n\t}\n\treturn err == nil \u0026\u0026 resp.StatusCode == http.StatusOK\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "insecureTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/test/e2e_node/util.go",
+        "SourceLineNum": 466,
+        "ParentFunction": "kubeletHealthCheck (url string) bool"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "insecureTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/test/e2e_node/util.go",
+          "SourceLineNum": 466,
+          "ParentFunction": "kubeletHealthCheck (url string) bool"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "readURL",
+    "file_path": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/provider.go",
+    "line_number": 87,
+    "full_implementation": "func readURL(url string, client *http.Client) (body []byte, err error) {\n\treq, err := http.NewRequest(\"GET\", url, nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treq.Header = http.Header{\n\t\t\"Metadata-Flavor\": []string{\"Google\"},\n\t}\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode != http.StatusOK {\n\t\treturn nil, \u0026HTTPError{\n\t\t\tStatusCode: resp.StatusCode,\n\t\t\tURL:        url,\n\t\t}\n\t}\n\n\tlimitedReader := \u0026io.LimitedReader{R: resp.Body, N: maxReadLength}\n\tcontents, err := io.ReadAll(limitedReader)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tif limitedReader.N \u003c= 0 {\n\t\treturn nil, errors.New(\"the read limit is reached\")\n\t}\n\n\treturn contents, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(\"GET\", url, nil)",
+        "SourceFilename": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/provider.go",
+        "SourceLineNum": 87,
+        "ParentFunction": "readURL (url string, client *net/http.Client) (body []byte, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func readURL(url string, client *http.Client) (body []byte, err error) {",
+          "SourceFilename": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/provider.go",
+          "SourceLineNum": 86,
+          "ParentFunction": "readURL (url string, client *net/http.Client) (body []byte, err error)"
+        },
+        {
+          "SourceCode": "tokenJSONBlob, err := readURL(p.tokenEndpoint, p.client)",
+          "SourceFilename": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/provider.go",
+          "SourceLineNum": 64,
+          "ParentFunction": "Provide (image string) (map[string]k8s.io/kubelet/pkg/apis/credentialprovider/v1.AuthConfig, error)"
+        },
+        {
+          "SourceCode": "func (p *provider) Provide(image string) (map[string]credentialproviderv1.AuthConfig, error) {",
+          "SourceFilename": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/provider.go",
+          "SourceLineNum": 61,
+          "ParentFunction": "Provide (image string) (map[string]k8s.io/kubelet/pkg/apis/credentialprovider/v1.AuthConfig, error)"
+        },
+        {
+          "SourceCode": "func getCredentials(tokenEndpoint string, r io.Reader, w io.Writer) error {",
+          "SourceFilename": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/main.go",
+          "SourceLineNum": 40,
+          "ParentFunction": "getCredentials (tokenEndpoint string, r io.Reader, w io.Writer) error"
+        },
+        {
+          "SourceCode": "if err := getCredentials(metadataTokenEndpoint, os.Stdin, os.Stdout); err != nil {",
+          "SourceFilename": "/analysis/repo/test/e2e_node/plugins/gcp-credential-provider/main.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "main ()"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "readinessCheck",
+    "file_path": "/analysis/repo/test/e2e_node/services/util.go",
+    "line_number": 51,
+    "full_implementation": "func readinessCheck(name string, urls []string, errCh \u003c-chan error) error {\n\tklog.Infof(\"Running readiness check for service %q\", name)\n\n\tinsecureTransport := http.DefaultTransport.(*http.Transport).Clone()\n\tinsecureTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\tinsecureHTTPClient := \u0026http.Client{\n\t\tTransport: insecureTransport,\n\t}\n\n\tendTime := time.Now().Add(*serverStartTimeout)\n\tblockCh := make(chan error)\n\tdefer close(blockCh)\n\tfor endTime.After(time.Now()) {\n\t\tselect {\n\t\t// We *always* want to run the health check if there is no error on the channel.\n\t\t// With systemd, reads from errCh report nil because cmd.Run() waits\n\t\t// on systemd-run, rather than the service process. systemd-run quickly\n\t\t// exits with status 0, causing the channel to be closed with no error. In\n\t\t// this case, you want to wait for the health check to complete, rather\n\t\t// than returning from readinessCheck as soon as the channel is closed.\n\t\tcase err, ok := \u003c-errCh:\n\t\t\tif ok { // The channel is not closed, this is a real error\n\t\t\t\tif err != nil { // If there is an error, return it\n\t\t\t\t\treturn err\n\t\t\t\t}\n\t\t\t\t// If not, keep checking readiness.\n\t\t\t} else { // The channel is closed, this is only a zero value.\n\t\t\t\t// Replace the errCh with blockCh to avoid busy loop,\n\t\t\t\t// and keep checking readiness.\n\t\t\t\terrCh = blockCh\n\t\t\t}\n\t\tcase \u003c-time.After(time.Second):\n\t\t\tready := true\n\t\t\tfor _, url := range urls {\n\t\t\t\tif !healthCheck(insecureHTTPClient, url) {\n\t\t\t\t\tready = false\n\t\t\t\t\tbreak\n\t\t\t\t}\n\t\t\t}\n\t\t\tif ready {\n\t\t\t\treturn nil\n\t\t\t}\n\t\t}\n\t}\n\treturn fmt.Errorf(\"e2e service %q readiness check timeout %v\", name, *serverStartTimeout)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "insecureTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/test/e2e_node/services/util.go",
+        "SourceLineNum": 51,
+        "ParentFunction": "readinessCheck (name string, urls []string, errCh \u003c-chan error) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "insecureTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/test/e2e_node/services/util.go",
+          "SourceLineNum": 51,
+          "ParentFunction": "readinessCheck (name string, urls []string, errCh \u003c-chan error) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

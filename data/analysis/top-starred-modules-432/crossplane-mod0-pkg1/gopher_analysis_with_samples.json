@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "Generate",
+    "file_path": "/analysis/repo/internal/initializer/cert_generator.go",
+    "line_number": 68,
+    "full_implementation": "func (*CertGenerator) Generate(cert *x509.Certificate, signer *CertificateSigner) (key []byte, crt []byte, err error) {\n\t// NOTE(muvaf): Why 2048 and not 4096? Mainly performance.\n\t// See https://www.fastly.com/blog/key-size-for-tls\n\tprivateKey, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, errors.Wrap(err, \"cannot generate private key\")\n\t}\n\n\tif signer == nil {\n\t\tsigner = \u0026CertificateSigner{\n\t\t\tcertificate: cert,\n\t\t\tkey:         privateKey,\n\t\t}\n\t}\n\n\tcertBytes, err := x509.CreateCertificate(rand.Reader, cert, signer.certificate, \u0026privateKey.PublicKey, signer.key)\n\tif err != nil {\n\t\treturn nil, nil, errors.Wrap(err, \"cannot create certificate with key\")\n\t}\n\n\tcertPEM := new(bytes.Buffer)\n\tif err := pem.Encode(certPEM, \u0026pem.Block{\n\t\tType:  \"CERTIFICATE\",\n\t\tBytes: certBytes,\n\t}); err != nil {\n\t\treturn nil, nil, errors.Wrap(err, \"cannot encode cert into PEM\")\n\t}\n\tcertKeyPEM := new(bytes.Buffer)\n\tif err := pem.Encode(certKeyPEM, \u0026pem.Block{\n\t\tType:  \"RSA PRIVATE KEY\",\n\t\tBytes: x509.MarshalPKCS1PrivateKey(privateKey),\n\t}); err != nil {\n\t\treturn nil, nil, errors.Wrap(err, \"cannot encode private key into PEM\")\n\t}\n\treturn certKeyPEM.Bytes(), certPEM.Bytes(), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/internal/initializer/cert_generator.go",
+        "SourceLineNum": 68,
+        "ParentFunction": "Generate (cert *crypto/x509.Certificate, signer *github.com/crossplane/crossplane/internal/initializer.CertificateSigner) (key []byte, crt []byte, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/internal/initializer/cert_generator.go",
+          "SourceLineNum": 68,
+          "ParentFunction": "Generate (cert *crypto/x509.Certificate, signer *github.com/crossplane/crossplane/internal/initializer.CertificateSigner) (key []byte, crt []byte, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

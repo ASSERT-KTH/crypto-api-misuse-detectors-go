@@ -1,0 +1,156 @@
+[
+	{
+		"FuncName": "crypto/rsa.SignPKCS1v15",
+		"Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+		"Slicing_Criteria": {
+			"SourceCode": "return rsa.SignPKCS1v15(rand.Reader, key, hash, h.Sum(nil))",
+			"SourceFilename": "/analysis/repo/internal/jwx/jws/sign/rsa.go",
+			"SourceLineNum": 55,
+			"ParentFunction": "makeSignPKCS1v15$1 (payload []byte, key *crypto/rsa.PrivateKey) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.DecryptPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := x509.DecryptPEMBlock(block, []byte(ap.PrivateKeyPassphrase))",
+			"SourceFilename": "/analysis/repo/v1/plugins/rest/auth.go",
+			"SourceLineNum": 690,
+			"ParentFunction": "NewClient (c github.com/open-policy-agent/opa/v1/plugins/rest.Config) (*net/http.Client, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.IsEncryptedPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "if x509.IsEncryptedPEMBlock(block) {",
+			"SourceFilename": "/analysis/repo/v1/plugins/rest/auth.go",
+			"SourceLineNum": 685,
+			"ParentFunction": "NewClient (c github.com/open-policy-agent/opa/v1/plugins/rest.Config) (*net/http.Client, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "net/http.NewRequestWithContext",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequestWithContext(ctx, http.MethodPut, tokenURL, nil)",
+			"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+			"SourceLineNum": 235,
+			"ParentFunction": "tokenRequest (ctx context.Context) (*net/http.Request, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tokenURL := ec2DefaultTokenPath",
+				"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+				"SourceLineNum": 230,
+				"ParentFunction": "tokenRequest (ctx context.Context) (*net/http.Request, error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequestWithContext",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequestWithContext(ctx, http.MethodGet, metaDataURL, nil)",
+			"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+			"SourceLineNum": 273,
+			"ParentFunction": "refreshFromService (ctx context.Context) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "metaDataURL, err := cs.urlForMetadataService()",
+				"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+				"SourceLineNum": 265,
+				"ParentFunction": "refreshFromService (ctx context.Context) error"
+			},
+			{
+				"SourceCode": "return ec2DefaultCredServicePath + cs.RoleName, nil",
+				"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+				"SourceLineNum": 212,
+				"ParentFunction": "urlForMetadataService () (string, error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequestWithContext",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequestWithContext(ctx, http.MethodGet, metaDataURL, nil)",
+			"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+			"SourceLineNum": 273,
+			"ParentFunction": "refreshFromService (ctx context.Context) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "metaDataURL, err := cs.urlForMetadataService()",
+				"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+				"SourceLineNum": 265,
+				"ParentFunction": "refreshFromService (ctx context.Context) error"
+			},
+			{
+				"SourceCode": "return ecsDefaultCredServicePath + os.Getenv(ecsRelativePathEnvVar), nil",
+				"SourceFilename": "/analysis/repo/v1/plugins/rest/aws.go",
+				"SourceLineNum": 220,
+				"ParentFunction": "urlForMetadataService () (string, error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5sum := md5.Sum([]byte(s))",
+			"SourceFilename": "/analysis/repo/v1/topdown/crypto.go",
+			"SourceLineNum": 455,
+			"ParentFunction": "builtinCryptoMd5 (_ github.com/open-policy-agent/opa/v1/topdown.BuiltinContext, operands []*github.com/open-policy-agent/opa/v1/ast.Term, iter "
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sha1sum := sha1.Sum([]byte(s))",
+			"SourceFilename": "/analysis/repo/v1/topdown/crypto.go",
+			"SourceLineNum": 466,
+			"ParentFunction": "builtinCryptoSha1 (_ github.com/open-policy-agent/opa/v1/topdown.BuiltinContext, operands []*github.com/open-policy-agent/opa/v1/ast.Term, iter "
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+		"Slicing_Criteria": {
+			"SourceCode": "mac := hmac.New(h, []byte(key))",
+			"SourceFilename": "/analysis/repo/v1/topdown/crypto.go",
+			"SourceLineNum": 495,
+			"ParentFunction": "hmacHelper (operands []*github.com/open-policy-agent/opa/v1/ast.Term, iter "
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func hmacHelper(operands []*ast.Term, iter func(*ast.Term) error, h func() hash.Hash) error {",
+				"SourceFilename": "/analysis/repo/v1/topdown/crypto.go",
+				"SourceLineNum": 482,
+				"ParentFunction": "hmacHelper (operands []*github.com/open-policy-agent/opa/v1/ast.Term, iter "
+			},
+			{
+				"SourceCode": "return hmacHelper(operands, iter, md5.New)",
+				"SourceFilename": "/analysis/repo/v1/topdown/crypto.go",
+				"SourceLineNum": 503,
+				"ParentFunction": "builtinCryptoHmacMd5 (_ github.com/open-policy-agent/opa/v1/topdown.BuiltinContext, operands []*github.com/open-policy-agent/opa/v1/ast.Term, iter "
+			}
+		],
+		"Predicate_Type": "SECURE_HMAC_HASH"
+	}
+]

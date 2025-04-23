@@ -1,0 +1,207 @@
+[
+  {
+    "function_name": "uploadStateFallback",
+    "file_path": "/analysis/repo/internal/cloud/state.go",
+    "line_number": 276,
+    "full_implementation": "func (s *State) uploadStateFallback(ctx context.Context, lineage string, serial uint64, isForcePush bool, state, jsonState, jsonStateOutputs []byte) error {\n\toptions := tfe.StateVersionCreateOptions{\n\t\tLineage:          tfe.String(lineage),\n\t\tSerial:           tfe.Int64(int64(serial)),\n\t\tMD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),\n\t\tForce:            tfe.Bool(isForcePush),\n\t\tState:            tfe.String(base64.StdEncoding.EncodeToString(state)),\n\t\tJSONState:        tfe.String(base64.StdEncoding.EncodeToString(jsonState)),\n\t\tJSONStateOutputs: tfe.String(base64.StdEncoding.EncodeToString(jsonStateOutputs)),\n\t}\n\n\t// If we have a run ID, make sure to add it to the options\n\t// so the state will be properly associated with the run.\n\trunID := os.Getenv(\"TFE_RUN_ID\")\n\tif runID != \"\" {\n\t\toptions.Run = \u0026tfe.Run{ID: runID}\n\t}\n\n\t// Create the new state.\n\t_, err := s.tfeClient.StateVersions.Create(ctx, s.workspace.ID, options)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "MD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),",
+        "SourceFilename": "/analysis/repo/internal/cloud/state.go",
+        "SourceLineNum": 276,
+        "ParentFunction": "uploadStateFallback (ctx context.Context, lineage string, serial uint64, isForcePush bool, state []byte, jsonState []byte, jsonStateOutputs []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getStatePayload",
+    "file_path": "/analysis/repo/internal/cloud/state.go",
+    "line_number": 431,
+    "full_implementation": "func (s *State) getStatePayload() (*remote.Payload, error) {\n\tctx := context.Background()\n\n\t// Check the x-terraform-snapshot-interval header to see if it has a non-empty\n\t// value which would indicate snapshots are enabled\n\tctx = tfe.ContextWithResponseHeaderHook(ctx, s.readSnapshotIntervalHeader)\n\n\tsv, err := s.tfeClient.StateVersions.ReadCurrent(ctx, s.workspace.ID)\n\tif err != nil {\n\t\tif err == tfe.ErrResourceNotFound {\n\t\t\t// If no state exists, then return nil.\n\t\t\treturn nil, nil\n\t\t}\n\t\treturn nil, fmt.Errorf(\"error retrieving state: %v\", err)\n\t}\n\n\tstate, err := s.tfeClient.StateVersions.Download(ctx, sv.DownloadURL)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error downloading state: %v\", err)\n\t}\n\n\t// If the state is empty, then return nil.\n\tif len(state) == 0 {\n\t\treturn nil, nil\n\t}\n\n\t// Get the MD5 checksum of the state.\n\tsum := md5.Sum(state)\n\n\treturn \u0026remote.Payload{\n\t\tData: state,\n\t\tMD5:  sum[:],\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := md5.Sum(state)",
+        "SourceFilename": "/analysis/repo/internal/cloud/state.go",
+        "SourceLineNum": 431,
+        "ParentFunction": "getStatePayload () (*github.com/hashicorp/terraform/internal/states/remote.Payload, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "uploadState",
+    "file_path": "/analysis/repo/internal/cloud/state.go",
+    "line_number": 302,
+    "full_implementation": "func (s *State) uploadState(lineage string, serial uint64, isForcePush bool, state, jsonState, jsonStateOutputs []byte) error {\n\tctx := context.Background()\n\n\toptions := tfe.StateVersionUploadOptions{\n\t\tStateVersionCreateOptions: tfe.StateVersionCreateOptions{\n\t\t\tLineage:          tfe.String(lineage),\n\t\t\tSerial:           tfe.Int64(int64(serial)),\n\t\t\tMD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),\n\t\t\tForce:            tfe.Bool(isForcePush),\n\t\t\tJSONStateOutputs: tfe.String(base64.StdEncoding.EncodeToString(jsonStateOutputs)),\n\t\t},\n\t\tRawState:     state,\n\t\tRawJSONState: jsonState,\n\t}\n\n\t// If we have a run ID, make sure to add it to the options\n\t// so the state will be properly associated with the run.\n\trunID := os.Getenv(\"TFE_RUN_ID\")\n\tif runID != \"\" {\n\t\toptions.StateVersionCreateOptions.Run = \u0026tfe.Run{ID: runID}\n\t}\n\n\t// The server is allowed to dynamically request a different time interval\n\t// than we'd normally use, for example if it's currently under heavy load\n\t// and needs clients to backoff for a while.\n\tctx = tfe.ContextWithResponseHeaderHook(ctx, s.readSnapshotIntervalHeader)\n\n\t// Create the new state.\n\t_, err := s.tfeClient.StateVersions.Upload(ctx, s.workspace.ID, options)\n\tif errors.Is(err, tfe.ErrStateVersionUploadNotSupported) {\n\t\t// Create the new state with content included in the request (Terraform Enterprise v202306-1 and below)\n\t\tlog.Println(\"[INFO] Detected that state version upload is not supported. Retrying using compatibility state upload.\")\n\t\treturn s.uploadStateFallback(ctx, lineage, serial, isForcePush, state, jsonState, jsonStateOutputs)\n\t}\n\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "MD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),",
+        "SourceFilename": "/analysis/repo/internal/cloud/state.go",
+        "SourceLineNum": 302,
+        "ParentFunction": "uploadState (lineage string, serial uint64, isForcePush bool, state []byte, jsonState []byte, jsonStateOutputs []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Put",
+    "file_path": "/analysis/repo/internal/backend/remote/backend_state.go",
+    "line_number": 130,
+    "full_implementation": "func (r *remoteClient) Put(state []byte) error {\n\tctx := context.Background()\n\n\t// Read the raw state into a Terraform state.\n\tstateFile, err := statefile.Read(bytes.NewReader(state))\n\tif err != nil {\n\t\treturn fmt.Errorf(\"error reading state: %s\", err)\n\t}\n\n\tov, err := jsonstate.MarshalOutputs(stateFile.State.RootOutputValues)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"error reading output values: %s\", err)\n\t}\n\to, err := json.Marshal(ov)\n\tif err != nil {\n\t\treturn fmt.Errorf(\"error converting output values to json: %s\", err)\n\t}\n\n\toptions := tfe.StateVersionUploadOptions{\n\t\tStateVersionCreateOptions: tfe.StateVersionCreateOptions{\n\t\t\tLineage:          tfe.String(stateFile.Lineage),\n\t\t\tSerial:           tfe.Int64(int64(stateFile.Serial)),\n\t\t\tMD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),\n\t\t\tForce:            tfe.Bool(r.forcePush),\n\t\t\tJSONStateOutputs: tfe.String(base64.StdEncoding.EncodeToString(o)),\n\t\t},\n\t\tRawState: state,\n\t}\n\n\t// If we have a run ID, make sure to add it to the options\n\t// so the state will be properly associated with the run.\n\tif r.runID != \"\" {\n\t\toptions.Run = \u0026tfe.Run{ID: r.runID}\n\t}\n\n\t// Create the new state.\n\t// Create the new state.\n\t_, err = r.client.StateVersions.Upload(ctx, r.workspace.ID, options)\n\tif errors.Is(err, tfe.ErrStateVersionUploadNotSupported) {\n\t\t// Create the new state with content included in the request (Terraform Enterprise v202306-1 and below)\n\t\tlog.Println(\"[INFO] Detected that state version upload is not supported. Retrying using compatibility state upload.\")\n\t\treturn r.uploadStateFallback(ctx, stateFile, state, o)\n\t}\n\tif err != nil {\n\t\tr.stateUploadErr = true\n\t\treturn fmt.Errorf(\"error uploading state: %v\", err)\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "MD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),",
+        "SourceFilename": "/analysis/repo/internal/backend/remote/backend_state.go",
+        "SourceLineNum": 130,
+        "ParentFunction": "Put (state []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Get",
+    "file_path": "/analysis/repo/internal/backend/remote/backend_state.go",
+    "line_number": 74,
+    "full_implementation": "func (r *remoteClient) Get() (*remote.Payload, error) {\n\tctx := context.Background()\n\n\tsv, err := r.client.StateVersions.ReadCurrent(ctx, r.workspace.ID)\n\tif err != nil {\n\t\tif err == tfe.ErrResourceNotFound {\n\t\t\t// If no state exists, then return nil.\n\t\t\treturn nil, nil\n\t\t}\n\t\treturn nil, fmt.Errorf(\"Error retrieving state: %v\", err)\n\t}\n\n\tstate, err := r.client.StateVersions.Download(ctx, sv.DownloadURL)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"Error downloading state: %v\", err)\n\t}\n\n\t// If the state is empty, then return nil.\n\tif len(state) == 0 {\n\t\treturn nil, nil\n\t}\n\n\t// Get the MD5 checksum of the state.\n\tsum := md5.Sum(state)\n\n\treturn \u0026remote.Payload{\n\t\tData: state,\n\t\tMD5:  sum[:],\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := md5.Sum(state)",
+        "SourceFilename": "/analysis/repo/internal/backend/remote/backend_state.go",
+        "SourceLineNum": 74,
+        "ParentFunction": "Get () (*github.com/hashicorp/terraform/internal/states/remote.Payload, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "uploadStateFallback",
+    "file_path": "/analysis/repo/internal/backend/remote/backend_state.go",
+    "line_number": 86,
+    "full_implementation": "func (r *remoteClient) uploadStateFallback(ctx context.Context, stateFile *statefile.File, state []byte, jsonStateOutputs []byte) error {\n\toptions := tfe.StateVersionCreateOptions{\n\t\tLineage:          tfe.String(stateFile.Lineage),\n\t\tSerial:           tfe.Int64(int64(stateFile.Serial)),\n\t\tMD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),\n\t\tForce:            tfe.Bool(r.forcePush),\n\t\tState:            tfe.String(base64.StdEncoding.EncodeToString(state)),\n\t\tJSONStateOutputs: tfe.String(base64.StdEncoding.EncodeToString(jsonStateOutputs)),\n\t}\n\n\t// If we have a run ID, make sure to add it to the options\n\t// so the state will be properly associated with the run.\n\tif r.runID != \"\" {\n\t\toptions.Run = \u0026tfe.Run{ID: r.runID}\n\t}\n\n\t// Create the new state.\n\t_, err := r.client.StateVersions.Create(ctx, r.workspace.ID, options)\n\tif err != nil {\n\t\tr.stateUploadErr = true\n\t\treturn fmt.Errorf(\"error uploading state in compatibility mode: %v\", err)\n\t}\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "MD5:              tfe.String(fmt.Sprintf(\"%x\", md5.Sum(state))),",
+        "SourceFilename": "/analysis/repo/internal/backend/remote/backend_state.go",
+        "SourceLineNum": 86,
+        "ParentFunction": "uploadStateFallback (ctx context.Context, stateFile *github.com/hashicorp/terraform/internal/states/statefile.File, state []byte, jsonStateOutputs []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "configureTLS",
+    "file_path": "/analysis/repo/internal/backend/remote-state/http/backend.go",
+    "line_number": 288,
+    "full_implementation": "func (b *Backend) configureTLS(client *retryablehttp.Client, configVal cty.Value) error {\n\t// If there are no conditions needing to configure TLS, leave the client untouched\n\tskipCertVerification := backendbase.MustBoolValue(\n\t\tbackendbase.GetAttrDefault(configVal, \"skip_cert_verification\", cty.False),\n\t)\n\tclientCACertificatePem := backendbase.GetAttrEnvDefaultFallback(\n\t\tconfigVal, \"client_ca_certificate_pem\",\n\t\t\"TF_HTTP_CLIENT_CA_CERTIFICATE_PEM\", cty.StringVal(\"\"),\n\t).AsString()\n\tclientCertificatePem := backendbase.GetAttrEnvDefaultFallback(\n\t\tconfigVal, \"client_certificate_pem\",\n\t\t\"TF_HTTP_CLIENT_CERTIFICATE_PEM\", cty.StringVal(\"\"),\n\t).AsString()\n\tclientPrivateKeyPem := backendbase.GetAttrEnvDefaultFallback(\n\t\tconfigVal, \"client_private_key_pem\",\n\t\t\"TF_HTTP_CLIENT_PRIVATE_KEY_PEM\", cty.StringVal(\"\"),\n\t).AsString()\n\tif !skipCertVerification \u0026\u0026 clientCACertificatePem == \"\" \u0026\u0026 clientCertificatePem == \"\" \u0026\u0026 clientPrivateKeyPem == \"\" {\n\t\treturn nil\n\t}\n\tif clientCertificatePem != \"\" \u0026\u0026 clientPrivateKeyPem == \"\" {\n\t\treturn fmt.Errorf(\"client_certificate_pem is set but client_private_key_pem is not\")\n\t}\n\tif clientPrivateKeyPem != \"\" \u0026\u0026 clientCertificatePem == \"\" {\n\t\treturn fmt.Errorf(\"client_private_key_pem is set but client_certificate_pem is not\")\n\t}\n\n\t// TLS configuration is needed; create an object and configure it\n\tvar tlsConfig tls.Config\n\tclient.HTTPClient.Transport.(*http.Transport).TLSClientConfig = \u0026tlsConfig\n\n\tif skipCertVerification {\n\t\t// ignores TLS verification\n\t\ttlsConfig.InsecureSkipVerify = true\n\t}\n\tif clientCACertificatePem != \"\" {\n\t\t// trust servers based on a CA\n\t\ttlsConfig.RootCAs = x509.NewCertPool()\n\t\tif !tlsConfig.RootCAs.AppendCertsFromPEM([]byte(clientCACertificatePem)) {\n\t\t\treturn errors.New(\"failed to append certs\")\n\t\t}\n\t}\n\tif clientCertificatePem != \"\" \u0026\u0026 clientPrivateKeyPem != \"\" {\n\t\t// attach a client certificate to the TLS handshake (aka mTLS)\n\t\tcertificate, err := tls.X509KeyPair([]byte(clientCertificatePem), []byte(clientPrivateKeyPem))\n\t\tif err != nil {\n\t\t\treturn fmt.Errorf(\"cannot load client certificate: %w\", err)\n\t\t}\n\t\ttlsConfig.Certificates = []tls.Certificate{certificate}\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/internal/backend/remote-state/http/backend.go",
+        "SourceLineNum": 288,
+        "ParentFunction": "configureTLS (client *github.com/hashicorp/go-retryablehttp.Client, configVal github.com/zclconf/go-cty/cty.Value) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/internal/backend/remote-state/http/backend.go",
+          "SourceLineNum": 288,
+          "ParentFunction": "configureTLS (client *github.com/hashicorp/go-retryablehttp.Client, configVal github.com/zclconf/go-cty/cty.Value) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "httpRequest",
+    "file_path": "/analysis/repo/internal/backend/remote-state/http/client.go",
+    "line_number": 66,
+    "full_implementation": "func (c *httpClient) httpRequest(method string, url *url.URL, data *[]byte, what string) (*http.Response, error) {\n\t// If we have data we need a reader\n\tvar reader io.Reader = nil\n\tif data != nil {\n\t\treader = bytes.NewReader(*data)\n\t}\n\n\t// Create the request\n\treq, err := retryablehttp.NewRequest(method, url.String(), reader)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"Failed to make %s HTTP request: %s\", what, err)\n\t}\n\t// Set up basic auth\n\tif c.Username != \"\" {\n\t\treq.SetBasicAuth(c.Username, c.Password)\n\t}\n\n\t// Work with data/body\n\tif data != nil {\n\t\treq.Header.Set(\"Content-Type\", \"application/json\")\n\t\treq.ContentLength = int64(len(*data))\n\n\t\t// Generate the MD5\n\t\thash := md5.Sum(*data)\n\t\tb64 := base64.StdEncoding.EncodeToString(hash[:])\n\t\treq.Header.Set(\"Content-MD5\", b64)\n\t}\n\n\t// Make the request\n\tresp, err := c.Client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"Failed to %s: %v\", what, err)\n\t}\n\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := md5.Sum(*data)",
+        "SourceFilename": "/analysis/repo/internal/backend/remote-state/http/client.go",
+        "SourceLineNum": 66,
+        "ParentFunction": "httpRequest (method string, url *net/url.URL, data *[]byte, what string) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Get",
+    "file_path": "/analysis/repo/internal/backend/remote-state/http/client.go",
+    "line_number": 199,
+    "full_implementation": "func (c *httpClient) Get() (*remote.Payload, error) {\n\tresp, err := c.httpRequest(\"GET\", c.URL, nil, \"get state\")\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer resp.Body.Close()\n\n\t// Handle the common status codes\n\tswitch resp.StatusCode {\n\tcase http.StatusOK:\n\t\t// Handled after\n\tcase http.StatusNoContent:\n\t\treturn nil, nil\n\tcase http.StatusNotFound:\n\t\treturn nil, nil\n\tcase http.StatusUnauthorized:\n\t\treturn nil, fmt.Errorf(\"HTTP remote state endpoint requires auth\")\n\tcase http.StatusForbidden:\n\t\treturn nil, fmt.Errorf(\"HTTP remote state endpoint invalid auth\")\n\tcase http.StatusInternalServerError:\n\t\treturn nil, fmt.Errorf(\"HTTP remote state internal server error\")\n\tdefault:\n\t\treturn nil, fmt.Errorf(\"Unexpected HTTP response code %d\", resp.StatusCode)\n\t}\n\n\t// Read in the body\n\tbuf := bytes.NewBuffer(nil)\n\tif _, err := io.Copy(buf, resp.Body); err != nil {\n\t\treturn nil, fmt.Errorf(\"Failed to read remote state: %s\", err)\n\t}\n\n\t// Create the payload\n\tpayload := \u0026remote.Payload{\n\t\tData: buf.Bytes(),\n\t}\n\n\t// If there was no data, then return nil\n\tif len(payload.Data) == 0 {\n\t\treturn nil, nil\n\t}\n\n\t// Check for the MD5\n\tif raw := resp.Header.Get(\"Content-MD5\"); raw != \"\" {\n\t\tmd5, err := base64.StdEncoding.DecodeString(raw)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\n\t\t\t\t\"Failed to decode Content-MD5 '%s': %s\", raw, err)\n\t\t}\n\n\t\tpayload.MD5 = md5\n\t} else {\n\t\t// Generate the MD5\n\t\thash := md5.Sum(payload.Data)\n\t\tpayload.MD5 = hash[:]\n\t}\n\n\treturn payload, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := md5.Sum(payload.Data)",
+        "SourceFilename": "/analysis/repo/internal/backend/remote-state/http/client.go",
+        "SourceLineNum": 199,
+        "ParentFunction": "Get () (*github.com/hashicorp/terraform/internal/states/remote.Payload, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Put",
+    "file_path": "/analysis/repo/internal/backend/remote-state/inmem/client.go",
+    "line_number": 32,
+    "full_implementation": "func (c *RemoteClient) Put(data []byte) error {\n\tmd5 := md5.Sum(data)\n\n\tc.Data = data\n\tc.MD5 = md5[:]\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "md5 := md5.Sum(data)",
+        "SourceFilename": "/analysis/repo/internal/backend/remote-state/inmem/client.go",
+        "SourceLineNum": 32,
+        "ParentFunction": "Put (data []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "buildSSHClientConfig",
+    "file_path": "/analysis/repo/internal/communicator/ssh/provisioner.go",
+    "line_number": 330,
+    "full_implementation": "func buildSSHClientConfig(opts sshClientConfigOpts) (*ssh.ClientConfig, error) {\n\thkCallback := ssh.InsecureIgnoreHostKey()\n\n\tif opts.hostKey != \"\" {\n\t\t// The knownhosts package only takes paths to files, but terraform\n\t\t// generally wants to handle config data in-memory. Rather than making\n\t\t// the known_hosts file an exception, write out the data to a temporary\n\t\t// file to create the HostKeyCallback.\n\t\ttf, err := ioutil.TempFile(\"\", \"tf-known_hosts\")\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to create temp known_hosts file: %s\", err)\n\t\t}\n\t\tdefer tf.Close()\n\t\tdefer os.RemoveAll(tf.Name())\n\n\t\t// we mark this as a CA as well, but the host key fallback will still\n\t\t// use it as a direct match if the remote host doesn't return a\n\t\t// certificate.\n\t\tif _, err := tf.WriteString(fmt.Sprintf(\"@cert-authority %s %s\\n\", opts.host, opts.hostKey)); err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to write temp known_hosts file: %s\", err)\n\t\t}\n\t\ttf.Sync()\n\n\t\thkCallback, err = knownhosts.New(tf.Name())\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\tconf := \u0026ssh.ClientConfig{\n\t\tHostKeyCallback: hkCallback,\n\t\tUser:            opts.user,\n\t}\n\n\tif opts.privateKey != \"\" {\n\t\tif opts.certificate != \"\" {\n\t\t\tlog.Println(\"using client certificate for authentication\")\n\n\t\t\tcertSigner, err := signCertWithPrivateKey(opts.privateKey, opts.certificate)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\tconf.Auth = append(conf.Auth, certSigner)\n\t\t} else {\n\t\t\tlog.Println(\"using private key for authentication\")\n\n\t\t\tpubKeyAuth, err := readPrivateKey(opts.privateKey)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t\tconf.Auth = append(conf.Auth, pubKeyAuth)\n\t\t}\n\t}\n\n\tif opts.password != \"\" {\n\t\tconf.Auth = append(conf.Auth, ssh.Password(opts.password))\n\t\tconf.Auth = append(conf.Auth, ssh.KeyboardInteractive(\n\t\t\tPasswordKeyboardInteractive(opts.password)))\n\t}\n\n\tif opts.sshAgent != nil {\n\t\tconf.Auth = append(conf.Auth, opts.sshAgent.Auth())\n\t}\n\n\treturn conf, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "hkCallback := ssh.InsecureIgnoreHostKey()",
+        "SourceFilename": "/analysis/repo/internal/communicator/ssh/provisioner.go",
+        "SourceLineNum": 330,
+        "ParentFunction": "buildSSHClientConfig (opts github.com/hashicorp/terraform/internal/communicator/ssh.sshClientConfigOpts) (*golang.org/x/crypto/ssh.ClientConfig, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

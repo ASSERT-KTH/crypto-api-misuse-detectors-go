@@ -1,0 +1,81 @@
+[
+  {
+    "function_name": "Transport",
+    "file_path": "/analysis/repo/lfshttp/client.go",
+    "line_number": 479,
+    "full_implementation": "func (c *Client) Transport(u *url.URL, access creds.AccessMode) (http.RoundTripper, error) {\n\thost := u.Host\n\n\tif c.gitEnv == nil {\n\t\tc.gitEnv = make(testEnv)\n\t}\n\n\tif c.osEnv == nil {\n\t\tc.osEnv = make(testEnv)\n\t}\n\n\tconcurrentTransfers := c.ConcurrentTransfers\n\tif concurrentTransfers \u003c 1 {\n\t\tconcurrentTransfers = 8\n\t}\n\n\tdialtime := c.DialTimeout\n\tif dialtime \u003c 1 {\n\t\tdialtime = 30\n\t}\n\n\tkeepalivetime := c.KeepaliveTimeout\n\tif keepalivetime \u003c 1 {\n\t\tkeepalivetime = 1800\n\t}\n\n\ttlstime := c.TLSTimeout\n\tif tlstime \u003c 1 {\n\t\ttlstime = 30\n\t}\n\ttr := \u0026http.Transport{\n\t\tProxy:               proxyFromClient(c),\n\t\tTLSHandshakeTimeout: time.Duration(tlstime) * time.Second,\n\t\tMaxIdleConnsPerHost: concurrentTransfers,\n\t}\n\n\tactivityTimeout := 30\n\tif v, ok := c.uc.Get(\"lfs\", u.String(), \"activitytimeout\"); ok {\n\t\tif i, err := strconv.Atoi(v); err == nil {\n\t\t\tactivityTimeout = i\n\t\t} else {\n\t\t\tactivityTimeout = 0\n\t\t}\n\t}\n\n\tdialer := \u0026net.Dialer{\n\t\tTimeout:   time.Duration(dialtime) * time.Second,\n\t\tKeepAlive: time.Duration(keepalivetime) * time.Second,\n\t\tDualStack: true,\n\t}\n\n\tif activityTimeout \u003e 0 {\n\t\tactivityDuration := time.Duration(activityTimeout) * time.Second\n\t\ttr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {\n\t\t\tc, err := dialer.DialContext(ctx, network, addr)\n\t\t\tif c == nil {\n\t\t\t\treturn c, err\n\t\t\t}\n\t\t\tif tc, ok := c.(*net.TCPConn); ok {\n\t\t\t\ttc.SetKeepAlive(true)\n\t\t\t\ttc.SetKeepAlivePeriod(dialer.KeepAlive)\n\t\t\t}\n\t\t\treturn \u0026deadlineConn{Timeout: activityDuration, Conn: c}, err\n\t\t}\n\t} else {\n\t\ttr.DialContext = dialer.DialContext\n\t}\n\n\ttr.TLSClientConfig = \u0026tls.Config{\n\t\tRenegotiation: tls.RenegotiateFreelyAsClient,\n\t}\n\n\tif isClientCertEnabledForHost(c, host) {\n\t\ttracerx.Printf(\"http: client cert for %s\", host)\n\t\tcert, err := getClientCertForHost(c, host)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tif cert != nil {\n\t\t\ttr.TLSClientConfig.Certificates = []tls.Certificate{*cert}\n\t\t\ttr.TLSClientConfig.BuildNameToCertificate()\n\t\t}\n\t}\n\n\tif isCertVerificationDisabledForHost(c, host) {\n\t\ttr.TLSClientConfig.InsecureSkipVerify = true\n\t} else {\n\t\ttr.TLSClientConfig.RootCAs = getRootCAsForHost(c, host)\n\t}\n\n\tif err := c.configureProtocols(u, tr); err != nil {\n\t\treturn nil, err\n\t}\n\n\tif access == creds.NegotiateAccess {\n\t\t// This technically copies a mutex, but we know since we've just created\n\t\t// the object that this mutex is unlocked.\n\t\treturn \u0026spnego.Transport{Transport: *tr}, nil\n\t}\n\treturn tr, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "tr.TLSClientConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/lfshttp/client.go",
+        "SourceLineNum": 479,
+        "ParentFunction": "Transport (u *net/url.URL, access github.com/git-lfs/git-lfs/v3/creds.AccessMode) (net/http.RoundTripper, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "decryptPEMBlock",
+    "file_path": "/analysis/repo/lfshttp/certs.go",
+    "line_number": 58,
+    "full_implementation": "func decryptPEMBlock(c *Client, block *pem.Block, path string, key []byte) ([]byte, error) {\n\tfileurl := fmt.Sprintf(\"cert:///%s\", filepath.ToSlash(path))\n\turl, err := url.Parse(fileurl)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tcredWrapper := c.credHelperContext.GetCredentialHelper(nil, url)\n\n\tcredWrapper.Input[\"username\"] = []string{\"\"}\n\n\tcreds, err := credWrapper.CredentialHelper.Fill(credWrapper.Input)\n\tif err != nil {\n\t\ttracerx.Printf(\"Error filling credentials for %q: %v\", fileurl, err)\n\t\treturn nil, err\n\t}\n\tpass := creds[\"password\"][0]\n\tdecrypted, err := x509.DecryptPEMBlock(block, []byte(pass))\n\tif err != nil {\n\t\tcredWrapper.CredentialHelper.Reject(creds)\n\t\treturn nil, err\n\t}\n\tcredWrapper.CredentialHelper.Approve(creds)\n\n\t// decrypted is a DER blob, but we need a PEM-encoded block.\n\ttoEncode := \u0026pem.Block{Type: block.Type, Headers: nil, Bytes: decrypted}\n\tbuf := pem.EncodeToMemory(toEncode)\n\treturn buf, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.DecryptPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "decrypted, err := x509.DecryptPEMBlock(block, []byte(pass))",
+        "SourceFilename": "/analysis/repo/lfshttp/certs.go",
+        "SourceLineNum": 58,
+        "ParentFunction": "decryptPEMBlock (c *github.com/git-lfs/git-lfs/v3/lfshttp.Client, block *encoding/pem.Block, path string, key []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "Transport",
+    "file_path": "/analysis/repo/lfshttp/client.go",
+    "line_number": 484,
+    "full_implementation": "func (c *Client) Transport(u *url.URL, access creds.AccessMode) (http.RoundTripper, error) {\n\thost := u.Host\n\n\tif c.gitEnv == nil {\n\t\tc.gitEnv = make(testEnv)\n\t}\n\n\tif c.osEnv == nil {\n\t\tc.osEnv = make(testEnv)\n\t}\n\n\tconcurrentTransfers := c.ConcurrentTransfers\n\tif concurrentTransfers \u003c 1 {\n\t\tconcurrentTransfers = 8\n\t}\n\n\tdialtime := c.DialTimeout\n\tif dialtime \u003c 1 {\n\t\tdialtime = 30\n\t}\n\n\tkeepalivetime := c.KeepaliveTimeout\n\tif keepalivetime \u003c 1 {\n\t\tkeepalivetime = 1800\n\t}\n\n\ttlstime := c.TLSTimeout\n\tif tlstime \u003c 1 {\n\t\ttlstime = 30\n\t}\n\ttr := \u0026http.Transport{\n\t\tProxy:               proxyFromClient(c),\n\t\tTLSHandshakeTimeout: time.Duration(tlstime) * time.Second,\n\t\tMaxIdleConnsPerHost: concurrentTransfers,\n\t}\n\n\tactivityTimeout := 30\n\tif v, ok := c.uc.Get(\"lfs\", u.String(), \"activitytimeout\"); ok {\n\t\tif i, err := strconv.Atoi(v); err == nil {\n\t\t\tactivityTimeout = i\n\t\t} else {\n\t\t\tactivityTimeout = 0\n\t\t}\n\t}\n\n\tdialer := \u0026net.Dialer{\n\t\tTimeout:   time.Duration(dialtime) * time.Second,\n\t\tKeepAlive: time.Duration(keepalivetime) * time.Second,\n\t\tDualStack: true,\n\t}\n\n\tif activityTimeout \u003e 0 {\n\t\tactivityDuration := time.Duration(activityTimeout) * time.Second\n\t\ttr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {\n\t\t\tc, err := dialer.DialContext(ctx, network, addr)\n\t\t\tif c == nil {\n\t\t\t\treturn c, err\n\t\t\t}\n\t\t\tif tc, ok := c.(*net.TCPConn); ok {\n\t\t\t\ttc.SetKeepAlive(true)\n\t\t\t\ttc.SetKeepAlivePeriod(dialer.KeepAlive)\n\t\t\t}\n\t\t\treturn \u0026deadlineConn{Timeout: activityDuration, Conn: c}, err\n\t\t}\n\t} else {\n\t\ttr.DialContext = dialer.DialContext\n\t}\n\n\ttr.TLSClientConfig = \u0026tls.Config{\n\t\tRenegotiation: tls.RenegotiateFreelyAsClient,\n\t}\n\n\tif isClientCertEnabledForHost(c, host) {\n\t\ttracerx.Printf(\"http: client cert for %s\", host)\n\t\tcert, err := getClientCertForHost(c, host)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tif cert != nil {\n\t\t\ttr.TLSClientConfig.Certificates = []tls.Certificate{*cert}\n\t\t\ttr.TLSClientConfig.BuildNameToCertificate()\n\t\t}\n\t}\n\n\tif isCertVerificationDisabledForHost(c, host) {\n\t\ttr.TLSClientConfig.InsecureSkipVerify = true\n\t} else {\n\t\ttr.TLSClientConfig.RootCAs = getRootCAsForHost(c, host)\n\t}\n\n\tif err := c.configureProtocols(u, tr); err != nil {\n\t\treturn nil, err\n\t}\n\n\tif access == creds.NegotiateAccess {\n\t\t// This technically copies a mutex, but we know since we've just created\n\t\t// the object that this mutex is unlocked.\n\t\treturn \u0026spnego.Transport{Transport: *tr}, nil\n\t}\n\treturn tr, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/lfshttp/client.go",
+        "SourceLineNum": 484,
+        "ParentFunction": "Transport (u *net/url.URL, access github.com/git-lfs/git-lfs/v3/creds.AccessMode) (net/http.RoundTripper, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/lfshttp/client.go",
+          "SourceLineNum": 484,
+          "ParentFunction": "Transport (u *net/url.URL, access github.com/git-lfs/git-lfs/v3/creds.AccessMode) (net/http.RoundTripper, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "getClientCertForHost",
+    "file_path": "/analysis/repo/lfshttp/certs.go",
+    "line_number": 102,
+    "full_implementation": "func getClientCertForHost(c *Client, host string) (*tls.Certificate, error) {\n\thostSslKey, _ := c.uc.Get(\"http\", fmt.Sprintf(\"https://%v/\", host), \"sslKey\")\n\thostSslCert, _ := c.uc.Get(\"http\", fmt.Sprintf(\"https://%v/\", host), \"sslCert\")\n\n\thostSslKey, err := tools.ExpandPath(hostSslKey, false)\n\tif err != nil {\n\t\treturn nil, errors.Wrapf(err, tr.Tr.Get(\"Error resolving key path %q\", hostSslKey))\n\t}\n\n\thostSslCert, err = tools.ExpandPath(hostSslCert, false)\n\tif err != nil {\n\t\treturn nil, errors.Wrapf(err, tr.Tr.Get(\"Error resolving cert path %q\", hostSslCert))\n\t}\n\n\tcert, err := os.ReadFile(hostSslCert)\n\tif err != nil {\n\t\ttracerx.Printf(\"Error reading client cert file %q: %v\", hostSslCert, err)\n\t\treturn nil, errors.Wrapf(err, tr.Tr.Get(\"Error reading client cert file %q\", hostSslCert))\n\t}\n\tkey, err := os.ReadFile(hostSslKey)\n\tif err != nil {\n\t\ttracerx.Printf(\"Error reading client key file %q: %v\", hostSslKey, err)\n\t\treturn nil, errors.Wrapf(err, tr.Tr.Get(\"Error reading client key file %q\", hostSslKey))\n\t}\n\n\tblock, _ := pem.Decode(key)\n\tif block == nil {\n\t\treturn nil, errors.New(tr.Tr.Get(\"Error decoding PEM block from %q\", hostSslKey))\n\t}\n\tif x509.IsEncryptedPEMBlock(block) {\n\t\tkey, err = decryptPEMBlock(c, block, hostSslKey, key)\n\t\tif err != nil {\n\t\t\ttracerx.Printf(\"Unable to decrypt client key file %q: %v\", hostSslKey, err)\n\t\t\treturn nil, errors.Wrapf(err, tr.Tr.Get(\"Error reading client key file %q (not a PKCS#1 file?)\", hostSslKey))\n\t\t}\n\t}\n\n\tcertobj, err := tls.X509KeyPair(cert, key)\n\tif err != nil {\n\t\ttracerx.Printf(\"Error reading client cert/key %v\", err)\n\t\treturn nil, errors.Wrapf(err, tr.Tr.Get(\"Error reading client cert/key\"))\n\t}\n\treturn \u0026certobj, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.IsEncryptedPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "if x509.IsEncryptedPEMBlock(block) {",
+        "SourceFilename": "/analysis/repo/lfshttp/certs.go",
+        "SourceLineNum": 102,
+        "ParentFunction": "getClientCertForHost (c *github.com/git-lfs/git-lfs/v3/lfshttp.Client, host string) (*crypto/tls.Certificate, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

@@ -1,0 +1,63 @@
+[
+  {
+    "function_name": "initVersion",
+    "file_path": "/analysis/repo/pkg/app/http.go",
+    "line_number": 169,
+    "full_implementation": "func (h *Handler) initVersion() {\n\tif h.Version == \"\" {\n\t\tt := time.Now().UTC().String()\n\t\th.Version = fmt.Sprintf(`%x`, sha1.Sum([]byte(t)))\n\t}\n\th.etag = `\"` + h.Version + `\"`\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h.Version = fmt.Sprintf(`%x`, sha1.Sum([]byte(t)))",
+        "SourceFilename": "/analysis/repo/pkg/app/http.go",
+        "SourceLineNum": 169,
+        "ParentFunction": "initVersion ()"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "serveProxyResource",
+    "file_path": "/analysis/repo/pkg/app/http.go",
+    "line_number": 563,
+    "full_implementation": "func (h *Handler) serveProxyResource(resource ProxyResource, w http.ResponseWriter, r *http.Request) {\n\tvar u string\n\tif _, ok := h.Resources.(http.Handler); ok {\n\t\tvar protocol string\n\t\tif r.TLS != nil {\n\t\t\tprotocol = \"https://\"\n\t\t} else {\n\t\t\tprotocol = \"http://\"\n\t\t}\n\t\tu = protocol + r.Host + resource.ResourcePath\n\t} else {\n\t\tu = h.Resources.Resolve(resource.ResourcePath)\n\t}\n\n\tif i, ok := h.cachedProxyResources.Get(resource.Path); ok {\n\t\th.serveCachedItem(w, i)\n\t\treturn\n\t}\n\n\tres, err := http.Get(u)\n\tif err != nil {\n\t\tw.WriteHeader(http.StatusInternalServerError)\n\t\tLog(errors.New(\"getting proxy static resource failed\").\n\t\t\tWithTag(\"url\", u).\n\t\t\tWithTag(\"proxy-path\", resource.Path).\n\t\t\tWithTag(\"static-resource-path\", resource.ResourcePath).\n\t\t\tWrap(err),\n\t\t)\n\t\treturn\n\t}\n\tdefer res.Body.Close()\n\n\tif res.StatusCode != http.StatusOK {\n\t\tw.WriteHeader(http.StatusNotFound)\n\t\treturn\n\t}\n\n\tbody, err := io.ReadAll(res.Body)\n\tif err != nil {\n\t\tw.WriteHeader(http.StatusInternalServerError)\n\t\tLog(errors.New(\"reading proxy static resource failed\").\n\t\t\tWithTag(\"url\", u).\n\t\t\tWithTag(\"proxy-path\", resource.Path).\n\t\t\tWithTag(\"static-resource-path\", resource.ResourcePath).\n\t\t\tWrap(err),\n\t\t)\n\t\treturn\n\t}\n\n\titem := cacheItem{\n\t\tPath:            resource.Path,\n\t\tContentType:     res.Header.Get(\"Content-Type\"),\n\t\tContentEncoding: res.Header.Get(\"Content-Encoding\"),\n\t\tBody:            body,\n\t}\n\th.cachedProxyResources.Set(item)\n\th.serveCachedItem(w, item)\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "res, err := http.Get(u)",
+        "SourceFilename": "/analysis/repo/pkg/app/http.go",
+        "SourceLineNum": 563,
+        "ParentFunction": "serveProxyResource (resource github.com/maxence-charriere/go-app/v10/pkg/app.ProxyResource, w net/http.ResponseWriter, r *net/http.Request)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "var u string",
+          "SourceFilename": "/analysis/repo/pkg/app/http.go",
+          "SourceLineNum": 545,
+          "ParentFunction": "serveProxyResource (resource github.com/maxence-charriere/go-app/v10/pkg/app.ProxyResource, w net/http.ResponseWriter, r *net/http.Request)"
+        },
+        {
+          "SourceCode": "u = protocol + r.Host + resource.ResourcePath",
+          "SourceFilename": "/analysis/repo/pkg/app/http.go",
+          "SourceLineNum": 553,
+          "ParentFunction": "serveProxyResource (resource github.com/maxence-charriere/go-app/v10/pkg/app.ProxyResource, w net/http.ResponseWriter, r *net/http.Request)"
+        },
+        {
+          "SourceCode": "u = protocol + r.Host + resource.ResourcePath",
+          "SourceFilename": "/analysis/repo/pkg/app/http.go",
+          "SourceLineNum": 553,
+          "ParentFunction": "serveProxyResource (resource github.com/maxence-charriere/go-app/v10/pkg/app.ProxyResource, w net/http.ResponseWriter, r *net/http.Request)"
+        },
+        {
+          "SourceCode": "var protocol string",
+          "SourceFilename": "/analysis/repo/pkg/app/http.go",
+          "SourceLineNum": 547,
+          "ParentFunction": "serveProxyResource (resource github.com/maxence-charriere/go-app/v10/pkg/app.ProxyResource, w net/http.ResponseWriter, r *net/http.Request)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  }
+]

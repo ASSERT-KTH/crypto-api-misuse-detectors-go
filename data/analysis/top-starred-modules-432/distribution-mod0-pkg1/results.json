@@ -1,0 +1,126 @@
+[
+	{
+		"FuncName": "(*crypto/x509.CertPool).Subjects",
+		"Message": "Deprecated: if s was returned by SystemCertPool, Subjects will not include the system roots.",
+		"Slicing_Criteria": {
+			"SourceCode": "for _, subj := range pool.Subjects() { //nolint:staticcheck // FIXME(thaJeztah): ignore SA1019: ac.(*accessController).rootCerts.Subjects has been deprecated since Go 1.18: if s was returned by SystemCertPool, Subjects will not include the system roots. (staticcheck)",
+			"SourceFilename": "/analysis/repo/registry/registry.go",
+			"SourceLineNum": 305,
+			"ParentFunction": "ListenAndServe () error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+		"Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+		"Slicing_Criteria": {
+			"SourceCode": "encryptedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)",
+			"SourceFilename": "/analysis/repo/registry/auth/htpasswd/access.go",
+			"SourceLineNum": 146,
+			"ParentFunction": "createHtpasswdFile (path string) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "encryptedPass, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)",
+				"SourceFilename": "/analysis/repo/registry/auth/htpasswd/access.go",
+				"SourceLineNum": 146,
+				"ParentFunction": "createHtpasswdFile (path string) error"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+			"SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+			"SourceLineNum": 141,
+			"ParentFunction": "newSharedKeyCredentialsClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+				"SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+				"SourceLineNum": 141,
+				"ParentFunction": "newSharedKeyCredentialsClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New() // nolint: gosec // ok for content verification",
+			"SourceFilename": "/analysis/repo/registry/storage/driver/azure/azure.go",
+			"SourceLineNum": 756,
+			"ParentFunction": "chunkUploadVerify (appendPos int64, chunk []byte) (int64, *github.com/Azure/azure-sdk-for-go/sdk/azcore.ETag, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+			"SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+			"SourceLineNum": 99,
+			"ParentFunction": "newTokenClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+				"SourceFilename": "/analysis/repo/registry/storage/driver/azure/auth.go",
+				"SourceLineNum": 99,
+				"ParentFunction": "newTokenClient (params *github.com/distribution/distribution/v3/registry/storage/driver/azure.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/azure.azureClient, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New() // nolint: gosec // ok for content verification",
+			"SourceFilename": "/analysis/repo/registry/storage/driver/azure/azure.go",
+			"SourceLineNum": 746,
+			"ParentFunction": "chunkUploadVerify (appendPos int64, chunk []byte) (int64, *github.com/Azure/azure-sdk-for-go/sdk/azcore.ETag, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New()",
+			"SourceFilename": "/analysis/repo/registry/storage/driver/gcs/gcs.go",
+			"SourceLineNum": 433,
+			"ParentFunction": "putContent (ctx context.Context, obj *cloud.google.com/go/storage.ObjectHandle, content []byte, contentType string, metadata map[string]string) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+			"SourceFilename": "/analysis/repo/registry/storage/driver/s3-aws/s3.go",
+			"SourceLineNum": 537,
+			"ParentFunction": "New (ctx context.Context, params github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.Driver, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "httpTransport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+				"SourceFilename": "/analysis/repo/registry/storage/driver/s3-aws/s3.go",
+				"SourceLineNum": 537,
+				"ParentFunction": "New (ctx context.Context, params github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.DriverParameters) (*github.com/distribution/distribution/v3/registry/storage/driver/s3-aws.Driver, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	}
+]

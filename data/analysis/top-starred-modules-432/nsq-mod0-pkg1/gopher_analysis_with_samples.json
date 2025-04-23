@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "NewOptions",
+    "file_path": "/analysis/repo/nsqd/options.go",
+    "line_number": 95,
+    "full_implementation": "func NewOptions() *Options {\n\thostname, err := os.Hostname()\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\n\th := md5.New()\n\tio.WriteString(h, hostname)\n\tdefaultID := int64(crc32.ChecksumIEEE(h.Sum(nil)) % 1024)\n\n\treturn \u0026Options{\n\t\tID:        defaultID,\n\t\tLogPrefix: \"[nsqd] \",\n\t\tLogLevel:  lg.INFO,\n\n\t\tTCPAddress:        \"0.0.0.0:4150\",\n\t\tHTTPAddress:       \"0.0.0.0:4151\",\n\t\tHTTPSAddress:      \"0.0.0.0:4152\",\n\t\tBroadcastAddress:  hostname,\n\t\tBroadcastTCPPort:  0,\n\t\tBroadcastHTTPPort: 0,\n\n\t\tNSQLookupdTCPAddresses: make([]string, 0),\n\t\tAuthHTTPAddresses:      make([]string, 0),\n\n\t\tHTTPClientConnectTimeout: 2 * time.Second,\n\t\tHTTPClientRequestTimeout: 5 * time.Second,\n\n\t\tMemQueueSize:    10000,\n\t\tMaxBytesPerFile: 100 * 1024 * 1024,\n\t\tSyncEvery:       2500,\n\t\tSyncTimeout:     2 * time.Second,\n\n\t\tQueueScanInterval:        100 * time.Millisecond,\n\t\tQueueScanRefreshInterval: 5 * time.Second,\n\t\tQueueScanSelectionCount:  20,\n\t\tQueueScanWorkerPoolMax:   4,\n\t\tQueueScanDirtyPercent:    0.25,\n\n\t\tMsgTimeout:    60 * time.Second,\n\t\tMaxMsgTimeout: 15 * time.Minute,\n\t\tMaxMsgSize:    1024 * 1024,\n\t\tMaxBodySize:   5 * 1024 * 1024,\n\t\tMaxReqTimeout: 1 * time.Hour,\n\t\tClientTimeout: 60 * time.Second,\n\n\t\tMaxHeartbeatInterval:   60 * time.Second,\n\t\tMaxRdyCount:            2500,\n\t\tMaxOutputBufferSize:    64 * 1024,\n\t\tMaxOutputBufferTimeout: 30 * time.Second,\n\t\tMinOutputBufferTimeout: 25 * time.Millisecond,\n\t\tOutputBufferTimeout:    250 * time.Millisecond,\n\t\tMaxChannelConsumers:    0,\n\n\t\tStatsdPrefix:        \"nsq.%s\",\n\t\tStatsdInterval:      60 * time.Second,\n\t\tStatsdMemStats:      true,\n\t\tStatsdUDPPacketSize: 508,\n\n\t\tE2EProcessingLatencyWindowTime: time.Duration(10 * time.Minute),\n\n\t\tDeflateEnabled:  true,\n\t\tMaxDeflateLevel: 6,\n\t\tSnappyEnabled:   true,\n\n\t\tTLSMinVersion: tls.VersionTLS10,\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h := md5.New()",
+        "SourceFilename": "/analysis/repo/nsqd/options.go",
+        "SourceLineNum": 95,
+        "ParentFunction": "NewOptions () *github.com/nsqio/nsq/nsqd.Options"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

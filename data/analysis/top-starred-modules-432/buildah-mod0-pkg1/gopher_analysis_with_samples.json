@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "passwdCmd",
+    "file_path": "/analysis/repo/cmd/buildah/passwd.go",
+    "line_number": 24,
+    "full_implementation": "func passwdCmd(_ *cobra.Command, args []string) error {\n\tpasswd, err := bcrypt.GenerateFromPassword([]byte(args[0]), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Println(string(passwd))\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "passwd, err := bcrypt.GenerateFromPassword([]byte(args[0]), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/cmd/buildah/passwd.go",
+        "SourceLineNum": 24,
+        "ParentFunction": "passwdCmd (_ *github.com/spf13/cobra.Command, args []string) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "passwd, err := bcrypt.GenerateFromPassword([]byte(args[0]), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/cmd/buildah/passwd.go",
+          "SourceLineNum": 24,
+          "ParentFunction": "passwdCmd (_ *github.com/spf13/cobra.Command, args []string) error"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

@@ -1,0 +1,94 @@
+[
+  {
+    "function_name": "GenerateClientIDFromRequest",
+    "file_path": "/analysis/repo/utils/clientId.go",
+    "line_number": 19,
+    "full_implementation": "func GenerateClientIDFromRequest(req *http.Request) string {\n\tipAddress := GetIPAddressFromRequest(req)\n\tclientID := ipAddress + req.UserAgent()\n\n\t// Create a MD5 hash of this ip + useragent\n\tb := md5.Sum([]byte(clientID)) // nolint\n\treturn hex.EncodeToString(b[:])\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "b := md5.Sum([]byte(clientID)) // nolint",
+        "SourceFilename": "/analysis/repo/utils/clientId.go",
+        "SourceLineNum": 19,
+        "ParentFunction": "GenerateClientIDFromRequest (req *net/http.Request) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "SetAdminPassword",
+    "file_path": "/analysis/repo/persistence/configrepository/sqlconfigrepository.go",
+    "line_number": 94,
+    "full_implementation": "func (r *SqlConfigRepository) SetAdminPassword(key string) error {\n\thashed_pass, err := utils.HashPassword(key)\n\tif err != nil {\n\t\treturn err\n\t}\n\treturn r.datastore.SetString(adminPasswordKey, hashed_pass)\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/owncast/owncast/utils.HashPassword",
+      "Message": "PassWord should be random\n\u003e\u003e/analysis/repo/utils/hashing.go\nHashPassword (password string) (string, error)\n\t9:\thash, err := bcrypt.GenerateFromPassword([]byte(password), 0)\n\t9:\thash, err := bcrypt.GenerateFromPassword([]byte(password), 0)\n\t7:\tfunc HashPassword(password string) (string, error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "hashed_pass, err := utils.HashPassword(key)",
+        "SourceFilename": "/analysis/repo/persistence/configrepository/sqlconfigrepository.go",
+        "SourceLineNum": 94,
+        "ParentFunction": "SetAdminPassword (key string) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func (r *SqlConfigRepository) SetAdminPassword(key string) error {",
+          "SourceFilename": "/analysis/repo/persistence/configrepository/sqlconfigrepository.go",
+          "SourceLineNum": 93,
+          "ParentFunction": "SetAdminPassword (key string) error"
+        },
+        {
+          "SourceCode": "unhashed_pass, _ := datastore.GetString(\"admin_password_key\")",
+          "SourceFilename": "/analysis/repo/persistence/configrepository/configMigrations.go",
+          "SourceLineNum": 82,
+          "ParentFunction": "migrateToDatastoreValues4 (datastore *github.com/owncast/owncast/core/data.Datastore, configRepository github.com/owncast/owncast/persistence/configrepository.ConfigRepository)"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "GenerateKeys",
+    "file_path": "/analysis/repo/activitypub/crypto/keys.go",
+    "line_number": 56,
+    "full_implementation": "func GenerateKeys() ([]byte, []byte, error) {\n\t// generate key\n\tprivatekey, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\tlog.Errorln(\"Cannot generate RSA key\", err)\n\t\treturn nil, nil, err\n\t}\n\tpublickey := \u0026privatekey.PublicKey\n\n\tprivateKeyBytes := x509.MarshalPKCS1PrivateKey(privatekey)\n\tprivateKeyBlock := \u0026pem.Block{\n\t\tType:  \"RSA PRIVATE KEY\",\n\t\tBytes: privateKeyBytes,\n\t}\n\tprivatePem := pem.EncodeToMemory(privateKeyBlock)\n\n\tpublicKeyBytes, err := x509.MarshalPKIXPublicKey(publickey)\n\tif err != nil {\n\t\tlog.Errorln(\"error when dumping publickey:\", err)\n\t\treturn nil, nil, err\n\t}\n\tpublicKeyBlock := \u0026pem.Block{\n\t\tType:  \"PUBLIC KEY\",\n\t\tBytes: publicKeyBytes,\n\t}\n\tpublicPem := pem.EncodeToMemory(publicKeyBlock)\n\n\treturn privatePem, publicPem, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privatekey, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/activitypub/crypto/keys.go",
+        "SourceLineNum": 56,
+        "ParentFunction": "GenerateKeys () ([]byte, []byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privatekey, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/activitypub/crypto/keys.go",
+          "SourceLineNum": 56,
+          "ParentFunction": "GenerateKeys () ([]byte, []byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "handleScraperMetadataPage",
+    "file_path": "/analysis/repo/webserver/handlers/index.go",
+    "line_number": 203,
+    "full_implementation": "func handleScraperMetadataPage(w http.ResponseWriter, r *http.Request) {\n\tcacheKey := \"bot-scraper-html\"\n\tcacheHtmlExpiration := time.Duration(60) * time.Second\n\tc := gc.GetOrCreateCache(cacheKey, cacheHtmlExpiration)\n\n\tcachedHtml := c.GetValueForKey(cacheKey)\n\tif cachedHtml != nil {\n\t\tw.Header().Set(\"Content-Type\", \"text/html\")\n\t\t_, _ = w.Write(cachedHtml)\n\t\treturn\n\t}\n\n\ttmpl, err := static.GetBotMetadataTemplate()\n\tif err != nil {\n\t\tlog.Errorln(err)\n\t\tw.WriteHeader(http.StatusInternalServerError)\n\t\treturn\n\t}\n\n\tscheme := \"http\"\n\tconfigRepository := configrepository.Get()\n\tif siteURL := configRepository.GetServerURL(); siteURL != \"\" {\n\t\tif parsed, err := url.Parse(siteURL); err == nil \u0026\u0026 parsed.Scheme != \"\" {\n\t\t\tscheme = parsed.Scheme\n\t\t}\n\t}\n\n\tfullURL, err := url.Parse(fmt.Sprintf(\"%s://%s%s\", scheme, r.Host, r.URL.Path))\n\tif err != nil {\n\t\tlog.Errorln(err)\n\t}\n\timageURL, err := url.Parse(fmt.Sprintf(\"%s://%s%s\", scheme, r.Host, \"/logo/external\"))\n\tif err != nil {\n\t\tlog.Errorln(err)\n\t}\n\n\tstatus := core.GetStatus()\n\n\t// If the thumbnail does not exist or we're offline then just use the logo image\n\tvar thumbnailURL string\n\tif status.Online \u0026\u0026 utils.DoesFileExists(filepath.Join(config.DataDirectory, \"tmp\", \"thumbnail.jpg\")) {\n\t\tthumbnail, err := url.Parse(fmt.Sprintf(\"%s://%s%s\", scheme, r.Host, \"/thumbnail.jpg\"))\n\t\tif err != nil {\n\t\t\tlog.Errorln(err)\n\t\t\tthumbnailURL = imageURL.String()\n\t\t} else {\n\t\t\tthumbnailURL = thumbnail.String()\n\t\t}\n\t} else {\n\t\tthumbnailURL = imageURL.String()\n\t}\n\n\ttagsString := strings.Join(configRepository.GetServerMetadataTags(), \",\")\n\tmetadata := MetadataPage{\n\t\tName:          configRepository.GetServerName(),\n\t\tRequestedURL:  fullURL.String(),\n\t\tImage:         imageURL.String(),\n\t\tSummary:       configRepository.GetServerSummary(),\n\t\tThumbnail:     thumbnailURL,\n\t\tTagsString:    tagsString,\n\t\tTags:          configRepository.GetServerMetadataTags(),\n\t\tSocialHandles: configRepository.GetSocialHandles(),\n\t}\n\n\t// Cache the rendered HTML\n\tvar b bytes.Buffer\n\tif err := tmpl.Execute(\u0026b, metadata); err != nil {\n\t\tlog.Errorln(err)\n\t}\n\tc.Set(cacheKey, b.Bytes())\n\n\t// Set a cache header\n\tmiddleware.SetCachingHeaders(w, r)\n\tw.Header().Set(\"ETag\", fmt.Sprintf(\"%x\", md5.Sum(b.Bytes()))) // nolint:gosec\n\tw.Header().Set(\"Content-Type\", \"text/html\")\n\tif _, err = w.Write(b.Bytes()); err != nil {\n\t\tlog.Errorln(err)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "w.Header().Set(\"ETag\", fmt.Sprintf(\"%x\", md5.Sum(b.Bytes()))) // nolint:gosec",
+        "SourceFilename": "/analysis/repo/webserver/handlers/index.go",
+        "SourceLineNum": 203,
+        "ParentFunction": "handleScraperMetadataPage (w net/http.ResponseWriter, r *net/http.Request)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

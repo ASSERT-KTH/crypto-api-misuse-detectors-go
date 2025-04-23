@@ -1,0 +1,88 @@
+[
+  {
+    "function_name": "NewCertConfig",
+    "file_path": "/analysis/repo/pkg/proxy/cert.go",
+    "line_number": 53,
+    "full_implementation": "func NewCertConfig(ca *x509.Certificate, caPrivKey crypto.PrivateKey) (*CertConfig, error) {\n\tpriv, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpub := priv.Public()\n\n\t// Subject Key Identifier support for end entity certificate.\n\t// https://www.ietf.org/rfc/rfc3280.txt (section 4.2.1.2)\n\tpkixPubKey, err := x509.MarshalPKIXPublicKey(pub)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\th := sha1.New()\n\th.Write(pkixPubKey)\n\tkeyID := h.Sum(nil)\n\n\treturn \u0026CertConfig{\n\t\tca:     ca,\n\t\tcaPriv: caPrivKey,\n\t\tpriv:   priv,\n\t\tkeyID:  keyID,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/pkg/proxy/cert.go",
+        "SourceLineNum": 53,
+        "ParentFunction": "NewCertConfig (ca *crypto/x509.Certificate, caPrivKey crypto.PrivateKey) (*github.com/dstotijn/hetty/pkg/proxy.CertConfig, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewCertConfig",
+    "file_path": "/analysis/repo/pkg/proxy/cert.go",
+    "line_number": 39,
+    "full_implementation": "func NewCertConfig(ca *x509.Certificate, caPrivKey crypto.PrivateKey) (*CertConfig, error) {\n\tpriv, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpub := priv.Public()\n\n\t// Subject Key Identifier support for end entity certificate.\n\t// https://www.ietf.org/rfc/rfc3280.txt (section 4.2.1.2)\n\tpkixPubKey, err := x509.MarshalPKIXPublicKey(pub)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\th := sha1.New()\n\th.Write(pkixPubKey)\n\tkeyID := h.Sum(nil)\n\n\treturn \u0026CertConfig{\n\t\tca:     ca,\n\t\tcaPriv: caPrivKey,\n\t\tpriv:   priv,\n\t\tkeyID:  keyID,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/pkg/proxy/cert.go",
+        "SourceLineNum": 39,
+        "ParentFunction": "NewCertConfig (ca *crypto/x509.Certificate, caPrivKey crypto.PrivateKey) (*github.com/dstotijn/hetty/pkg/proxy.CertConfig, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/pkg/proxy/cert.go",
+          "SourceLineNum": 39,
+          "ParentFunction": "NewCertConfig (ca *crypto/x509.Certificate, caPrivKey crypto.PrivateKey) (*github.com/dstotijn/hetty/pkg/proxy.CertConfig, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "NewCA",
+    "file_path": "/analysis/repo/pkg/proxy/cert.go",
+    "line_number": 142,
+    "full_implementation": "func NewCA(name, organization string, validity time.Duration) (*x509.Certificate, *rsa.PrivateKey, error) {\n\tpriv, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\tpub := priv.Public()\n\n\t// Subject Key Identifier support for end entity certificate.\n\t// https://www.ietf.org/rfc/rfc3280.txt (section 4.2.1.2)\n\tpkixpub, err := x509.MarshalPKIXPublicKey(pub)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\th := sha1.New()\n\th.Write(pkixpub)\n\tkeyID := h.Sum(nil)\n\n\t// TODO: keep a map of used serial numbers to avoid potentially reusing a\n\t// serial multiple times.\n\tserial, err := rand.Int(rand.Reader, MaxSerialNumber)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\ttmpl := \u0026x509.Certificate{\n\t\tSerialNumber: serial,\n\t\tSubject: pkix.Name{\n\t\t\tCommonName:   name,\n\t\t\tOrganization: []string{organization},\n\t\t},\n\t\tSubjectKeyId:          keyID,\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t\tNotBefore:             time.Now(),\n\t\tNotAfter:              time.Now().Add(validity),\n\t\tDNSNames:              []string{name},\n\t\tIsCA:                  true,\n\t}\n\n\traw, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, pub, priv)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\t// Parse certificate bytes so that we have a leaf certificate.\n\tx509c, err := x509.ParseCertificate(raw)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\treturn x509c, priv, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/pkg/proxy/cert.go",
+        "SourceLineNum": 142,
+        "ParentFunction": "NewCA (name string, organization string, validity time.Duration) (*crypto/x509.Certificate, *crypto/rsa.PrivateKey, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/pkg/proxy/cert.go",
+          "SourceLineNum": 142,
+          "ParentFunction": "NewCA (name string, organization string, validity time.Duration) (*crypto/x509.Certificate, *crypto/rsa.PrivateKey, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "NewCA",
+    "file_path": "/analysis/repo/pkg/proxy/cert.go",
+    "line_number": 156,
+    "full_implementation": "func NewCA(name, organization string, validity time.Duration) (*x509.Certificate, *rsa.PrivateKey, error) {\n\tpriv, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\tpub := priv.Public()\n\n\t// Subject Key Identifier support for end entity certificate.\n\t// https://www.ietf.org/rfc/rfc3280.txt (section 4.2.1.2)\n\tpkixpub, err := x509.MarshalPKIXPublicKey(pub)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\th := sha1.New()\n\th.Write(pkixpub)\n\tkeyID := h.Sum(nil)\n\n\t// TODO: keep a map of used serial numbers to avoid potentially reusing a\n\t// serial multiple times.\n\tserial, err := rand.Int(rand.Reader, MaxSerialNumber)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\ttmpl := \u0026x509.Certificate{\n\t\tSerialNumber: serial,\n\t\tSubject: pkix.Name{\n\t\t\tCommonName:   name,\n\t\t\tOrganization: []string{organization},\n\t\t},\n\t\tSubjectKeyId:          keyID,\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t\tNotBefore:             time.Now(),\n\t\tNotAfter:              time.Now().Add(validity),\n\t\tDNSNames:              []string{name},\n\t\tIsCA:                  true,\n\t}\n\n\traw, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, pub, priv)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\t// Parse certificate bytes so that we have a leaf certificate.\n\tx509c, err := x509.ParseCertificate(raw)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\treturn x509c, priv, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/pkg/proxy/cert.go",
+        "SourceLineNum": 156,
+        "ParentFunction": "NewCA (name string, organization string, validity time.Duration) (*crypto/x509.Certificate, *crypto/rsa.PrivateKey, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

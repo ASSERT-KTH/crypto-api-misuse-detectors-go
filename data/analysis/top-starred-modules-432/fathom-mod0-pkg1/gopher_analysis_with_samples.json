@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "SetPassword",
+    "file_path": "/analysis/repo/pkg/models/user.go",
+    "line_number": 26,
+    "full_implementation": "func (u *User) SetPassword(pwd string) {\n\thash, _ := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)\n\tu.Password = string(hash)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "hash, _ := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/pkg/models/user.go",
+        "SourceLineNum": 26,
+        "ParentFunction": "SetPassword (pwd string)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hash, _ := bcrypt.GenerateFromPassword([]byte(pwd), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/pkg/models/user.go",
+          "SourceLineNum": 26,
+          "ParentFunction": "SetPassword (pwd string)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

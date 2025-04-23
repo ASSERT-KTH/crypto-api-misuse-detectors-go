@@ -1,0 +1,199 @@
+[
+  {
+    "function_name": "GeneratePrivateKey",
+    "file_path": "/analysis/repo/certcrypto/crypto.go",
+    "line_number": 126,
+    "full_implementation": "func GeneratePrivateKey(keyType KeyType) (crypto.PrivateKey, error) {\n\tswitch keyType {\n\tcase EC256:\n\t\treturn ecdsa.GenerateKey(elliptic.P256(), rand.Reader)\n\tcase EC384:\n\t\treturn ecdsa.GenerateKey(elliptic.P384(), rand.Reader)\n\tcase RSA2048:\n\t\treturn rsa.GenerateKey(rand.Reader, 2048)\n\tcase RSA3072:\n\t\treturn rsa.GenerateKey(rand.Reader, 3072)\n\tcase RSA4096:\n\t\treturn rsa.GenerateKey(rand.Reader, 4096)\n\tcase RSA8192:\n\t\treturn rsa.GenerateKey(rand.Reader, 8192)\n\t}\n\n\treturn nil, fmt.Errorf(\"invalid KeyType: %s\", keyType)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/certcrypto/crypto.go",
+        "SourceLineNum": 126,
+        "ParentFunction": "GeneratePrivateKey (keyType github.com/go-acme/lego/v4/certcrypto.KeyType) (crypto.PrivateKey, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "return rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/certcrypto/crypto.go",
+          "SourceLineNum": 126,
+          "ParentFunction": "GeneratePrivateKey (keyType github.com/go-acme/lego/v4/certcrypto.KeyType) (crypto.PrivateKey, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "NewDefaultConfig",
+    "file_path": "/analysis/repo/providers/dns/dnsmadeeasy/dnsmadeeasy.go",
+    "line_number": 57,
+    "full_implementation": "func NewDefaultConfig() *Config {\n\ttr := \u0026http.Transport{}\n\n\tdefaultTransport, ok := http.DefaultTransport.(*http.Transport)\n\tif ok {\n\t\ttr = defaultTransport.Clone()\n\t}\n\n\ttr.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\n\treturn \u0026Config{\n\t\tTTL:                env.GetOrDefaultInt(EnvTTL, dns01.DefaultTTL),\n\t\tPropagationTimeout: env.GetOrDefaultSecond(EnvPropagationTimeout, dns01.DefaultPropagationTimeout),\n\t\tPollingInterval:    env.GetOrDefaultSecond(EnvPollingInterval, dns01.DefaultPollingInterval),\n\t\tHTTPClient: \u0026http.Client{\n\t\t\tTimeout:   env.GetOrDefaultSecond(EnvHTTPTimeout, 10*time.Second),\n\t\t\tTransport: tr,\n\t\t},\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tr.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/providers/dns/dnsmadeeasy/dnsmadeeasy.go",
+        "SourceLineNum": 57,
+        "ParentFunction": "NewDefaultConfig () *github.com/go-acme/lego/v4/providers/dns/dnsmadeeasy.Config"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tr.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/providers/dns/dnsmadeeasy/dnsmadeeasy.go",
+          "SourceLineNum": 57,
+          "ParentFunction": "NewDefaultConfig () *github.com/go-acme/lego/v4/providers/dns/dnsmadeeasy.Config"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "NewDNSProviderConfig",
+    "file_path": "/analysis/repo/providers/dns/efficientip/efficientip.go",
+    "line_number": 112,
+    "full_implementation": "func NewDNSProviderConfig(config *Config) (*DNSProvider, error) {\n\tif config == nil {\n\t\treturn nil, errors.New(\"efficientip: the configuration of the DNS provider is nil\")\n\t}\n\n\tif config.Username == \"\" {\n\t\treturn nil, errors.New(\"efficientip: missing username\")\n\t}\n\tif config.Password == \"\" {\n\t\treturn nil, errors.New(\"efficientip: missing password\")\n\t}\n\tif config.Hostname == \"\" {\n\t\treturn nil, errors.New(\"efficientip: missing hostname\")\n\t}\n\tif config.DNSName == \"\" {\n\t\treturn nil, errors.New(\"efficientip: missing dnsname\")\n\t}\n\n\tclient := internal.NewClient(config.Hostname, config.Username, config.Password)\n\n\tif config.HTTPClient != nil {\n\t\tclient.HTTPClient = config.HTTPClient\n\t}\n\n\tif config.InsecureSkipVerify {\n\t\tclient.HTTPClient.Transport = \u0026http.Transport{\n\t\t\tTLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},\n\t\t}\n\t}\n\n\treturn \u0026DNSProvider{config: config, client: client}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/providers/dns/efficientip/efficientip.go",
+        "SourceLineNum": 112,
+        "ParentFunction": "NewDNSProviderConfig (config *github.com/go-acme/lego/v4/providers/dns/efficientip.Config) (*github.com/go-acme/lego/v4/providers/dns/efficientip.DNSProvider, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/providers/dns/efficientip/efficientip.go",
+          "SourceLineNum": 112,
+          "ParentFunction": "NewDNSProviderConfig (config *github.com/go-acme/lego/v4/providers/dns/efficientip.Config) (*github.com/go-acme/lego/v4/providers/dns/efficientip.DNSProvider, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "pebbleHealthCheck",
+    "file_path": "/analysis/repo/e2e/loader/loader.go",
+    "line_number": 141,
+    "full_implementation": "func pebbleHealthCheck(options *CmdOption) {\n\tclient := \u0026http.Client{Transport: \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}}}\n\terr := wait.For(\"pebble\", 10*time.Second, 500*time.Millisecond, func() (bool, error) {\n\t\tresp, err := client.Get(options.HealthCheckURL)\n\t\tif err != nil {\n\t\t\treturn false, err\n\t\t}\n\n\t\tif resp.StatusCode != http.StatusOK {\n\t\t\treturn false, nil\n\t\t}\n\n\t\treturn true, nil\n\t})\n\tif err != nil {\n\t\tpanic(err)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "client := \u0026http.Client{Transport: \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}}}",
+        "SourceFilename": "/analysis/repo/e2e/loader/loader.go",
+        "SourceLineNum": 141,
+        "ParentFunction": "pebbleHealthCheck (options *github.com/go-acme/lego/v4/e2e/loader.CmdOption)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "client := \u0026http.Client{Transport: \u0026http.Transport{TLSClientConfig: \u0026tls.Config{InsecureSkipVerify: true}}}",
+          "SourceFilename": "/analysis/repo/e2e/loader/loader.go",
+          "SourceLineNum": 141,
+          "ParentFunction": "pebbleHealthCheck (options *github.com/go-acme/lego/v4/e2e/loader.CmdOption)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "newClient",
+    "file_path": "/analysis/repo/cmd/setup.go",
+    "line_number": 64,
+    "full_implementation": "func newClient(ctx *cli.Context, acc registration.User, keyType certcrypto.KeyType) *lego.Client {\n\tconfig := lego.NewConfig(acc)\n\tconfig.CADirURL = ctx.String(flgServer)\n\n\tconfig.Certificate = lego.CertificateConfig{\n\t\tKeyType:             keyType,\n\t\tTimeout:             time.Duration(ctx.Int(flgCertTimeout)) * time.Second,\n\t\tOverallRequestLimit: ctx.Int(flgOverallRequestLimit),\n\t}\n\tconfig.UserAgent = getUserAgent(ctx)\n\n\tif ctx.IsSet(flgHTTPTimeout) {\n\t\tconfig.HTTPClient.Timeout = time.Duration(ctx.Int(flgHTTPTimeout)) * time.Second\n\t}\n\n\tif ctx.Bool(flgTLSSkipVerify) {\n\t\tdefaultTransport, ok := config.HTTPClient.Transport.(*http.Transport)\n\t\tif ok { // This is always true because the default client used by the CLI defined the transport.\n\t\t\ttr := defaultTransport.Clone()\n\t\t\ttr.TLSClientConfig.InsecureSkipVerify = true\n\t\t\tconfig.HTTPClient.Transport = tr\n\t\t}\n\t}\n\n\tretryClient := retryablehttp.NewClient()\n\tretryClient.RetryMax = 5\n\tretryClient.HTTPClient = config.HTTPClient\n\tretryClient.Logger = nil\n\n\tif _, v := os.LookupEnv(\"LEGO_DEBUG_ACME_HTTP_CLIENT\"); v {\n\t\tretryClient.Logger = log.Logger\n\t}\n\n\tconfig.HTTPClient = retryClient.StandardClient()\n\n\tclient, err := lego.NewClient(config)\n\tif err != nil {\n\t\tlog.Fatalf(\"Could not create client: %v\", err)\n\t}\n\n\tif client.GetExternalAccountRequired() \u0026\u0026 !ctx.IsSet(flgEAB) {\n\t\tlog.Fatalf(\"Server requires External Account Binding. Use --%s with --%s and --%s.\", flgEAB, flgKID, flgHMAC)\n\t}\n\n\treturn client\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/cmd/setup.go",
+        "SourceLineNum": 64,
+        "ParentFunction": "newClient (ctx *github.com/urfave/cli/v2.Context, acc github.com/go-acme/lego/v4/registration.User, keyType github.com/go-acme/lego/v4/certcrypto.KeyType) *github.com/go-acme/lego/v4/lego.Client"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/cmd/setup.go",
+          "SourceLineNum": 64,
+          "ParentFunction": "newClient (ctx *github.com/urfave/cli/v2.Context, acc github.com/go-acme/lego/v4/registration.User, keyType github.com/go-acme/lego/v4/certcrypto.KeyType) *github.com/go-acme/lego/v4/lego.Client"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Sign",
+    "file_path": "/analysis/repo/providers/dns/nearlyfreespeech/internal/client.go",
+    "line_number": 122,
+    "full_implementation": "func (c Signer) Sign(uri string, body, login, apiKey string) string {\n\t// Header is \"login;timestamp;salt;hash\".\n\t// hash is SHA1(\"login;timestamp;salt;api-key;request-uri;body-hash\")\n\t// and body-hash is SHA1(body).\n\n\tbodyHash := sha1.Sum([]byte(body))\n\ttimestamp := strconv.FormatInt(c.clock().Unix(), 10)\n\n\t// Workaround for https://golang.org/issue/58605\n\turi = \"/\" + strings.TrimLeft(uri, \"/\")\n\n\tsalt := c.saltShaker()\n\n\thashInput := fmt.Sprintf(\"%s;%s;%s;%s;%s;%02x\", login, timestamp, salt, apiKey, uri, bodyHash)\n\n\treturn fmt.Sprintf(\"%s;%s;%s;%02x\", login, timestamp, salt, sha1.Sum([]byte(hashInput)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "bodyHash := sha1.Sum([]byte(body))",
+        "SourceFilename": "/analysis/repo/providers/dns/nearlyfreespeech/internal/client.go",
+        "SourceLineNum": 122,
+        "ParentFunction": "Sign (uri string, body string, login string, apiKey string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Sign",
+    "file_path": "/analysis/repo/providers/dns/nearlyfreespeech/internal/client.go",
+    "line_number": 132,
+    "full_implementation": "func (c Signer) Sign(uri string, body, login, apiKey string) string {\n\t// Header is \"login;timestamp;salt;hash\".\n\t// hash is SHA1(\"login;timestamp;salt;api-key;request-uri;body-hash\")\n\t// and body-hash is SHA1(body).\n\n\tbodyHash := sha1.Sum([]byte(body))\n\ttimestamp := strconv.FormatInt(c.clock().Unix(), 10)\n\n\t// Workaround for https://golang.org/issue/58605\n\turi = \"/\" + strings.TrimLeft(uri, \"/\")\n\n\tsalt := c.saltShaker()\n\n\thashInput := fmt.Sprintf(\"%s;%s;%s;%s;%s;%02x\", login, timestamp, salt, apiKey, uri, bodyHash)\n\n\treturn fmt.Sprintf(\"%s;%s;%s;%02x\", login, timestamp, salt, sha1.Sum([]byte(hashInput)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "return fmt.Sprintf(\"%s;%s;%s;%02x\", login, timestamp, salt, sha1.Sum([]byte(hashInput)))",
+        "SourceFilename": "/analysis/repo/providers/dns/nearlyfreespeech/internal/client.go",
+        "SourceLineNum": 132,
+        "ParentFunction": "Sign (uri string, body string, login string, apiKey string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "sha1string",
+    "file_path": "/analysis/repo/providers/dns/wedos/internal/token.go",
+    "line_number": 16,
+    "full_implementation": "func sha1string(txt string) string {\n\th := sha1.New()\n\t_, _ = io.WriteString(h, txt)\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/providers/dns/wedos/internal/token.go",
+        "SourceLineNum": 16,
+        "ParentFunction": "sha1string (txt string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "sign",
+    "file_path": "/analysis/repo/providers/dns/westcn/internal/client.go",
+    "line_number": 138,
+    "full_implementation": "func (c *Client) sign(form url.Values, now time.Time) {\n\ttimestamp := strconv.FormatInt(now.UnixMilli(), 10)\n\n\tsum := md5.Sum([]byte(c.username + c.password + timestamp))\n\n\tform.Set(\"token\", hex.EncodeToString(sum[:]))\n\tform.Set(\"username\", c.username)\n\tform.Set(\"time\", timestamp)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := md5.Sum([]byte(c.username + c.password + timestamp))",
+        "SourceFilename": "/analysis/repo/providers/dns/westcn/internal/client.go",
+        "SourceLineNum": 138,
+        "ParentFunction": "sign (form net/url.Values, now time.Time)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

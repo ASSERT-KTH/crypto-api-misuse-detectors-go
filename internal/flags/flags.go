@@ -26,12 +26,12 @@ func ParseFlags() (*Config, error) {
 	moduleFlagSet := flag.NewFlagSet("module", flag.ExitOnError)
 
 	// Shared flags
-	verbose := vulnFlagSet.Bool("verbose", true, "Enable verbose output")
+	verbose := vulnFlagSet.Bool("verbose", false, "Enable verbose output")
 	parallel := vulnFlagSet.Int("parallel", 4, "Number of parallel operations for Docker Compose")
 	dockerDir := vulnFlagSet.String("docker-dir", "internal/docker", "Directory for Docker files")
 	analysisOutDir := vulnFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
 
-	moduleFlagSet.BoolVar(verbose, "verbose", true, "Enable verbose output")
+	moduleFlagSet.BoolVar(verbose, "verbose", false, "Enable verbose output")
 	moduleFlagSet.IntVar(parallel, "parallel", 4, "Number of parallel operations for Docker Compose")
 	moduleFlagSet.StringVar(dockerDir, "docker-dir", "internal/docker", "Directory for Docker files")
 	moduleFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")

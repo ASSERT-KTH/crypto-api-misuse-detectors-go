@@ -64,7 +64,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Successfully extracted functions")
 }
 
 func ExtractFunctions(resultsFile, repoRootDir string) error {

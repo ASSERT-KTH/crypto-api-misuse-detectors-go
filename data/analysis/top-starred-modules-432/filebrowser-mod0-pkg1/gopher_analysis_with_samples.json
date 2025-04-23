@@ -1,0 +1,131 @@
+[
+  {
+    "function_name": "Checksum",
+    "file_path": "/analysis/repo/files/file.go",
+    "line_number": 187,
+    "full_implementation": "func (i *FileInfo) Checksum(algo string) error {\n\tif i.IsDir {\n\t\treturn fbErrors.ErrIsDirectory\n\t}\n\n\tif i.Checksums == nil {\n\t\ti.Checksums = map[string]string{}\n\t}\n\n\treader, err := i.Fs.Open(i.Path)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer reader.Close()\n\n\tvar h hash.Hash\n\n\t//nolint:gosec\n\tswitch algo {\n\tcase \"md5\":\n\t\th = md5.New()\n\tcase \"sha1\":\n\t\th = sha1.New()\n\tcase \"sha256\":\n\t\th = sha256.New()\n\tcase \"sha512\":\n\t\th = sha512.New()\n\tdefault:\n\t\treturn fbErrors.ErrInvalidOption\n\t}\n\n\t_, err = io.Copy(h, reader)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\ti.Checksums[algo] = hex.EncodeToString(h.Sum(nil))\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "h = md5.New()",
+        "SourceFilename": "/analysis/repo/files/file.go",
+        "SourceLineNum": 187,
+        "ParentFunction": "Checksum (algo string) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Checksum",
+    "file_path": "/analysis/repo/files/file.go",
+    "line_number": 189,
+    "full_implementation": "func (i *FileInfo) Checksum(algo string) error {\n\tif i.IsDir {\n\t\treturn fbErrors.ErrIsDirectory\n\t}\n\n\tif i.Checksums == nil {\n\t\ti.Checksums = map[string]string{}\n\t}\n\n\treader, err := i.Fs.Open(i.Path)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer reader.Close()\n\n\tvar h hash.Hash\n\n\t//nolint:gosec\n\tswitch algo {\n\tcase \"md5\":\n\t\th = md5.New()\n\tcase \"sha1\":\n\t\th = sha1.New()\n\tcase \"sha256\":\n\t\th = sha256.New()\n\tcase \"sha512\":\n\t\th = sha512.New()\n\tdefault:\n\t\treturn fbErrors.ErrInvalidOption\n\t}\n\n\t_, err = io.Copy(h, reader)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\ti.Checksums[algo] = hex.EncodeToString(h.Sum(nil))\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h = sha1.New()",
+        "SourceFilename": "/analysis/repo/files/file.go",
+        "SourceLineNum": 189,
+        "ParentFunction": "Checksum (algo string) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "HashPwd",
+    "file_path": "/analysis/repo/users/password.go",
+    "line_number": 9,
+    "full_implementation": "func HashPwd(password string) (string, error) {\n\tbytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\treturn string(bytes), err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/users/password.go",
+        "SourceLineNum": 9,
+        "ParentFunction": "HashPwd (password string) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/users/password.go",
+          "SourceLineNum": 9,
+          "ParentFunction": "HashPwd (password string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "getFileName",
+    "file_path": "/analysis/repo/diskcache/file_cache.go",
+    "line_number": 106,
+    "full_implementation": "func (f *FileCache) getFileName(key string) string {\n\thasher := sha1.New() //nolint:gosec\n\t_, _ = hasher.Write([]byte(key))\n\thash := hex.EncodeToString(hasher.Sum(nil))\n\treturn fmt.Sprintf(\"%s/%s/%s\", hash[:1], hash[1:3], hash)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := sha1.New() //nolint:gosec",
+        "SourceFilename": "/analysis/repo/diskcache/file_cache.go",
+        "SourceLineNum": 106,
+        "ParentFunction": "getFileName (key string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getSharePasswordHash",
+    "file_path": "/analysis/repo/http/share.go",
+    "line_number": 161,
+    "full_implementation": "func getSharePasswordHash(body share.CreateBody) (data []byte, statuscode int, err error) {\n\tif body.Password == \"\" {\n\t\treturn nil, 0, nil\n\t}\n\n\thash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn nil, http.StatusInternalServerError, fmt.Errorf(\"failed to hash password: %w\", err)\n\t}\n\n\treturn hash, 0, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/http/share.go",
+        "SourceLineNum": 161,
+        "ParentFunction": "getSharePasswordHash (body github.com/filebrowser/filebrowser/v2/share.CreateBody) (data []byte, statuscode int, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/http/share.go",
+          "SourceLineNum": 161,
+          "ParentFunction": "getSharePasswordHash (body github.com/filebrowser/filebrowser/v2/share.CreateBody) (data []byte, statuscode int, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "quickSetup",
+    "file_path": "/analysis/repo/cmd/root.go",
+    "line_number": 381,
+    "full_implementation": "func quickSetup(flags *pflag.FlagSet, d pythonData) {\n\tset := \u0026settings.Settings{\n\t\tKey:              generateKey(),\n\t\tSignup:           false,\n\t\tCreateUserDir:    false,\n\t\tUserHomeBasePath: settings.DefaultUsersHomeBasePath,\n\t\tDefaults: settings.UserDefaults{\n\t\t\tScope:       \".\",\n\t\t\tLocale:      \"en\",\n\t\t\tSingleClick: false,\n\t\t\tPerm: users.Permissions{\n\t\t\t\tAdmin:    false,\n\t\t\t\tExecute:  true,\n\t\t\t\tCreate:   true,\n\t\t\t\tRename:   true,\n\t\t\t\tModify:   true,\n\t\t\t\tDelete:   true,\n\t\t\t\tShare:    true,\n\t\t\t\tDownload: true,\n\t\t\t},\n\t\t},\n\t\tAuthMethod: \"\",\n\t\tBranding:   settings.Branding{},\n\t\tTus: settings.Tus{\n\t\t\tChunkSize:  settings.DefaultTusChunkSize,\n\t\t\tRetryCount: settings.DefaultTusRetryCount,\n\t\t},\n\t\tCommands: nil,\n\t\tShell:    nil,\n\t\tRules:    nil,\n\t}\n\n\tvar err error\n\tif _, noauth := getParamB(flags, \"noauth\"); noauth {\n\t\tset.AuthMethod = auth.MethodNoAuth\n\t\terr = d.store.Auth.Save(\u0026auth.NoAuth{})\n\t} else {\n\t\tset.AuthMethod = auth.MethodJSONAuth\n\t\terr = d.store.Auth.Save(\u0026auth.JSONAuth{})\n\t}\n\n\tcheckErr(err)\n\terr = d.store.Settings.Save(set)\n\tcheckErr(err)\n\n\tser := \u0026settings.Server{\n\t\tBaseURL: getParam(flags, \"baseurl\"),\n\t\tPort:    getParam(flags, \"port\"),\n\t\tLog:     getParam(flags, \"log\"),\n\t\tTLSKey:  getParam(flags, \"key\"),\n\t\tTLSCert: getParam(flags, \"cert\"),\n\t\tAddress: getParam(flags, \"address\"),\n\t\tRoot:    getParam(flags, \"root\"),\n\t}\n\n\terr = d.store.Settings.SaveServer(ser)\n\tcheckErr(err)\n\n\tusername := getParam(flags, \"username\")\n\tpassword := getParam(flags, \"password\")\n\n\tif password == \"\" {\n\t\tpassword, err = users.HashPwd(\"admin\")\n\t\tcheckErr(err)\n\t}\n\n\tif username == \"\" || password == \"\" {\n\t\tlog.Fatal(\"username and password cannot be empty during quick setup\")\n\t}\n\n\tuser := \u0026users.User{\n\t\tUsername:     username,\n\t\tPassword:     password,\n\t\tLockPassword: false,\n\t}\n\n\tset.Defaults.Apply(user)\n\tuser.Perm.Admin = true\n\n\terr = d.store.Users.Save(user)\n\tcheckErr(err)\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/filebrowser/filebrowser/v2/users.HashPwd",
+      "Message": "PassWord should be random\n\u003e\u003e/analysis/repo/users/password.go\nHashPwd (password string) (string, error)\n\t9:\tbytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\t9:\tbytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\t8:\tfunc HashPwd(password string) (string, error) {",
+      "Slicing_Criteria": {
+        "SourceCode": "password, err = users.HashPwd(\"admin\")",
+        "SourceFilename": "/analysis/repo/cmd/root.go",
+        "SourceLineNum": 381,
+        "ParentFunction": "quickSetup (flags *github.com/spf13/pflag.FlagSet, d github.com/filebrowser/filebrowser/v2/cmd.pythonData)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "password, err = users.HashPwd(\"admin\")",
+          "SourceFilename": "/analysis/repo/cmd/root.go",
+          "SourceLineNum": 381,
+          "ParentFunction": "quickSetup (flags *github.com/spf13/pflag.FlagSet, d github.com/filebrowser/filebrowser/v2/cmd.pythonData)"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  }
+]

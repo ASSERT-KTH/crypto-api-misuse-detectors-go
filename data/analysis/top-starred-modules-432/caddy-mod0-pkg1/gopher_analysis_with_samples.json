@@ -1,0 +1,39 @@
+[
+  {
+    "function_name": "AdminAPIRequest",
+    "file_path": "/analysis/repo/cmd/commandfuncs.go",
+    "line_number": 673,
+    "full_implementation": "func AdminAPIRequest(adminAddr, method, uri string, headers http.Header, body io.Reader) (*http.Response, error) {\n\tparsedAddr, err := caddy.ParseNetworkAddress(adminAddr)\n\tif err != nil || parsedAddr.PortRangeSize() \u003e 1 {\n\t\treturn nil, fmt.Errorf(\"invalid admin address %s: %v\", adminAddr, err)\n\t}\n\torigin := \"http://\" + parsedAddr.JoinHostPort(0)\n\tif parsedAddr.IsUnixNetwork() {\n\t\torigin = \"http://127.0.0.1\" // bogus host is a hack so that http.NewRequest() is happy\n\n\t\t// the unix address at this point might still contain the optional\n\t\t// unix socket permissions, which are part of the address/host.\n\t\t// those need to be removed first, as they aren't part of the\n\t\t// resulting unix file path\n\t\taddr, _, err := internal.SplitUnixSocketPermissionsBits(parsedAddr.Host)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tparsedAddr.Host = addr\n\t} else if parsedAddr.IsFdNetwork() {\n\t\torigin = \"http://127.0.0.1\"\n\t}\n\n\t// form the request\n\treq, err := http.NewRequest(method, origin+uri, body)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"making request: %v\", err)\n\t}\n\tif parsedAddr.IsUnixNetwork() || parsedAddr.IsFdNetwork() {\n\t\t// We used to conform to RFC 2616 Section 14.26 which requires\n\t\t// an empty host header when there is no host, as is the case\n\t\t// with unix sockets and socket fds. However, Go required a\n\t\t// Host value so we used a hack of a space character as the host\n\t\t// (it would see the Host was non-empty, then trim the space later).\n\t\t// As of Go 1.20.6 (July 2023), this hack no longer works. See:\n\t\t// https://github.com/golang/go/issues/60374\n\t\t// See also the discussion here:\n\t\t// https://github.com/golang/go/issues/61431\n\t\t//\n\t\t// After that, we now require a Host value of either 127.0.0.1\n\t\t// or ::1 if one is set. Above I choose to use 127.0.0.1. Even\n\t\t// though the value should be completely irrelevant (it could be\n\t\t// \"srldkjfsd\"), if for some reason the Host *is* used, at least\n\t\t// we can have some reasonable assurance it will stay on the local\n\t\t// machine and that browsers, if they ever allow access to unix\n\t\t// sockets, can still enforce CORS, ensuring it is still coming\n\t\t// from the local machine.\n\t} else {\n\t\treq.Header.Set(\"Origin\", origin)\n\t}\n\tif body != nil {\n\t\treq.Header.Set(\"Content-Type\", \"application/json\")\n\t}\n\tfor k, v := range headers {\n\t\treq.Header[k] = v\n\t}\n\n\t// make an HTTP client that dials our network type, since admin\n\t// endpoints aren't always TCP, which is what the default transport\n\t// expects; reuse is not of particular concern here\n\tclient := http.Client{\n\t\tTransport: \u0026http.Transport{\n\t\t\tDialContext: func(_ context.Context, _, _ string) (net.Conn, error) {\n\t\t\t\treturn net.Dial(parsedAddr.Network, parsedAddr.JoinHostPort(0))\n\t\t\t},\n\t\t},\n\t}\n\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"performing request: %v\", err)\n\t}\n\n\t// if it didn't work, let the user know\n\tif resp.StatusCode \u003e= 400 {\n\t\trespBody, err := io.ReadAll(io.LimitReader(resp.Body, 1024*1024*2))\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"HTTP %d: reading error message: %v\", resp.StatusCode, err)\n\t\t}\n\t\treturn nil, fmt.Errorf(\"caddy responded with error: HTTP %d: %s\", resp.StatusCode, respBody)\n\t}\n\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(method, origin+uri, body)",
+        "SourceFilename": "/analysis/repo/cmd/commandfuncs.go",
+        "SourceLineNum": 673,
+        "ParentFunction": "AdminAPIRequest (adminAddr string, method string, uri string, headers net/http.Header, body io.Reader) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(method, origin+uri, body)",
+          "SourceFilename": "/analysis/repo/cmd/commandfuncs.go",
+          "SourceLineNum": 673,
+          "ParentFunction": "AdminAPIRequest (adminAddr string, method string, uri string, headers net/http.Header, body io.Reader) (*net/http.Response, error)"
+        },
+        {
+          "SourceCode": "origin := \"http://\" + parsedAddr.JoinHostPort(0)",
+          "SourceFilename": "/analysis/repo/cmd/commandfuncs.go",
+          "SourceLineNum": 655,
+          "ParentFunction": "AdminAPIRequest (adminAddr string, method string, uri string, headers net/http.Header, body io.Reader) (*net/http.Response, error)"
+        },
+        {
+          "SourceCode": "origin := \"http://\" + parsedAddr.JoinHostPort(0)",
+          "SourceFilename": "/analysis/repo/cmd/commandfuncs.go",
+          "SourceLineNum": 655,
+          "ParentFunction": "AdminAPIRequest (adminAddr string, method string, uri string, headers net/http.Header, body io.Reader) (*net/http.Response, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  }
+]

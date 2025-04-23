@@ -1,0 +1,183 @@
+[
+  {
+    "function_name": "GenerateRSAPrivateKey",
+    "file_path": "/analysis/repo/pkg/util/pki/generate.go",
+    "line_number": 95,
+    "full_implementation": "func GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {\n\t// Do not allow keySize \u003c 2048\n\t// https://en.wikipedia.org/wiki/Key_size#cite_note-twirl-14\n\tif keySize \u003c MinRSAKeySize {\n\t\treturn nil, fmt.Errorf(\"weak rsa key size specified: %d. minimum key size: %d\", keySize, MinRSAKeySize)\n\t}\n\tif keySize \u003e MaxRSAKeySize {\n\t\treturn nil, fmt.Errorf(\"rsa key size specified too big: %d. maximum key size: %d\", keySize, MaxRSAKeySize)\n\t}\n\n\treturn rsa.GenerateKey(rand.Reader, keySize)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "return rsa.GenerateKey(rand.Reader, keySize)",
+        "SourceFilename": "/analysis/repo/pkg/util/pki/generate.go",
+        "SourceLineNum": 95,
+        "ParentFunction": "GenerateRSAPrivateKey (keySize int) (*crypto/rsa.PrivateKey, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {",
+          "SourceFilename": "/analysis/repo/pkg/util/pki/generate.go",
+          "SourceLineNum": 85,
+          "ParentFunction": "GenerateRSAPrivateKey (keySize int) (*crypto/rsa.PrivateKey, error)"
+        },
+        {
+          "SourceCode": "keySize := MinRSAKeySize",
+          "SourceFilename": "/analysis/repo/pkg/util/pki/generate.go",
+          "SourceLineNum": 61,
+          "ParentFunction": "GeneratePrivateKeyForCertificate (crt *github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.Certificate) (crypto.Signer, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "generateTLSAssets",
+    "file_path": "/analysis/repo/test/webhook/testwebhook.go",
+    "line_number": 147,
+    "full_implementation": "func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error) {\n\tcaPK, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\trootCA := \u0026x509.Certificate{\n\t\tVersion:               3,\n\t\tBasicConstraintsValid: true,\n\t\tSerialNumber:          big.NewInt(1658),\n\t\tPublicKeyAlgorithm:    x509.RSA,\n\t\tSubject: pkix.Name{\n\t\t\tCommonName: \"testing-ca\",\n\t\t},\n\t\tNotBefore: time.Now().Add(-1 * time.Hour),\n\t\tNotAfter:  time.Now().Add(time.Hour),\n\t\tKeyUsage:  x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tIsCA:      true,\n\t}\n\trootCADER, err := x509.CreateCertificate(rand.Reader, rootCA, rootCA, caPK.Public(), caPK)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\trootCA, err = x509.ParseCertificate(rootCADER)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tservingCert := \u0026x509.Certificate{\n\t\tVersion:               3,\n\t\tBasicConstraintsValid: true,\n\t\tSerialNumber:          big.NewInt(1659),\n\t\tPublicKeyAlgorithm:    x509.RSA,\n\t\tDNSNames:              []string{\"localhost\"},\n\t\tIPAddresses:           []net.IP{{127, 0, 0, 1}},\n\t\tNotBefore:             time.Now().Add(-1 * time.Hour),\n\t\tNotAfter:              time.Now().Add(time.Hour),\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t}\n\tservingPK, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tservingDER, err := x509.CreateCertificate(rand.Reader, servingCert, rootCA, servingPK.Public(), caPK)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tservingCert, err = x509.ParseCertificate(servingDER)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\n\t// encoding PKI data to PEM\n\tprivateKeyPEM, err = pki.EncodePKCS8PrivateKey(servingPK)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tcaPEM, err = pki.EncodeX509(rootCA)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tcertificatePEM, err = pki.EncodeX509(servingCert)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "caPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+        "SourceLineNum": 147,
+        "ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "caPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+          "SourceLineNum": 147,
+          "ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "generateTLSAssets",
+    "file_path": "/analysis/repo/test/webhook/testwebhook.go",
+    "line_number": 184,
+    "full_implementation": "func generateTLSAssets() (caPEM, certificatePEM, privateKeyPEM []byte, err error) {\n\tcaPK, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\trootCA := \u0026x509.Certificate{\n\t\tVersion:               3,\n\t\tBasicConstraintsValid: true,\n\t\tSerialNumber:          big.NewInt(1658),\n\t\tPublicKeyAlgorithm:    x509.RSA,\n\t\tSubject: pkix.Name{\n\t\t\tCommonName: \"testing-ca\",\n\t\t},\n\t\tNotBefore: time.Now().Add(-1 * time.Hour),\n\t\tNotAfter:  time.Now().Add(time.Hour),\n\t\tKeyUsage:  x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tIsCA:      true,\n\t}\n\trootCADER, err := x509.CreateCertificate(rand.Reader, rootCA, rootCA, caPK.Public(), caPK)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\trootCA, err = x509.ParseCertificate(rootCADER)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tservingCert := \u0026x509.Certificate{\n\t\tVersion:               3,\n\t\tBasicConstraintsValid: true,\n\t\tSerialNumber:          big.NewInt(1659),\n\t\tPublicKeyAlgorithm:    x509.RSA,\n\t\tDNSNames:              []string{\"localhost\"},\n\t\tIPAddresses:           []net.IP{{127, 0, 0, 1}},\n\t\tNotBefore:             time.Now().Add(-1 * time.Hour),\n\t\tNotAfter:              time.Now().Add(time.Hour),\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t}\n\tservingPK, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tservingDER, err := x509.CreateCertificate(rand.Reader, servingCert, rootCA, servingPK.Public(), caPK)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tservingCert, err = x509.ParseCertificate(servingDER)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\n\t// encoding PKI data to PEM\n\tprivateKeyPEM, err = pki.EncodePKCS8PrivateKey(servingPK)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tcaPEM, err = pki.EncodeX509(rootCA)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\tcertificatePEM, err = pki.EncodeX509(servingCert)\n\tif err != nil {\n\t\treturn nil, nil, nil, err\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "servingPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+        "SourceLineNum": 184,
+        "ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "servingPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+          "SourceLineNum": 184,
+          "ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Generate",
+    "file_path": "/analysis/repo/pkg/issuer/acme/dns/rfc2136/tsig.go",
+    "line_number": 67,
+    "full_implementation": "func (key tsigHMACProvider) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {\n\trawsecret, err := fromBase64([]byte(key))\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"error decoding the provided TSIG secret: %w\", err)\n\t}\n\tvar h hash.Hash\n\tswitch dns.CanonicalName(t.Algorithm) {\n\tcase dns.HmacSHA1:\n\t\th = hmac.New(sha1.New, rawsecret)\n\tcase dns.HmacSHA224:\n\t\th = hmac.New(sha256.New224, rawsecret)\n\tcase dns.HmacSHA256:\n\t\th = hmac.New(sha256.New, rawsecret)\n\tcase dns.HmacSHA384:\n\t\th = hmac.New(sha512.New384, rawsecret)\n\tcase dns.HmacSHA512:\n\t\th = hmac.New(sha512.New, rawsecret)\n\tcase dns.HmacMD5:\n\t\th = hmac.New(md5.New, rawsecret)\n\tdefault:\n\t\treturn nil, dns.ErrKeyAlg\n\t}\n\t_, err = h.Write(msg)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn h.Sum(nil), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+      "Slicing_Criteria": {
+        "SourceCode": "h = hmac.New(md5.New, rawsecret)",
+        "SourceFilename": "/analysis/repo/pkg/issuer/acme/dns/rfc2136/tsig.go",
+        "SourceLineNum": 67,
+        "ParentFunction": "Generate (msg []byte, t *github.com/miekg/dns.TSIG) ([]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "h = hmac.New(md5.New, rawsecret)",
+          "SourceFilename": "/analysis/repo/pkg/issuer/acme/dns/rfc2136/tsig.go",
+          "SourceLineNum": 67,
+          "ParentFunction": "Generate (msg []byte, t *github.com/miekg/dns.TSIG) ([]byte, error)"
+        }
+      ],
+      "Predicate_Type": "SECURE_HMAC_HASH"
+    }
+  },
+  {
+    "function_name": "createAccountPrivateKey",
+    "file_path": "/analysis/repo/pkg/issuer/acme/setup.go",
+    "line_number": 427,
+    "full_implementation": "func (a *Acme) createAccountPrivateKey(ctx context.Context, sel cmmeta.SecretKeySelector, ns string) (*rsa.PrivateKey, error) {\n\tsel = acme.PrivateKeySelector(sel)\n\taccountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t_, err = a.secretsClient.Secrets(ns).Create(ctx, \u0026corev1.Secret{\n\t\tObjectMeta: metav1.ObjectMeta{\n\t\t\tName:      sel.Name,\n\t\t\tNamespace: ns,\n\t\t},\n\t\tData: map[string][]byte{\n\t\t\tsel.Key: pki.EncodePKCS1PrivateKey(accountPrivKey),\n\t\t},\n\t}, metav1.CreateOptions{})\n\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn accountPrivKey, err\n}",
+    "vulnerability_info": {
+      "FuncName": "github.com/cert-manager/cert-manager/pkg/util/pki.GenerateRSAPrivateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/pkg/util/pki/generate.go\nGenerateRSAPrivateKey (keySize int) (*crypto/rsa.PrivateKey, error)\n\t95:\treturn rsa.GenerateKey(rand.Reader, keySize)\n\t85:\tfunc GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)",
+        "SourceFilename": "/analysis/repo/pkg/issuer/acme/setup.go",
+        "SourceLineNum": 427,
+        "ParentFunction": "createAccountPrivateKey (ctx context.Context, sel github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector, ns string) (*crypto/rsa.PrivateKey, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)",
+          "SourceFilename": "/analysis/repo/pkg/issuer/acme/setup.go",
+          "SourceLineNum": 427,
+          "ParentFunction": "createAccountPrivateKey (ctx context.Context, sel github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector, ns string) (*crypto/rsa.PrivateKey, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "GenerateCA",
+    "file_path": "/analysis/repo/test/framework/addon/vault/vault.go",
+    "line_number": 419,
+    "full_implementation": "func GenerateCA() ([]byte, []byte, error) {\n\tca := \u0026x509.Certificate{\n\t\tSerialNumber: big.NewInt(1653),\n\t\tSubject: pkix.Name{\n\t\t\tOrganization: []string{\"cert-manager test\"},\n\t\t},\n\t\tNotBefore:             time.Now(),\n\t\tNotAfter:              time.Now().AddDate(10, 0, 0),\n\t\tIsCA:                  true,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},\n\t\tKeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,\n\t\tBasicConstraintsValid: true,\n\t}\n\n\tprivateKey, _ := rsa.GenerateKey(rand.Reader, 2048)\n\tcaBytes, _ := x509.CreateCertificate(rand.Reader, ca, ca, \u0026privateKey.PublicKey, privateKey)\n\n\treturn encodePublicKey(caBytes), encodePrivateKey(privateKey), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+        "SourceLineNum": 419,
+        "ParentFunction": "GenerateCA () ([]byte, []byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+          "SourceLineNum": 419,
+          "ParentFunction": "GenerateCA () ([]byte, []byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "generateVaultServingCert",
+    "file_path": "/analysis/repo/test/framework/addon/vault/vault.go",
+    "line_number": 399,
+    "full_implementation": "func generateVaultServingCert(vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error) {\n\tcatls, _ := tls.X509KeyPair(vaultCA, vaultCAPrivateKey)\n\tca, _ := x509.ParseCertificate(catls.Certificate[0])\n\n\tcert := \u0026x509.Certificate{\n\t\tSerialNumber: big.NewInt(1658),\n\t\tSubject: pkix.Name{\n\t\t\tCommonName:   dnsName,\n\t\t\tOrganization: []string{\"cert-manager vault server\"},\n\t\t},\n\t\tNotBefore:    time.Now(),\n\t\tNotAfter:     time.Now().AddDate(10, 0, 0),\n\t\tSubjectKeyId: []byte{1, 2, 3, 4, 6},\n\t\tExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},\n\t\tKeyUsage:     x509.KeyUsageDigitalSignature,\n\t\tIPAddresses:  []net.IP{net.IPv4(127, 0, 0, 1)},\n\t\tDNSNames:     []string{dnsName},\n\t}\n\n\tprivateKey, _ := rsa.GenerateKey(rand.Reader, 2048)\n\tcertBytes, _ := x509.CreateCertificate(rand.Reader, cert, ca, \u0026privateKey.PublicKey, catls.PrivateKey)\n\n\treturn encodePublicKey(certBytes), encodePrivateKey(privateKey), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+        "SourceLineNum": 399,
+        "ParentFunction": "generateVaultServingCert (vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+          "SourceLineNum": 399,
+          "ParentFunction": "generateVaultServingCert (vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

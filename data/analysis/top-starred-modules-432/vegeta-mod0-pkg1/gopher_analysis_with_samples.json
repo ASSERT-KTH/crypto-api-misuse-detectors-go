@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "tlsConfig",
+    "file_path": "/analysis/repo/attack.go",
+    "line_number": 291,
+    "full_implementation": "func tlsConfig(insecure bool, certf, keyf string, rootCerts []string) (*tls.Config, error) {\n\tvar err error\n\tfiles := map[string][]byte{}\n\tfilenames := append([]string{certf, keyf}, rootCerts...)\n\tfor _, f := range filenames {\n\t\tif f != \"\" {\n\t\t\tif files[f], err = os.ReadFile(f); err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\t\t}\n\t}\n\n\tc := tls.Config{InsecureSkipVerify: insecure}\n\tif cert, ok := files[certf]; ok {\n\t\tkey, ok := files[keyf]\n\t\tif !ok {\n\t\t\tkey = cert\n\t\t}\n\n\t\tcertificate, err := tls.X509KeyPair(cert, key)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\n\t\tc.Certificates = append(c.Certificates, certificate)\n\t\tc.BuildNameToCertificate()\n\t}\n\n\tif len(rootCerts) \u003e 0 {\n\t\tc.RootCAs = x509.NewCertPool()\n\t\tfor _, f := range rootCerts {\n\t\t\tif !c.RootCAs.AppendCertsFromPEM(files[f]) {\n\t\t\t\treturn nil, errBadCert\n\t\t\t}\n\t\t}\n\t}\n\n\treturn \u0026c, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "c.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/attack.go",
+        "SourceLineNum": 291,
+        "ParentFunction": "tlsConfig (insecure bool, certf string, keyf string, rootCerts []string) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

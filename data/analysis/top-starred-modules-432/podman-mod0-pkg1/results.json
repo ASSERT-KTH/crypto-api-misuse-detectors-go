@@ -1,0 +1,90 @@
+[
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+activatePath, nil)",
+			"SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+			"SourceLineNum": 78,
+			"ParentFunction": "validatePlugin (newPlugin *github.com/containers/podman/v5/libpod/plugin.VolumePlugin) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+activatePath, nil)",
+				"SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+				"SourceLineNum": 78,
+				"ParentFunction": "validatePlugin (newPlugin *github.com/containers/podman/v5/libpod/plugin.VolumePlugin) error"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+endpoint, bytes.NewReader(reqJSON))",
+			"SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+			"SourceLineNum": 220,
+			"ParentFunction": "sendRequest (toJSON interface{}, endpoint string) (*net/http.Response, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "req, err := http.NewRequest(http.MethodPost, \"http://plugin\"+endpoint, bytes.NewReader(reqJSON))",
+				"SourceFilename": "/analysis/repo/libpod/plugin/volume_api.go",
+				"SourceLineNum": 220,
+				"ParentFunction": "sendRequest (toJSON interface{}, endpoint string) (*net/http.Response, error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "TLSClientConfig: \u0026tls.Config{RootCAs: caCertPool, Certificates: []tls.Certificate{clientCert}, InsecureSkipVerify: insecureSkipVerify},",
+			"SourceFilename": "/analysis/repo/pkg/domain/infra/abi/apply.go",
+			"SourceLineNum": 145,
+			"ParentFunction": "setUpClusterClient (kconfig github.com/containers/podman/v5/pkg/k8s.io/api/core/v1.Config, applyOptions github.com/containers/podman/v5/pkg/domain/entities.ApplyOptions) (*net/http.Client, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "insecureSkipVerify := false",
+				"SourceFilename": "/analysis/repo/pkg/domain/infra/abi/apply.go",
+				"SourceLineNum": 119,
+				"ParentFunction": "setUpClusterClient (kconfig github.com/containers/podman/v5/pkg/k8s.io/api/core/v1.Config, applyOptions github.com/containers/podman/v5/pkg/domain/entities.ApplyOptions) (*net/http.Client, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "(*net/http.Client).Get",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "resp, err := client.Get(\"http://host/_ping\")",
+			"SourceFilename": "/analysis/repo/pkg/machine/config.go",
+			"SourceLineNum": 265,
+			"ParentFunction": "WaitAndPingAPI (sock string)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "resp, err := client.Get(\"http://host/_ping\")",
+				"SourceFilename": "/analysis/repo/pkg/machine/config.go",
+				"SourceLineNum": 265,
+				"ParentFunction": "WaitAndPingAPI (sock string)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+		"Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+		"Slicing_Criteria": {
+			"SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+			"SourceFilename": "/analysis/repo/pkg/machine/ssh.go",
+			"SourceLineNum": 108,
+			"ParentFunction": "createConfig (user string, identityPath string) (*golang.org/x/crypto/ssh.ClientConfig, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

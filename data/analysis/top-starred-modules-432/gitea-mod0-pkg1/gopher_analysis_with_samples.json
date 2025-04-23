@@ -1,0 +1,846 @@
+[
+  {
+    "function_name": "getEncryptionKey",
+    "file_path": "/analysis/repo/models/auth/twofactor.go",
+    "line_number": 96,
+    "full_implementation": "func (t *TwoFactor) getEncryptionKey() []byte {\n\tk := md5.Sum([]byte(setting.SecretKey))\n\treturn k[:]\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "k := md5.Sum([]byte(setting.SecretKey))",
+        "SourceFilename": "/analysis/repo/models/auth/twofactor.go",
+        "SourceLineNum": 96,
+        "ParentFunction": "getEncryptionKey () []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GenerateClientSecret",
+    "file_path": "/analysis/repo/models/auth/oauth2.go",
+    "line_number": 189,
+    "full_implementation": "func (app *OAuth2Application) GenerateClientSecret(ctx context.Context) (string, error) {\n\trBytes, err := util.CryptoRandomBytes(32)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\t// Add a prefix to the base32, this is in order to make it easier\n\t// for code scanners to grab sensitive tokens.\n\tclientSecret := \"gto_\" + base32Lower.EncodeToString(rBytes)\n\n\thashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\tapp.ClientSecret = string(hashedSecret)\n\tif _, err := db.GetEngine(ctx).ID(app.ID).Cols(\"client_secret\").Update(app); err != nil {\n\t\treturn \"\", err\n\t}\n\treturn clientSecret, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "hashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/models/auth/oauth2.go",
+        "SourceLineNum": 189,
+        "ParentFunction": "GenerateClientSecret (ctx context.Context) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/models/auth/oauth2.go",
+          "SourceLineNum": 189,
+          "ParentFunction": "GenerateClientSecret (ctx context.Context) (string, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "HashToken",
+    "file_path": "/analysis/repo/models/auth/twofactor.go",
+    "line_number": 82,
+    "full_implementation": "func HashToken(token, salt string) string {\n\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\treturn hex.EncodeToString(tempHash)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 10000",
+      "Slicing_Criteria": {
+        "SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+        "SourceFilename": "/analysis/repo/models/auth/twofactor.go",
+        "SourceLineNum": 82,
+        "ParentFunction": "HashToken (token string, salt string) string"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+          "SourceFilename": "/analysis/repo/models/auth/twofactor.go",
+          "SourceLineNum": 82,
+          "ParentFunction": "HashToken (token string, salt string) string"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "HashEmail",
+    "file_path": "/analysis/repo/models/avatars/avatar.go",
+    "line_number": 94,
+    "full_implementation": "func HashEmail(email string) string {\n\tm := md5.New()\n\t_, _ = m.Write([]byte(strings.ToLower(strings.TrimSpace(email))))\n\treturn hex.EncodeToString(m.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "m := md5.New()",
+        "SourceFilename": "/analysis/repo/models/avatars/avatar.go",
+        "SourceLineNum": 94,
+        "ParentFunction": "HashEmail (email string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "HashFilePathForWebUI",
+    "file_path": "/analysis/repo/modules/git/utils.go",
+    "line_number": 133,
+    "full_implementation": "func HashFilePathForWebUI(s string) string {\n\th := sha1.New()\n\t_, _ = h.Write([]byte(s))\n\treturn hex.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/modules/git/utils.go",
+        "SourceLineNum": 133,
+        "ParentFunction": "HashFilePathForWebUI (s string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ComputeHash",
+    "file_path": "/analysis/repo/modules/git/object_format.go",
+    "line_number": 67,
+    "full_implementation": "func (h Sha1ObjectFormatImpl) ComputeHash(t ObjectType, content []byte) ObjectID {\n\thasher := sha1.New()\n\t_, _ = hasher.Write(t.Bytes())\n\t_, _ = hasher.Write([]byte(\" \"))\n\t_, _ = hasher.Write([]byte(strconv.FormatInt(int64(len(content)), 10)))\n\t_, _ = hasher.Write([]byte{0})\n\t_, _ = hasher.Write(content)\n\treturn h.MustID(hasher.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher := sha1.New()",
+        "SourceFilename": "/analysis/repo/modules/git/object_format.go",
+        "SourceLineNum": 67,
+        "ParentFunction": "ComputeHash (t code.gitea.io/gitea/modules/git.ObjectType, content []byte) code.gitea.io/gitea/modules/git.ObjectID"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "VerifyTimeLimitCode",
+    "file_path": "/analysis/repo/modules/base/tool.go",
+    "line_number": 70,
+    "full_implementation": "func VerifyTimeLimitCode(now time.Time, data string, minutes int, code string) bool {\n\tif len(code) \u003c= 18 {\n\t\treturn false\n\t}\n\n\tstartTimeStr := code[:12]\n\taliveTimeStr := code[12:18]\n\taliveTime, _ := strconv.Atoi(aliveTimeStr) // no need to check err, if anything wrong, the following code check will fail soon\n\n\t// check code\n\tretCode := CreateTimeLimitCode(data, aliveTime, startTimeStr, nil)\n\tif subtle.ConstantTimeCompare([]byte(retCode), []byte(code)) != 1 {\n\t\tretCode = CreateTimeLimitCode(data, aliveTime, startTimeStr, sha1.New()) // TODO: this is only for the support of legacy codes, remove this in/after 1.23\n\t\tif subtle.ConstantTimeCompare([]byte(retCode), []byte(code)) != 1 {\n\t\t\treturn false\n\t\t}\n\t}\n\n\t// check time is expired or not: startTime \u003c= now \u0026\u0026 now \u003c startTime + minutes\n\tstartTime, _ := time.ParseInLocation(\"200601021504\", startTimeStr, time.Local)\n\treturn (startTime.Before(now) || startTime.Equal(now)) \u0026\u0026 now.Before(startTime.Add(time.Minute*time.Duration(minutes)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "retCode = CreateTimeLimitCode(data, aliveTime, startTimeStr, sha1.New()) // TODO: this is only for the support of legacy codes, remove this in/after 1.23",
+        "SourceFilename": "/analysis/repo/modules/base/tool.go",
+        "SourceLineNum": 70,
+        "ParentFunction": "VerifyTimeLimitCode (now time.Time, data string, minutes int, code string) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "IsUploadAvatarChanged",
+    "file_path": "/analysis/repo/models/user/avatar.go",
+    "line_number": 109,
+    "full_implementation": "func (u *User) IsUploadAvatarChanged(data []byte) bool {\n\tif !u.UseCustomAvatar || len(u.Avatar) == 0 {\n\t\treturn true\n\t}\n\tavatarID := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", u.ID, md5.Sum(data)))))\n\treturn u.Avatar != avatarID\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "avatarID := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", u.ID, md5.Sum(data)))))",
+        "SourceFilename": "/analysis/repo/models/user/avatar.go",
+        "SourceLineNum": 109,
+        "ParentFunction": "IsUploadAvatarChanged (data []byte) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "IsUploadAvatarChanged",
+    "file_path": "/analysis/repo/models/user/avatar.go",
+    "line_number": 109,
+    "full_implementation": "func (u *User) IsUploadAvatarChanged(data []byte) bool {\n\tif !u.UseCustomAvatar || len(u.Avatar) == 0 {\n\t\treturn true\n\t}\n\tavatarID := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", u.ID, md5.Sum(data)))))\n\treturn u.Avatar != avatarID\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "avatarID := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", u.ID, md5.Sum(data)))))",
+        "SourceFilename": "/analysis/repo/models/user/avatar.go",
+        "SourceLineNum": 109,
+        "ParentFunction": "IsUploadAvatarChanged (data []byte) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "hashCommitStatusContext",
+    "file_path": "/analysis/repo/models/git/commit_status.go",
+    "line_number": 522,
+    "full_implementation": "func hashCommitStatusContext(context string) string {\n\treturn fmt.Sprintf(\"%x\", sha1.Sum([]byte(context)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "return fmt.Sprintf(\"%x\", sha1.Sum([]byte(context)))",
+        "SourceFilename": "/analysis/repo/models/git/commit_status.go",
+        "SourceLineNum": 522,
+        "ParentFunction": "hashCommitStatusContext (context string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "hashContext",
+    "file_path": "/analysis/repo/models/migrations/v1_10/v88.go",
+    "line_number": 14,
+    "full_implementation": "func hashContext(context string) string {\n\treturn fmt.Sprintf(\"%x\", sha1.Sum([]byte(context)))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "return fmt.Sprintf(\"%x\", sha1.Sum([]byte(context)))",
+        "SourceFilename": "/analysis/repo/models/migrations/v1_10/v88.go",
+        "SourceLineNum": 14,
+        "ParentFunction": "hashContext (context string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "HashToken",
+    "file_path": "/analysis/repo/models/migrations/base/hash.go",
+    "line_number": 14,
+    "full_implementation": "func HashToken(token, salt string) string {\n\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\treturn hex.EncodeToString(tempHash)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 10000",
+      "Slicing_Criteria": {
+        "SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+        "SourceFilename": "/analysis/repo/models/migrations/base/hash.go",
+        "SourceLineNum": 14,
+        "ParentFunction": "HashToken (token string, salt string) string"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+          "SourceFilename": "/analysis/repo/models/migrations/base/hash.go",
+          "SourceLineNum": 14,
+          "ParentFunction": "HashToken (token string, salt string) string"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "copyOldAvatarToNewLocation",
+    "file_path": "/analysis/repo/models/migrations/v1_11/v115.go",
+    "line_number": 149,
+    "full_implementation": "func copyOldAvatarToNewLocation(userID int64, oldAvatar string) (string, error) {\n\tfr, err := os.Open(filepath.Join(setting.Avatar.Storage.Path, oldAvatar))\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"os.Open: %w\", err)\n\t}\n\tdefer fr.Close()\n\n\tdata, err := io.ReadAll(fr)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"io.ReadAll: %w\", err)\n\t}\n\n\tnewAvatar := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", userID, md5.Sum(data)))))\n\tif newAvatar == oldAvatar {\n\t\treturn newAvatar, nil\n\t}\n\n\tif err := os.WriteFile(filepath.Join(setting.Avatar.Storage.Path, newAvatar), data, 0o666); err != nil {\n\t\treturn \"\", fmt.Errorf(\"os.WriteFile: %w\", err)\n\t}\n\n\treturn newAvatar, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "newAvatar := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", userID, md5.Sum(data)))))",
+        "SourceFilename": "/analysis/repo/models/migrations/v1_11/v115.go",
+        "SourceLineNum": 149,
+        "ParentFunction": "copyOldAvatarToNewLocation (userID int64, oldAvatar string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "copyOldAvatarToNewLocation",
+    "file_path": "/analysis/repo/models/migrations/v1_11/v115.go",
+    "line_number": 149,
+    "full_implementation": "func copyOldAvatarToNewLocation(userID int64, oldAvatar string) (string, error) {\n\tfr, err := os.Open(filepath.Join(setting.Avatar.Storage.Path, oldAvatar))\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"os.Open: %w\", err)\n\t}\n\tdefer fr.Close()\n\n\tdata, err := io.ReadAll(fr)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"io.ReadAll: %w\", err)\n\t}\n\n\tnewAvatar := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", userID, md5.Sum(data)))))\n\tif newAvatar == oldAvatar {\n\t\treturn newAvatar, nil\n\t}\n\n\tif err := os.WriteFile(filepath.Join(setting.Avatar.Storage.Path, newAvatar), data, 0o666); err != nil {\n\t\treturn \"\", fmt.Errorf(\"os.WriteFile: %w\", err)\n\t}\n\n\treturn newAvatar, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "newAvatar := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", userID, md5.Sum(data)))))",
+        "SourceFilename": "/analysis/repo/models/migrations/v1_11/v115.go",
+        "SourceLineNum": 149,
+        "ParentFunction": "copyOldAvatarToNewLocation (userID int64, oldAvatar string) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ParsePackage",
+    "file_path": "/analysis/repo/modules/packages/alpine/metadata.go",
+    "line_number": 79,
+    "full_implementation": "func ParsePackage(r io.Reader) (*Package, error) {\n\t// Alpine packages are concated .tar.gz streams. Usually the first stream contains the package metadata.\n\n\tbr := bufio.NewReader(r) // needed for gzip Multistream\n\n\th := sha1.New()\n\n\tgzr, err := gzip.NewReader(\u0026teeByteReader{br, h})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer gzr.Close()\n\n\tfor {\n\t\tgzr.Multistream(false)\n\n\t\ttr := tar.NewReader(gzr)\n\t\tfor {\n\t\t\thd, err := tr.Next()\n\t\t\tif err == io.EOF {\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\n\t\t\tif hd.Name == \".PKGINFO\" {\n\t\t\t\tp, err := ParsePackageInfo(tr)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\n\t\t\t\t// drain the reader\n\t\t\t\tfor {\n\t\t\t\t\tif _, err := tr.Next(); err != nil {\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tp.FileMetadata.Checksum = \"Q1\" + base64.StdEncoding.EncodeToString(h.Sum(nil))\n\n\t\t\t\treturn p, nil\n\t\t\t}\n\t\t}\n\n\t\th = sha1.New()\n\n\t\terr = gzr.Reset(\u0026teeByteReader{br, h})\n\t\tif err == io.EOF {\n\t\t\tbreak\n\t\t}\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\treturn nil, ErrMissingPKGINFOFile\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/modules/packages/alpine/metadata.go",
+        "SourceLineNum": 79,
+        "ParentFunction": "ParsePackage (r io.Reader) (*code.gitea.io/gitea/modules/packages/alpine.Package, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ParsePackage",
+    "file_path": "/analysis/repo/modules/packages/alpine/metadata.go",
+    "line_number": 119,
+    "full_implementation": "func ParsePackage(r io.Reader) (*Package, error) {\n\t// Alpine packages are concated .tar.gz streams. Usually the first stream contains the package metadata.\n\n\tbr := bufio.NewReader(r) // needed for gzip Multistream\n\n\th := sha1.New()\n\n\tgzr, err := gzip.NewReader(\u0026teeByteReader{br, h})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer gzr.Close()\n\n\tfor {\n\t\tgzr.Multistream(false)\n\n\t\ttr := tar.NewReader(gzr)\n\t\tfor {\n\t\t\thd, err := tr.Next()\n\t\t\tif err == io.EOF {\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tif err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}\n\n\t\t\tif hd.Name == \".PKGINFO\" {\n\t\t\t\tp, err := ParsePackageInfo(tr)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\n\t\t\t\t// drain the reader\n\t\t\t\tfor {\n\t\t\t\t\tif _, err := tr.Next(); err != nil {\n\t\t\t\t\t\tbreak\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tp.FileMetadata.Checksum = \"Q1\" + base64.StdEncoding.EncodeToString(h.Sum(nil))\n\n\t\t\t\treturn p, nil\n\t\t\t}\n\t\t}\n\n\t\th = sha1.New()\n\n\t\terr = gzr.Reset(\u0026teeByteReader{br, h})\n\t\tif err == io.EOF {\n\t\t\tbreak\n\t\t}\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\treturn nil, ErrMissingPKGINFOFile\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h = sha1.New()",
+        "SourceFilename": "/analysis/repo/modules/packages/alpine/metadata.go",
+        "SourceLineNum": 119,
+        "ParentFunction": "ParsePackage (r io.Reader) (*code.gitea.io/gitea/modules/packages/alpine.Package, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ParsePackage",
+    "file_path": "/analysis/repo/modules/packages/npm/creator.go",
+    "line_number": 267,
+    "full_implementation": "func ParsePackage(r io.Reader) (*Package, error) {\n\tvar upload packageUpload\n\tif err := json.NewDecoder(r).Decode(\u0026upload); err != nil {\n\t\treturn nil, err\n\t}\n\n\tfor _, meta := range upload.Versions {\n\t\tif !validateName(meta.Name) {\n\t\t\treturn nil, ErrInvalidPackageName\n\t\t}\n\n\t\tv, err := version.NewSemver(meta.Version)\n\t\tif err != nil {\n\t\t\treturn nil, ErrInvalidPackageVersion\n\t\t}\n\n\t\tscope := \"\"\n\t\tname := meta.Name\n\t\tnameParts := strings.SplitN(meta.Name, \"/\", 2)\n\t\tif len(nameParts) == 2 {\n\t\t\tscope = nameParts[0]\n\t\t\tname = nameParts[1]\n\t\t}\n\n\t\tif !validation.IsValidURL(meta.Homepage) {\n\t\t\tmeta.Homepage = \"\"\n\t\t}\n\n\t\tp := \u0026Package{\n\t\t\tName:     meta.Name,\n\t\t\tVersion:  v.String(),\n\t\t\tDistTags: make([]string, 0, 1),\n\t\t\tMetadata: Metadata{\n\t\t\t\tScope:                   scope,\n\t\t\t\tName:                    name,\n\t\t\t\tDescription:             meta.Description,\n\t\t\t\tAuthor:                  meta.Author.Name,\n\t\t\t\tLicense:                 meta.License,\n\t\t\t\tProjectURL:              meta.Homepage,\n\t\t\t\tKeywords:                meta.Keywords,\n\t\t\t\tDependencies:            meta.Dependencies,\n\t\t\t\tBundleDependencies:      meta.BundleDependencies,\n\t\t\t\tDevelopmentDependencies: meta.DevDependencies,\n\t\t\t\tPeerDependencies:        meta.PeerDependencies,\n\t\t\t\tPeerDependenciesMeta:    meta.PeerDependenciesMeta,\n\t\t\t\tOptionalDependencies:    meta.OptionalDependencies,\n\t\t\t\tBin:                     meta.Bin,\n\t\t\t\tReadme:                  meta.Readme,\n\t\t\t\tRepository:              meta.Repository,\n\t\t\t},\n\t\t}\n\n\t\tfor tag := range upload.DistTags {\n\t\t\tp.DistTags = append(p.DistTags, tag)\n\t\t}\n\n\t\tp.Filename = strings.ToLower(fmt.Sprintf(\"%s-%s.tgz\", name, p.Version))\n\n\t\tattachment := func() *PackageAttachment {\n\t\t\tfor _, a := range upload.Attachments {\n\t\t\t\treturn a\n\t\t\t}\n\t\t\treturn nil\n\t\t}()\n\t\tif attachment == nil || len(attachment.Data) == 0 {\n\t\t\treturn nil, ErrInvalidAttachment\n\t\t}\n\n\t\tdata, err := base64.StdEncoding.DecodeString(attachment.Data)\n\t\tif err != nil {\n\t\t\treturn nil, ErrInvalidAttachment\n\t\t}\n\t\tp.Data = data\n\n\t\tintegrity := strings.SplitN(meta.Dist.Integrity, \"-\", 2)\n\t\tif len(integrity) != 2 {\n\t\t\treturn nil, ErrInvalidIntegrity\n\t\t}\n\t\tintegrityHash, err := base64.StdEncoding.DecodeString(integrity[1])\n\t\tif err != nil {\n\t\t\treturn nil, ErrInvalidIntegrity\n\t\t}\n\t\tvar hash []byte\n\t\tswitch integrity[0] {\n\t\tcase \"sha1\":\n\t\t\ttmp := sha1.Sum(data)\n\t\t\thash = tmp[:]\n\t\tcase \"sha512\":\n\t\t\ttmp := sha512.Sum512(data)\n\t\t\thash = tmp[:]\n\t\t}\n\t\tif !bytes.Equal(integrityHash, hash) {\n\t\t\treturn nil, ErrInvalidIntegrity\n\t\t}\n\n\t\treturn p, nil\n\t}\n\n\treturn nil, ErrInvalidPackage\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "tmp := sha1.Sum(data)",
+        "SourceFilename": "/analysis/repo/modules/packages/npm/creator.go",
+        "SourceLineNum": 267,
+        "ParentFunction": "ParsePackage (r io.Reader) (*code.gitea.io/gitea/modules/packages/npm.Package, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewMultiHasher",
+    "file_path": "/analysis/repo/modules/packages/multi_hasher.go",
+    "line_number": 43,
+    "full_implementation": "func NewMultiHasher() *MultiHasher {\n\tmd5 := md5.New()\n\tsha1 := sha1.New()\n\tsha256 := sha256.New()\n\tsha512 := sha512.New()\n\n\tcombinedWriter := io.MultiWriter(md5, sha1, sha256, sha512)\n\n\treturn \u0026MultiHasher{\n\t\tmd5,\n\t\tsha1,\n\t\tsha256,\n\t\tsha512,\n\t\tcombinedWriter,\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "md5 := md5.New()",
+        "SourceFilename": "/analysis/repo/modules/packages/multi_hasher.go",
+        "SourceLineNum": 43,
+        "ParentFunction": "NewMultiHasher () *code.gitea.io/gitea/modules/packages.MultiHasher"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewMultiHasher",
+    "file_path": "/analysis/repo/modules/packages/multi_hasher.go",
+    "line_number": 44,
+    "full_implementation": "func NewMultiHasher() *MultiHasher {\n\tmd5 := md5.New()\n\tsha1 := sha1.New()\n\tsha256 := sha256.New()\n\tsha512 := sha512.New()\n\n\tcombinedWriter := io.MultiWriter(md5, sha1, sha256, sha512)\n\n\treturn \u0026MultiHasher{\n\t\tmd5,\n\t\tsha1,\n\t\tsha256,\n\t\tsha512,\n\t\tcombinedWriter,\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha1 := sha1.New()",
+        "SourceFilename": "/analysis/repo/modules/packages/multi_hasher.go",
+        "SourceLineNum": 44,
+        "ParentFunction": "NewMultiHasher () *code.gitea.io/gitea/modules/packages.MultiHasher"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "CheckPassword",
+    "file_path": "/analysis/repo/modules/auth/password/pwn/pwn.go",
+    "line_number": 80,
+    "full_implementation": "func (c *Client) CheckPassword(pw string, padding bool) (int, error) {\n\tif pw == \"\" {\n\t\treturn -1, ErrEmptyPassword\n\t}\n\n\tsha := sha1.New()\n\tsha.Write([]byte(pw))\n\tenc := hex.EncodeToString(sha.Sum(nil))\n\tprefix, suffix := enc[:5], enc[5:]\n\n\treq, err := newRequest(c.ctx, http.MethodGet, fmt.Sprintf(\"%s%s\", passwordURL, prefix), nil)\n\tif err != nil {\n\t\treturn -1, nil\n\t}\n\tif padding {\n\t\treq.Header.Add(\"Add-Padding\", \"true\")\n\t}\n\n\tresp, err := c.http.Do(req)\n\tif err != nil {\n\t\treturn -1, err\n\t}\n\n\tbody, err := io.ReadAll(resp.Body)\n\tif err != nil {\n\t\treturn -1, err\n\t}\n\tdefer resp.Body.Close()\n\n\tfor _, pair := range strings.Split(string(body), \"\\n\") {\n\t\tparts := strings.Split(pair, \":\")\n\t\tif len(parts) != 2 {\n\t\t\tcontinue\n\t\t}\n\t\tif strings.EqualFold(suffix, parts[0]) {\n\t\t\tcount, err := strconv.ParseInt(strings.TrimSpace(parts[1]), 10, 64)\n\t\t\tif err != nil {\n\t\t\t\treturn -1, err\n\t\t\t}\n\t\t\treturn int(count), nil\n\t\t}\n\t}\n\treturn 0, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha := sha1.New()",
+        "SourceFilename": "/analysis/repo/modules/auth/password/pwn/pwn.go",
+        "SourceLineNum": 80,
+        "ParentFunction": "CheckPassword (pw string, padding bool) (int, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "NewInternalRequest",
+    "file_path": "/analysis/repo/modules/private/internal.go",
+    "line_number": 52,
+    "full_implementation": "func NewInternalRequest(ctx context.Context, url, method string) *httplib.Request {\n\tif setting.InternalToken == \"\" {\n\t\tlog.Fatal(`The INTERNAL_TOKEN setting is missing from the configuration file: %q.\nEnsure you are running in the correct environment or set the correct configuration file with -c.`, setting.CustomConf)\n\t}\n\n\tif !strings.HasPrefix(url, setting.LocalURL) {\n\t\tlog.Fatal(\"Invalid internal request URL: %q\", url)\n\t}\n\n\treq := httplib.NewRequest(url, method).\n\t\tSetContext(ctx).\n\t\tHeader(\"X-Real-IP\", getClientIP()).\n\t\tHeader(\"X-Gitea-Internal-Auth\", fmt.Sprintf(\"Bearer %s\", setting.InternalToken)).\n\t\tSetTLSClientConfig(\u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t\tServerName:         setting.Domain,\n\t\t})\n\n\tif setting.Protocol == setting.HTTPUnix {\n\t\treq.SetTransport(\u0026http.Transport{\n\t\t\tDialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {\n\t\t\t\tvar d net.Dialer\n\t\t\t\tconn, err := d.DialContext(ctx, \"unix\", setting.HTTPAddr)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn conn, err\n\t\t\t\t}\n\t\t\t\tif setting.LocalUseProxyProtocol {\n\t\t\t\t\tif err = proxyprotocol.WriteLocalHeader(conn); err != nil {\n\t\t\t\t\t\t_ = conn.Close()\n\t\t\t\t\t\treturn nil, err\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\treturn conn, err\n\t\t\t},\n\t\t})\n\t} else if setting.LocalUseProxyProtocol {\n\t\treq.SetTransport(\u0026http.Transport{\n\t\t\tDialContext: func(ctx context.Context, network, address string) (net.Conn, error) {\n\t\t\t\tvar d net.Dialer\n\t\t\t\tconn, err := d.DialContext(ctx, network, address)\n\t\t\t\tif err != nil {\n\t\t\t\t\treturn conn, err\n\t\t\t\t}\n\t\t\t\tif err = proxyprotocol.WriteLocalHeader(conn); err != nil {\n\t\t\t\t\t_ = conn.Close()\n\t\t\t\t\treturn nil, err\n\t\t\t\t}\n\t\t\t\treturn conn, err\n\t\t\t},\n\t\t})\n\t}\n\treturn req\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/modules/private/internal.go",
+        "SourceLineNum": 52,
+        "ParentFunction": "NewInternalRequest (ctx context.Context, url string, method string) *code.gitea.io/gitea/modules/httplib.Request"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/modules/private/internal.go",
+          "SourceLineNum": 52,
+          "ParentFunction": "NewInternalRequest (ctx context.Context, url string, method string) *code.gitea.io/gitea/modules/httplib.Request"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "saveUploadChunkBase",
+    "file_path": "/analysis/repo/routers/api/actions/artifacts_chunks.go",
+    "line_number": 38,
+    "full_implementation": "func saveUploadChunkBase(st storage.ObjectStorage, ctx *ArtifactContext,\n\tartifact *actions.ActionArtifact,\n\tcontentSize, runID, start, end, length int64, checkMd5 bool,\n) (int64, error) {\n\t// build chunk store path\n\tstoragePath := fmt.Sprintf(\"tmp%d/%d-%d-%d-%d.chunk\", runID, runID, artifact.ID, start, end)\n\tvar r io.Reader = ctx.Req.Body\n\tvar hasher hash.Hash\n\tif checkMd5 {\n\t\t// use io.TeeReader to avoid reading all body to md5 sum.\n\t\t// it writes data to hasher after reading end\n\t\t// if hash is not matched, delete the read-end result\n\t\thasher = md5.New()\n\t\tr = io.TeeReader(r, hasher)\n\t}\n\t// save chunk to storage\n\twrittenSize, err := st.Save(storagePath, r, contentSize)\n\tif err != nil {\n\t\treturn -1, fmt.Errorf(\"save chunk to storage error: %v\", err)\n\t}\n\tvar checkErr error\n\tif checkMd5 {\n\t\t// check md5\n\t\treqMd5String := ctx.Req.Header.Get(artifactXActionsResultsMD5Header)\n\t\tchunkMd5String := base64.StdEncoding.EncodeToString(hasher.Sum(nil))\n\t\tlog.Info(\"[artifact] check chunk md5, sum: %s, header: %s\", chunkMd5String, reqMd5String)\n\t\t// if md5 not match, delete the chunk\n\t\tif reqMd5String != chunkMd5String {\n\t\t\tcheckErr = fmt.Errorf(\"md5 not match\")\n\t\t}\n\t}\n\tif writtenSize != contentSize {\n\t\tcheckErr = errors.Join(checkErr, fmt.Errorf(\"writtenSize %d not match contentSize %d\", writtenSize, contentSize))\n\t}\n\tif checkErr != nil {\n\t\tif err := st.Delete(storagePath); err != nil {\n\t\t\tlog.Error(\"Error deleting chunk: %s, %v\", storagePath, err)\n\t\t}\n\t\treturn -1, checkErr\n\t}\n\tlog.Info(\"[artifact] save chunk %s, size: %d, artifact id: %d, start: %d, end: %d\",\n\t\tstoragePath, contentSize, artifact.ID, start, end)\n\t// return chunk total size\n\treturn length, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hasher = md5.New()",
+        "SourceFilename": "/analysis/repo/routers/api/actions/artifacts_chunks.go",
+        "SourceLineNum": 38,
+        "ParentFunction": "saveUploadChunkBase (st code.gitea.io/gitea/modules/storage.ObjectStorage, ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext, artifact *code.gitea.io/gitea/models/actions.ActionArtifact, contentSize int64, runID int64, start int64, end int64, length int64, checkMd5 bool) (int64, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "validateArtifactHash",
+    "file_path": "/analysis/repo/routers/api/actions/artifacts_utils.go",
+    "line_number": 60,
+    "full_implementation": "func validateArtifactHash(ctx *ArtifactContext, artifactName string) bool {\n\tparamHash := ctx.PathParam(\"artifact_hash\")\n\t// use artifact name to create upload url\n\tartifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(artifactName)))\n\tif paramHash == artifactHash {\n\t\treturn true\n\t}\n\tlog.Error(\"Invalid artifact hash: %s\", paramHash)\n\tctx.Error(http.StatusBadRequest, \"Invalid artifact hash\")\n\treturn false\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "artifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(artifactName)))",
+        "SourceFilename": "/analysis/repo/routers/api/actions/artifacts_utils.go",
+        "SourceLineNum": 60,
+        "ParentFunction": "validateArtifactHash (ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext, artifactName string) bool"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getUploadArtifactURL",
+    "file_path": "/analysis/repo/routers/api/actions/artifacts.go",
+    "line_number": 226,
+    "full_implementation": "func (ar artifactRoutes) getUploadArtifactURL(ctx *ArtifactContext) {\n\t_, runID, ok := validateRunID(ctx)\n\tif !ok {\n\t\treturn\n\t}\n\n\tvar req getUploadArtifactRequest\n\tif err := json.NewDecoder(ctx.Req.Body).Decode(\u0026req); err != nil {\n\t\tlog.Error(\"Error decode request body: %v\", err)\n\t\tctx.Error(http.StatusInternalServerError, \"Error decode request body\")\n\t\treturn\n\t}\n\n\t// set retention days\n\tretentionQuery := \"\"\n\tif req.RetentionDays \u003e 0 {\n\t\tretentionQuery = fmt.Sprintf(\"?retentionDays=%d\", req.RetentionDays)\n\t}\n\n\t// use md5(artifact_name) to create upload url\n\tartifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(req.Name)))\n\tresp := getUploadArtifactResponse{\n\t\tFileContainerResourceURL: ar.buildArtifactURL(ctx, runID, artifactHash, \"upload\"+retentionQuery),\n\t}\n\tlog.Debug(\"[artifact] get upload url: %s\", resp.FileContainerResourceURL)\n\tctx.JSON(http.StatusOK, resp)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "artifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(req.Name)))",
+        "SourceFilename": "/analysis/repo/routers/api/actions/artifacts.go",
+        "SourceLineNum": 226,
+        "ParentFunction": "getUploadArtifactURL (ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "listArtifacts",
+    "file_path": "/analysis/repo/routers/api/actions/artifacts.go",
+    "line_number": 362,
+    "full_implementation": "func (ar artifactRoutes) listArtifacts(ctx *ArtifactContext) {\n\t_, runID, ok := validateRunID(ctx)\n\tif !ok {\n\t\treturn\n\t}\n\n\tartifacts, err := db.Find[actions.ActionArtifact](ctx, actions.FindArtifactsOptions{RunID: runID})\n\tif err != nil {\n\t\tlog.Error(\"Error getting artifacts: %v\", err)\n\t\tctx.Error(http.StatusInternalServerError, err.Error())\n\t\treturn\n\t}\n\tif len(artifacts) == 0 {\n\t\tlog.Debug(\"[artifact] handleListArtifacts, no artifacts\")\n\t\tctx.Error(http.StatusNotFound)\n\t\treturn\n\t}\n\n\tvar (\n\t\titems  []listArtifactsResponseItem\n\t\tvalues = make(map[string]bool)\n\t)\n\n\tfor _, art := range artifacts {\n\t\tif values[art.ArtifactName] {\n\t\t\tcontinue\n\t\t}\n\t\tartifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(art.ArtifactName)))\n\t\titem := listArtifactsResponseItem{\n\t\t\tName:                     art.ArtifactName,\n\t\t\tFileContainerResourceURL: ar.buildArtifactURL(ctx, runID, artifactHash, \"download_url\"),\n\t\t}\n\t\titems = append(items, item)\n\t\tvalues[art.ArtifactName] = true\n\n\t\tlog.Debug(\"[artifact] handleListArtifacts, name: %s, url: %s\", item.Name, item.FileContainerResourceURL)\n\t}\n\n\trespData := listArtifactsResponse{\n\t\tCount: int64(len(items)),\n\t\tValue: items,\n\t}\n\tctx.JSON(http.StatusOK, respData)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "artifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(art.ArtifactName)))",
+        "SourceFilename": "/analysis/repo/routers/api/actions/artifacts.go",
+        "SourceLineNum": 362,
+        "ParentFunction": "listArtifacts (ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "buildPackagesIndex",
+    "file_path": "/analysis/repo/services/packages/alpine/repository.go",
+    "line_number": 280,
+    "full_implementation": "func buildPackagesIndex(ctx context.Context, ownerID int64, repoVersion *packages_model.PackageVersion, branch, repository, architecture string) error {\n\tpfs, err := searchPackageFiles(ctx, ownerID, branch, repository, architecture)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif architecture != alpine_module.NoArch {\n\t\t// Add all noarch packages too\n\t\tnoarchFiles, err := searchPackageFiles(ctx, ownerID, branch, repository, alpine_module.NoArch)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tpfs = append(pfs, noarchFiles...)\n\t}\n\n\t// Delete the package indices if there are no packages\n\tif len(pfs) == 0 {\n\t\tpf, err := packages_model.GetFileForVersionByName(ctx, repoVersion.ID, IndexArchiveFilename, fmt.Sprintf(\"%s|%s|%s\", branch, repository, architecture))\n\t\tif err != nil \u0026\u0026 !errors.Is(err, util.ErrNotExist) {\n\t\t\treturn err\n\t\t} else if pf == nil {\n\t\t\treturn nil\n\t\t}\n\n\t\treturn packages_service.DeletePackageFile(ctx, pf)\n\t}\n\n\t// Cache data needed for all repository files\n\tcache := make(packageCache)\n\tfor _, pf := range pfs {\n\t\tpv, err := packages_model.GetVersionByID(ctx, pf.VersionID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tp, err := packages_model.GetPackageByID(ctx, pv.PackageID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tpb, err := packages_model.GetBlobByID(ctx, pf.BlobID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tpps, err := packages_model.GetPropertiesByName(ctx, packages_model.PropertyTypeFile, pf.ID, alpine_module.PropertyMetadata)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\n\t\tpd := \u0026packageData{\n\t\t\tPackage: p,\n\t\t\tVersion: pv,\n\t\t\tBlob:    pb,\n\t\t}\n\n\t\tif err := json.Unmarshal([]byte(pv.MetadataJSON), \u0026pd.VersionMetadata); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tif len(pps) \u003e 0 {\n\t\t\tif err := json.Unmarshal([]byte(pps[0].Value), \u0026pd.FileMetadata); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\tcache[pf] = pd\n\t}\n\n\tvar buf bytes.Buffer\n\tfor _, pf := range pfs {\n\t\tpd := cache[pf]\n\n\t\tfmt.Fprintf(\u0026buf, \"C:%s\\n\", pd.FileMetadata.Checksum)\n\t\tfmt.Fprintf(\u0026buf, \"P:%s\\n\", pd.Package.Name)\n\t\tfmt.Fprintf(\u0026buf, \"V:%s\\n\", pd.Version.Version)\n\t\tfmt.Fprintf(\u0026buf, \"A:%s\\n\", architecture)\n\t\tif pd.VersionMetadata.Description != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"T:%s\\n\", pd.VersionMetadata.Description)\n\t\t}\n\t\tif pd.VersionMetadata.ProjectURL != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"U:%s\\n\", pd.VersionMetadata.ProjectURL)\n\t\t}\n\t\tif pd.VersionMetadata.License != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"L:%s\\n\", pd.VersionMetadata.License)\n\t\t}\n\t\tfmt.Fprintf(\u0026buf, \"S:%d\\n\", pd.Blob.Size)\n\t\tfmt.Fprintf(\u0026buf, \"I:%d\\n\", pd.FileMetadata.Size)\n\t\tfmt.Fprintf(\u0026buf, \"o:%s\\n\", pd.FileMetadata.Origin)\n\t\tfmt.Fprintf(\u0026buf, \"m:%s\\n\", pd.VersionMetadata.Maintainer)\n\t\tfmt.Fprintf(\u0026buf, \"t:%d\\n\", pd.FileMetadata.BuildDate)\n\t\tif pd.FileMetadata.CommitHash != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"c:%s\\n\", pd.FileMetadata.CommitHash)\n\t\t}\n\t\tif len(pd.FileMetadata.Dependencies) \u003e 0 {\n\t\t\tfmt.Fprintf(\u0026buf, \"D:%s\\n\", strings.Join(pd.FileMetadata.Dependencies, \" \"))\n\t\t}\n\t\tif len(pd.FileMetadata.Provides) \u003e 0 {\n\t\t\tfmt.Fprintf(\u0026buf, \"p:%s\\n\", strings.Join(pd.FileMetadata.Provides, \" \"))\n\t\t}\n\t\tif pd.FileMetadata.InstallIf != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"i:%s\\n\", pd.FileMetadata.InstallIf)\n\t\t}\n\t\tif pd.FileMetadata.ProviderPriority \u003e 0 {\n\t\t\tfmt.Fprintf(\u0026buf, \"k:%d\\n\", pd.FileMetadata.ProviderPriority)\n\t\t}\n\t\tfmt.Fprint(\u0026buf, \"\\n\")\n\t}\n\n\tunsignedIndexContent, _ := packages_module.NewHashedBuffer()\n\tdefer unsignedIndexContent.Close()\n\n\th := sha1.New()\n\n\tif err := writeGzipStream(io.MultiWriter(unsignedIndexContent, h), IndexFilename, buf.Bytes(), true); err != nil {\n\t\treturn err\n\t}\n\n\tpriv, _, err := GetOrCreateKeyPair(ctx, ownerID)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tprivPem, _ := pem.Decode([]byte(priv))\n\tif privPem == nil {\n\t\treturn fmt.Errorf(\"failed to decode private key pem\")\n\t}\n\n\tprivKey, err := x509.ParsePKCS1PrivateKey(privPem.Bytes)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tsign, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA1, h.Sum(nil))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\towner, err := user_model.GetUserByID(ctx, ownerID)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tfingerprint, err := util.CreatePublicKeyFingerprint(\u0026privKey.PublicKey)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tsignedIndexContent, _ := packages_module.NewHashedBuffer()\n\tdefer signedIndexContent.Close()\n\n\tif err := writeGzipStream(\n\t\tsignedIndexContent,\n\t\tfmt.Sprintf(\".SIGN.RSA.%s@%s.rsa.pub\", owner.LowerName, hex.EncodeToString(fingerprint)),\n\t\tsign,\n\t\tfalse,\n\t); err != nil {\n\t\treturn err\n\t}\n\n\tif _, err := io.Copy(signedIndexContent, unsignedIndexContent); err != nil {\n\t\treturn err\n\t}\n\n\t_, err = packages_service.AddFileToPackageVersionInternal(\n\t\tctx,\n\t\trepoVersion,\n\t\t\u0026packages_service.PackageFileCreationInfo{\n\t\t\tPackageFileInfo: packages_service.PackageFileInfo{\n\t\t\t\tFilename:     IndexArchiveFilename,\n\t\t\t\tCompositeKey: fmt.Sprintf(\"%s|%s|%s\", branch, repository, architecture),\n\t\t\t},\n\t\t\tCreator:           user_model.NewGhostUser(),\n\t\t\tData:              signedIndexContent,\n\t\t\tIsLead:            false,\n\t\t\tOverwriteExisting: true,\n\t\t\tProperties: map[string]string{\n\t\t\t\talpine_module.PropertyBranch:       branch,\n\t\t\t\talpine_module.PropertyRepository:   repository,\n\t\t\t\talpine_module.PropertyArchitecture: architecture,\n\t\t\t},\n\t\t},\n\t)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/services/packages/alpine/repository.go",
+        "SourceLineNum": 280,
+        "ParentFunction": "buildPackagesIndex (ctx context.Context, ownerID int64, repoVersion *code.gitea.io/gitea/models/packages.PackageVersion, branch string, repository string, architecture string) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "buildPackagesIndex",
+    "file_path": "/analysis/repo/services/packages/alpine/repository.go",
+    "line_number": 301,
+    "full_implementation": "func buildPackagesIndex(ctx context.Context, ownerID int64, repoVersion *packages_model.PackageVersion, branch, repository, architecture string) error {\n\tpfs, err := searchPackageFiles(ctx, ownerID, branch, repository, architecture)\n\tif err != nil {\n\t\treturn err\n\t}\n\tif architecture != alpine_module.NoArch {\n\t\t// Add all noarch packages too\n\t\tnoarchFiles, err := searchPackageFiles(ctx, ownerID, branch, repository, alpine_module.NoArch)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tpfs = append(pfs, noarchFiles...)\n\t}\n\n\t// Delete the package indices if there are no packages\n\tif len(pfs) == 0 {\n\t\tpf, err := packages_model.GetFileForVersionByName(ctx, repoVersion.ID, IndexArchiveFilename, fmt.Sprintf(\"%s|%s|%s\", branch, repository, architecture))\n\t\tif err != nil \u0026\u0026 !errors.Is(err, util.ErrNotExist) {\n\t\t\treturn err\n\t\t} else if pf == nil {\n\t\t\treturn nil\n\t\t}\n\n\t\treturn packages_service.DeletePackageFile(ctx, pf)\n\t}\n\n\t// Cache data needed for all repository files\n\tcache := make(packageCache)\n\tfor _, pf := range pfs {\n\t\tpv, err := packages_model.GetVersionByID(ctx, pf.VersionID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tp, err := packages_model.GetPackageByID(ctx, pv.PackageID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tpb, err := packages_model.GetBlobByID(ctx, pf.BlobID)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tpps, err := packages_model.GetPropertiesByName(ctx, packages_model.PropertyTypeFile, pf.ID, alpine_module.PropertyMetadata)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\n\t\tpd := \u0026packageData{\n\t\t\tPackage: p,\n\t\t\tVersion: pv,\n\t\t\tBlob:    pb,\n\t\t}\n\n\t\tif err := json.Unmarshal([]byte(pv.MetadataJSON), \u0026pd.VersionMetadata); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tif len(pps) \u003e 0 {\n\t\t\tif err := json.Unmarshal([]byte(pps[0].Value), \u0026pd.FileMetadata); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t}\n\n\t\tcache[pf] = pd\n\t}\n\n\tvar buf bytes.Buffer\n\tfor _, pf := range pfs {\n\t\tpd := cache[pf]\n\n\t\tfmt.Fprintf(\u0026buf, \"C:%s\\n\", pd.FileMetadata.Checksum)\n\t\tfmt.Fprintf(\u0026buf, \"P:%s\\n\", pd.Package.Name)\n\t\tfmt.Fprintf(\u0026buf, \"V:%s\\n\", pd.Version.Version)\n\t\tfmt.Fprintf(\u0026buf, \"A:%s\\n\", architecture)\n\t\tif pd.VersionMetadata.Description != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"T:%s\\n\", pd.VersionMetadata.Description)\n\t\t}\n\t\tif pd.VersionMetadata.ProjectURL != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"U:%s\\n\", pd.VersionMetadata.ProjectURL)\n\t\t}\n\t\tif pd.VersionMetadata.License != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"L:%s\\n\", pd.VersionMetadata.License)\n\t\t}\n\t\tfmt.Fprintf(\u0026buf, \"S:%d\\n\", pd.Blob.Size)\n\t\tfmt.Fprintf(\u0026buf, \"I:%d\\n\", pd.FileMetadata.Size)\n\t\tfmt.Fprintf(\u0026buf, \"o:%s\\n\", pd.FileMetadata.Origin)\n\t\tfmt.Fprintf(\u0026buf, \"m:%s\\n\", pd.VersionMetadata.Maintainer)\n\t\tfmt.Fprintf(\u0026buf, \"t:%d\\n\", pd.FileMetadata.BuildDate)\n\t\tif pd.FileMetadata.CommitHash != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"c:%s\\n\", pd.FileMetadata.CommitHash)\n\t\t}\n\t\tif len(pd.FileMetadata.Dependencies) \u003e 0 {\n\t\t\tfmt.Fprintf(\u0026buf, \"D:%s\\n\", strings.Join(pd.FileMetadata.Dependencies, \" \"))\n\t\t}\n\t\tif len(pd.FileMetadata.Provides) \u003e 0 {\n\t\t\tfmt.Fprintf(\u0026buf, \"p:%s\\n\", strings.Join(pd.FileMetadata.Provides, \" \"))\n\t\t}\n\t\tif pd.FileMetadata.InstallIf != \"\" {\n\t\t\tfmt.Fprintf(\u0026buf, \"i:%s\\n\", pd.FileMetadata.InstallIf)\n\t\t}\n\t\tif pd.FileMetadata.ProviderPriority \u003e 0 {\n\t\t\tfmt.Fprintf(\u0026buf, \"k:%d\\n\", pd.FileMetadata.ProviderPriority)\n\t\t}\n\t\tfmt.Fprint(\u0026buf, \"\\n\")\n\t}\n\n\tunsignedIndexContent, _ := packages_module.NewHashedBuffer()\n\tdefer unsignedIndexContent.Close()\n\n\th := sha1.New()\n\n\tif err := writeGzipStream(io.MultiWriter(unsignedIndexContent, h), IndexFilename, buf.Bytes(), true); err != nil {\n\t\treturn err\n\t}\n\n\tpriv, _, err := GetOrCreateKeyPair(ctx, ownerID)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tprivPem, _ := pem.Decode([]byte(priv))\n\tif privPem == nil {\n\t\treturn fmt.Errorf(\"failed to decode private key pem\")\n\t}\n\n\tprivKey, err := x509.ParsePKCS1PrivateKey(privPem.Bytes)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tsign, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA1, h.Sum(nil))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\towner, err := user_model.GetUserByID(ctx, ownerID)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tfingerprint, err := util.CreatePublicKeyFingerprint(\u0026privKey.PublicKey)\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tsignedIndexContent, _ := packages_module.NewHashedBuffer()\n\tdefer signedIndexContent.Close()\n\n\tif err := writeGzipStream(\n\t\tsignedIndexContent,\n\t\tfmt.Sprintf(\".SIGN.RSA.%s@%s.rsa.pub\", owner.LowerName, hex.EncodeToString(fingerprint)),\n\t\tsign,\n\t\tfalse,\n\t); err != nil {\n\t\treturn err\n\t}\n\n\tif _, err := io.Copy(signedIndexContent, unsignedIndexContent); err != nil {\n\t\treturn err\n\t}\n\n\t_, err = packages_service.AddFileToPackageVersionInternal(\n\t\tctx,\n\t\trepoVersion,\n\t\t\u0026packages_service.PackageFileCreationInfo{\n\t\t\tPackageFileInfo: packages_service.PackageFileInfo{\n\t\t\t\tFilename:     IndexArchiveFilename,\n\t\t\t\tCompositeKey: fmt.Sprintf(\"%s|%s|%s\", branch, repository, architecture),\n\t\t\t},\n\t\t\tCreator:           user_model.NewGhostUser(),\n\t\t\tData:              signedIndexContent,\n\t\t\tIsLead:            false,\n\t\t\tOverwriteExisting: true,\n\t\t\tProperties: map[string]string{\n\t\t\t\talpine_module.PropertyBranch:       branch,\n\t\t\t\talpine_module.PropertyRepository:   repository,\n\t\t\t\talpine_module.PropertyArchitecture: architecture,\n\t\t\t},\n\t\t},\n\t)\n\treturn err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.SignPKCS1v15",
+      "Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+      "Slicing_Criteria": {
+        "SourceCode": "sign, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA1, h.Sum(nil))",
+        "SourceFilename": "/analysis/repo/services/packages/alpine/repository.go",
+        "SourceLineNum": 301,
+        "ParentFunction": "buildPackagesIndex (ctx context.Context, ownerID int64, repoVersion *code.gitea.io/gitea/models/packages.PackageVersion, branch string, repository string, architecture string) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "verifyDataNew",
+    "file_path": "/analysis/repo/routers/api/packages/chef/auth.go",
+    "line_number": 240,
+    "full_implementation": "func verifyDataNew(signature, data []byte, pub *rsa.PublicKey, algo crypto.Hash) error {\n\tvar h hash.Hash\n\tif algo == crypto.SHA256 {\n\t\th = sha256.New()\n\t} else {\n\t\th = sha1.New()\n\t}\n\tif _, err := h.Write(data); err != nil {\n\t\treturn err\n\t}\n\n\treturn rsa.VerifyPKCS1v15(pub, algo, h.Sum(nil), signature)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h = sha1.New()",
+        "SourceFilename": "/analysis/repo/routers/api/packages/chef/auth.go",
+        "SourceLineNum": 240,
+        "ParentFunction": "verifyDataNew (signature []byte, data []byte, pub *crypto/rsa.PublicKey, algo crypto.Hash) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "buildCheckData",
+    "file_path": "/analysis/repo/routers/api/packages/chef/auth.go",
+    "line_number": 204,
+    "full_implementation": "func buildCheckData(req *http.Request, version string) []byte {\n\tusername := req.Header.Get(\"X-Ops-Userid\")\n\tif version != \"1.0\" \u0026\u0026 version != \"1.3\" {\n\t\tsum := sha1.Sum([]byte(username))\n\t\tusername = base64.StdEncoding.EncodeToString(sum[:])\n\t}\n\n\tvar data string\n\tif version == \"1.3\" {\n\t\tdata = fmt.Sprintf(\n\t\t\t\"Method:%s\\nPath:%s\\nX-Ops-Content-Hash:%s\\nX-Ops-Sign:version=%s\\nX-Ops-Timestamp:%s\\nX-Ops-UserId:%s\\nX-Ops-Server-API-Version:%s\",\n\t\t\treq.Method,\n\t\t\tpath.Clean(req.URL.Path),\n\t\t\treq.Header.Get(\"X-Ops-Content-Hash\"),\n\t\t\tversion,\n\t\t\treq.Header.Get(\"X-Ops-Timestamp\"),\n\t\t\tusername,\n\t\t\treq.Header.Get(\"X-Ops-Server-Api-Version\"),\n\t\t)\n\t} else {\n\t\tsum := sha1.Sum([]byte(path.Clean(req.URL.Path)))\n\t\tdata = fmt.Sprintf(\n\t\t\t\"Method:%s\\nHashed Path:%s\\nX-Ops-Content-Hash:%s\\nX-Ops-Timestamp:%s\\nX-Ops-UserId:%s\",\n\t\t\treq.Method,\n\t\t\tbase64.StdEncoding.EncodeToString(sum[:]),\n\t\t\treq.Header.Get(\"X-Ops-Content-Hash\"),\n\t\t\treq.Header.Get(\"X-Ops-Timestamp\"),\n\t\t\tusername,\n\t\t)\n\t}\n\n\treturn []byte(data)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := sha1.Sum([]byte(username))",
+        "SourceFilename": "/analysis/repo/routers/api/packages/chef/auth.go",
+        "SourceLineNum": 204,
+        "ParentFunction": "buildCheckData (req *net/http.Request, version string) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "buildCheckData",
+    "file_path": "/analysis/repo/routers/api/packages/chef/auth.go",
+    "line_number": 221,
+    "full_implementation": "func buildCheckData(req *http.Request, version string) []byte {\n\tusername := req.Header.Get(\"X-Ops-Userid\")\n\tif version != \"1.0\" \u0026\u0026 version != \"1.3\" {\n\t\tsum := sha1.Sum([]byte(username))\n\t\tusername = base64.StdEncoding.EncodeToString(sum[:])\n\t}\n\n\tvar data string\n\tif version == \"1.3\" {\n\t\tdata = fmt.Sprintf(\n\t\t\t\"Method:%s\\nPath:%s\\nX-Ops-Content-Hash:%s\\nX-Ops-Sign:version=%s\\nX-Ops-Timestamp:%s\\nX-Ops-UserId:%s\\nX-Ops-Server-API-Version:%s\",\n\t\t\treq.Method,\n\t\t\tpath.Clean(req.URL.Path),\n\t\t\treq.Header.Get(\"X-Ops-Content-Hash\"),\n\t\t\tversion,\n\t\t\treq.Header.Get(\"X-Ops-Timestamp\"),\n\t\t\tusername,\n\t\t\treq.Header.Get(\"X-Ops-Server-Api-Version\"),\n\t\t)\n\t} else {\n\t\tsum := sha1.Sum([]byte(path.Clean(req.URL.Path)))\n\t\tdata = fmt.Sprintf(\n\t\t\t\"Method:%s\\nHashed Path:%s\\nX-Ops-Content-Hash:%s\\nX-Ops-Timestamp:%s\\nX-Ops-UserId:%s\",\n\t\t\treq.Method,\n\t\t\tbase64.StdEncoding.EncodeToString(sum[:]),\n\t\t\treq.Header.Get(\"X-Ops-Content-Hash\"),\n\t\t\treq.Header.Get(\"X-Ops-Timestamp\"),\n\t\t\tusername,\n\t\t)\n\t}\n\n\treturn []byte(data)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sum := sha1.Sum([]byte(path.Clean(req.URL.Path)))",
+        "SourceFilename": "/analysis/repo/routers/api/packages/chef/auth.go",
+        "SourceLineNum": 221,
+        "ParentFunction": "buildCheckData (req *net/http.Request, version string) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "serveMavenMetadata",
+    "file_path": "/analysis/repo/routers/api/packages/maven/maven.go",
+    "line_number": 134,
+    "full_implementation": "func serveMavenMetadata(ctx *context.Context, params parameters) {\n\t// path pattern: /com/foo/project/maven-metadata.xml[.md5/.sha1/.sha256/.sha512]\n\t// in case there are legacy package names (\"GroupID-ArtifactID\") we need to check both, new packages always use \":\" as separator(\"GroupID:ArtifactID\")\n\tpvsLegacy, err := packages_model.GetVersionsByPackageName(ctx, ctx.Package.Owner.ID, packages_model.TypeMaven, params.toInternalPackageNameLegacy())\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\tpvs, err := packages_model.GetVersionsByPackageName(ctx, ctx.Package.Owner.ID, packages_model.TypeMaven, params.toInternalPackageName())\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\tpvs = append(pvsLegacy, pvs...)\n\n\tif len(pvs) == 0 {\n\t\tapiError(ctx, http.StatusNotFound, packages_model.ErrPackageNotExist)\n\t\treturn\n\t}\n\n\tpds, err := packages_model.GetPackageDescriptors(ctx, pvs)\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\n\tsort.Slice(pds, func(i, j int) bool {\n\t\t// Maven and Gradle order packages by their creation timestamp and not by their version string\n\t\treturn pds[i].Version.CreatedUnix \u003c pds[j].Version.CreatedUnix\n\t})\n\n\txmlMetadata, err := xml.Marshal(createMetadataResponse(pds, params.GroupID, params.ArtifactID))\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\txmlMetadataWithHeader := append([]byte(xml.Header), xmlMetadata...)\n\n\tlatest := pds[len(pds)-1]\n\t// http.TimeFormat required a UTC time, refer to https://pkg.go.dev/net/http#TimeFormat\n\tlastModified := latest.Version.CreatedUnix.AsTime().UTC().Format(http.TimeFormat)\n\tctx.Resp.Header().Set(\"Last-Modified\", lastModified)\n\n\text := strings.ToLower(path.Ext(params.Filename))\n\tif isChecksumExtension(ext) {\n\t\tvar hash []byte\n\t\tswitch ext {\n\t\tcase extensionMD5:\n\t\t\ttmp := md5.Sum(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\tcase extensionSHA1:\n\t\t\ttmp := sha1.Sum(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\tcase extensionSHA256:\n\t\t\ttmp := sha256.Sum256(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\tcase extensionSHA512:\n\t\t\ttmp := sha512.Sum512(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\t}\n\t\tctx.PlainText(http.StatusOK, hex.EncodeToString(hash))\n\t\treturn\n\t}\n\n\tctx.Resp.Header().Set(\"Content-Length\", strconv.Itoa(len(xmlMetadataWithHeader)))\n\tctx.Resp.Header().Set(\"Content-Type\", contentTypeXML)\n\n\t_, _ = ctx.Resp.Write(xmlMetadataWithHeader)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "tmp := md5.Sum(xmlMetadataWithHeader)",
+        "SourceFilename": "/analysis/repo/routers/api/packages/maven/maven.go",
+        "SourceLineNum": 134,
+        "ParentFunction": "serveMavenMetadata (ctx *code.gitea.io/gitea/services/context.Context, params code.gitea.io/gitea/routers/api/packages/maven.parameters)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "serveMavenMetadata",
+    "file_path": "/analysis/repo/routers/api/packages/maven/maven.go",
+    "line_number": 137,
+    "full_implementation": "func serveMavenMetadata(ctx *context.Context, params parameters) {\n\t// path pattern: /com/foo/project/maven-metadata.xml[.md5/.sha1/.sha256/.sha512]\n\t// in case there are legacy package names (\"GroupID-ArtifactID\") we need to check both, new packages always use \":\" as separator(\"GroupID:ArtifactID\")\n\tpvsLegacy, err := packages_model.GetVersionsByPackageName(ctx, ctx.Package.Owner.ID, packages_model.TypeMaven, params.toInternalPackageNameLegacy())\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\tpvs, err := packages_model.GetVersionsByPackageName(ctx, ctx.Package.Owner.ID, packages_model.TypeMaven, params.toInternalPackageName())\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\tpvs = append(pvsLegacy, pvs...)\n\n\tif len(pvs) == 0 {\n\t\tapiError(ctx, http.StatusNotFound, packages_model.ErrPackageNotExist)\n\t\treturn\n\t}\n\n\tpds, err := packages_model.GetPackageDescriptors(ctx, pvs)\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\n\tsort.Slice(pds, func(i, j int) bool {\n\t\t// Maven and Gradle order packages by their creation timestamp and not by their version string\n\t\treturn pds[i].Version.CreatedUnix \u003c pds[j].Version.CreatedUnix\n\t})\n\n\txmlMetadata, err := xml.Marshal(createMetadataResponse(pds, params.GroupID, params.ArtifactID))\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\txmlMetadataWithHeader := append([]byte(xml.Header), xmlMetadata...)\n\n\tlatest := pds[len(pds)-1]\n\t// http.TimeFormat required a UTC time, refer to https://pkg.go.dev/net/http#TimeFormat\n\tlastModified := latest.Version.CreatedUnix.AsTime().UTC().Format(http.TimeFormat)\n\tctx.Resp.Header().Set(\"Last-Modified\", lastModified)\n\n\text := strings.ToLower(path.Ext(params.Filename))\n\tif isChecksumExtension(ext) {\n\t\tvar hash []byte\n\t\tswitch ext {\n\t\tcase extensionMD5:\n\t\t\ttmp := md5.Sum(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\tcase extensionSHA1:\n\t\t\ttmp := sha1.Sum(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\tcase extensionSHA256:\n\t\t\ttmp := sha256.Sum256(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\tcase extensionSHA512:\n\t\t\ttmp := sha512.Sum512(xmlMetadataWithHeader)\n\t\t\thash = tmp[:]\n\t\t}\n\t\tctx.PlainText(http.StatusOK, hex.EncodeToString(hash))\n\t\treturn\n\t}\n\n\tctx.Resp.Header().Set(\"Content-Length\", strconv.Itoa(len(xmlMetadataWithHeader)))\n\tctx.Resp.Header().Set(\"Content-Type\", contentTypeXML)\n\n\t_, _ = ctx.Resp.Write(xmlMetadataWithHeader)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "tmp := sha1.Sum(xmlMetadataWithHeader)",
+        "SourceFilename": "/analysis/repo/routers/api/packages/maven/maven.go",
+        "SourceLineNum": 137,
+        "ParentFunction": "serveMavenMetadata (ctx *code.gitea.io/gitea/services/context.Context, params code.gitea.io/gitea/routers/api/packages/maven.parameters)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GetAllPackagesVersions",
+    "file_path": "/analysis/repo/routers/api/packages/rubygems/rubygems.go",
+    "line_number": 353,
+    "full_implementation": "func GetAllPackagesVersions(ctx *context.Context) {\n\tpackages, err := packages_model.GetPackagesByType(ctx, ctx.Package.Owner.ID, packages_model.TypeRubyGems)\n\tif err != nil {\n\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\treturn\n\t}\n\n\tout := \u0026strings.Builder{}\n\tout.WriteString(\"---\\n\")\n\tfor _, pkg := range packages {\n\t\tversions, err := packages_model.GetVersionsByPackageName(ctx, ctx.Package.Owner.ID, packages_model.TypeRubyGems, pkg.Name)\n\t\tif err != nil {\n\t\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\t\treturn\n\t\t}\n\t\tif len(versions) == 0 {\n\t\t\tcontinue\n\t\t}\n\n\t\tinfo, err := makePackageInfo(ctx, versions)\n\t\tif err != nil {\n\t\t\tapiError(ctx, http.StatusInternalServerError, err)\n\t\t\treturn\n\t\t}\n\n\t\t// format: RUBYGEM [-]VERSION_PLATFORM[,VERSION_PLATFORM],...] MD5\n\t\t_, _ = fmt.Fprintf(out, \"%s \", pkg.Name)\n\t\tfor i, v := range versions {\n\t\t\tsep := util.Iif(i == len(versions)-1, \"\", \",\")\n\t\t\t_, _ = fmt.Fprintf(out, \"%s%s\", v.Version, sep)\n\t\t}\n\t\t_, _ = fmt.Fprintf(out, \" %x\\n\", md5.Sum([]byte(info)))\n\t}\n\n\tctx.PlainText(http.StatusOK, out.String())\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "_, _ = fmt.Fprintf(out, \" %x\\n\", md5.Sum([]byte(info)))",
+        "SourceFilename": "/analysis/repo/routers/api/packages/rubygems/rubygems.go",
+        "SourceLineNum": 353,
+        "ParentFunction": "GetAllPackagesVersions (ctx *code.gitea.io/gitea/services/context.Context)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "getMatrixTxnID",
+    "file_path": "/analysis/repo/services/webhook/matrix.go",
+    "line_number": 269,
+    "full_implementation": "func getMatrixTxnID(payload []byte) (string, error) {\n\tif len(payload) \u003e= matrixPayloadSizeLimit {\n\t\treturn \"\", fmt.Errorf(\"getMatrixTxnID: payload size %d \u003e %d\", len(payload), matrixPayloadSizeLimit)\n\t}\n\n\th := sha1.New()\n\t_, err := h.Write(payload)\n\tif err != nil {\n\t\treturn \"\", err\n\t}\n\n\treturn hex.EncodeToString(h.Sum(nil)), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/services/webhook/matrix.go",
+        "SourceLineNum": 269,
+        "ParentFunction": "getMatrixTxnID (payload []byte) (string, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ResetPasswdPost",
+    "file_path": "/analysis/repo/routers/web/auth/password.go",
+    "line_number": 173,
+    "full_implementation": "func ResetPasswdPost(ctx *context.Context) {\n\tu, twofa := commonResetPassword(ctx)\n\tif ctx.Written() {\n\t\treturn\n\t}\n\n\tif u == nil {\n\t\t// Flash error has been set\n\t\tctx.HTML(http.StatusOK, tplResetPassword)\n\t\treturn\n\t}\n\n\t// Handle two-factor\n\tregenerateScratchToken := false\n\tif twofa != nil {\n\t\tif ctx.FormBool(\"scratch_code\") {\n\t\t\tif !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Token\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_scratch_token_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tregenerateScratchToken = true\n\t\t} else {\n\t\t\tpasscode := ctx.FormString(\"passcode\")\n\t\t\tok, err := twofa.ValidateTOTP(passcode)\n\t\t\tif err != nil {\n\t\t\t\tctx.Error(http.StatusInternalServerError, \"ValidateTOTP\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !ok || twofa.LastUsedPasscode == passcode {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Passcode\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_passcode_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\ttwofa.LastUsedPasscode = passcode\n\t\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\t\tctx.ServerError(\"ResetPasswdPost: UpdateTwoFactor\", err)\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t}\n\n\topts := \u0026user_service.UpdateAuthOptions{\n\t\tPassword:           optional.Some(ctx.FormString(\"password\")),\n\t\tMustChangePassword: optional.Some(false),\n\t}\n\tif err := user_service.UpdateAuth(ctx, u, opts); err != nil {\n\t\tctx.Data[\"IsResetForm\"] = true\n\t\tctx.Data[\"Err_Password\"] = true\n\t\tswitch {\n\t\tcase errors.Is(err, password.ErrMinLength):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_too_short\", setting.MinPasswordLength), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrComplexity):\n\t\t\tctx.RenderWithErr(password.BuildComplexityError(ctx.Locale), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrIsPwned):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned\", \"https://haveibeenpwned.com/Passwords\"), tplResetPassword, nil)\n\t\tcase password.IsErrIsPwnedRequest(err):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned_err\"), tplResetPassword, nil)\n\t\tdefault:\n\t\t\tctx.ServerError(\"UpdateAuth\", err)\n\t\t}\n\t\treturn\n\t}\n\n\tlog.Trace(\"User password reset: %s\", u.Name)\n\tctx.Data[\"IsResetFailed\"] = true\n\tremember := len(ctx.FormString(\"remember\")) != 0\n\n\tif regenerateScratchToken {\n\t\t// Invalidate the scratch token.\n\t\t_, err := twofa.GenerateScratchToken()\n\t\tif err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\n\t\thandleSignInFull(ctx, u, remember, false)\n\t\tif ctx.Written() {\n\t\t\treturn\n\t\t}\n\t\tctx.Flash.Info(ctx.Tr(\"auth.twofa_scratch_used\"))\n\t\tctx.Redirect(setting.AppSubURL + \"/user/settings/security\")\n\t\treturn\n\t}\n\n\thandleSignIn(ctx, u, remember)\n}",
+    "vulnerability_info": {
+      "FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+        "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+        "SourceLineNum": 173,
+        "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "u, twofa := commonResetPassword(ctx)",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 158,
+          "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+        },
+        {
+          "SourceCode": "return nil, nil",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 112,
+          "ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "ResetPasswdPost",
+    "file_path": "/analysis/repo/routers/web/auth/password.go",
+    "line_number": 173,
+    "full_implementation": "func ResetPasswdPost(ctx *context.Context) {\n\tu, twofa := commonResetPassword(ctx)\n\tif ctx.Written() {\n\t\treturn\n\t}\n\n\tif u == nil {\n\t\t// Flash error has been set\n\t\tctx.HTML(http.StatusOK, tplResetPassword)\n\t\treturn\n\t}\n\n\t// Handle two-factor\n\tregenerateScratchToken := false\n\tif twofa != nil {\n\t\tif ctx.FormBool(\"scratch_code\") {\n\t\t\tif !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Token\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_scratch_token_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tregenerateScratchToken = true\n\t\t} else {\n\t\t\tpasscode := ctx.FormString(\"passcode\")\n\t\t\tok, err := twofa.ValidateTOTP(passcode)\n\t\t\tif err != nil {\n\t\t\t\tctx.Error(http.StatusInternalServerError, \"ValidateTOTP\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !ok || twofa.LastUsedPasscode == passcode {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Passcode\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_passcode_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\ttwofa.LastUsedPasscode = passcode\n\t\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\t\tctx.ServerError(\"ResetPasswdPost: UpdateTwoFactor\", err)\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t}\n\n\topts := \u0026user_service.UpdateAuthOptions{\n\t\tPassword:           optional.Some(ctx.FormString(\"password\")),\n\t\tMustChangePassword: optional.Some(false),\n\t}\n\tif err := user_service.UpdateAuth(ctx, u, opts); err != nil {\n\t\tctx.Data[\"IsResetForm\"] = true\n\t\tctx.Data[\"Err_Password\"] = true\n\t\tswitch {\n\t\tcase errors.Is(err, password.ErrMinLength):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_too_short\", setting.MinPasswordLength), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrComplexity):\n\t\t\tctx.RenderWithErr(password.BuildComplexityError(ctx.Locale), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrIsPwned):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned\", \"https://haveibeenpwned.com/Passwords\"), tplResetPassword, nil)\n\t\tcase password.IsErrIsPwnedRequest(err):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned_err\"), tplResetPassword, nil)\n\t\tdefault:\n\t\t\tctx.ServerError(\"UpdateAuth\", err)\n\t\t}\n\t\treturn\n\t}\n\n\tlog.Trace(\"User password reset: %s\", u.Name)\n\tctx.Data[\"IsResetFailed\"] = true\n\tremember := len(ctx.FormString(\"remember\")) != 0\n\n\tif regenerateScratchToken {\n\t\t// Invalidate the scratch token.\n\t\t_, err := twofa.GenerateScratchToken()\n\t\tif err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\n\t\thandleSignInFull(ctx, u, remember, false)\n\t\tif ctx.Written() {\n\t\t\treturn\n\t\t}\n\t\tctx.Flash.Info(ctx.Tr(\"auth.twofa_scratch_used\"))\n\t\tctx.Redirect(setting.AppSubURL + \"/user/settings/security\")\n\t\treturn\n\t}\n\n\thandleSignIn(ctx, u, remember)\n}",
+    "vulnerability_info": {
+      "FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+        "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+        "SourceLineNum": 173,
+        "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "u, twofa := commonResetPassword(ctx)",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 158,
+          "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+        },
+        {
+          "SourceCode": "return nil, nil",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 119,
+          "ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "ResetPasswdPost",
+    "file_path": "/analysis/repo/routers/web/auth/password.go",
+    "line_number": 173,
+    "full_implementation": "func ResetPasswdPost(ctx *context.Context) {\n\tu, twofa := commonResetPassword(ctx)\n\tif ctx.Written() {\n\t\treturn\n\t}\n\n\tif u == nil {\n\t\t// Flash error has been set\n\t\tctx.HTML(http.StatusOK, tplResetPassword)\n\t\treturn\n\t}\n\n\t// Handle two-factor\n\tregenerateScratchToken := false\n\tif twofa != nil {\n\t\tif ctx.FormBool(\"scratch_code\") {\n\t\t\tif !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Token\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_scratch_token_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tregenerateScratchToken = true\n\t\t} else {\n\t\t\tpasscode := ctx.FormString(\"passcode\")\n\t\t\tok, err := twofa.ValidateTOTP(passcode)\n\t\t\tif err != nil {\n\t\t\t\tctx.Error(http.StatusInternalServerError, \"ValidateTOTP\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !ok || twofa.LastUsedPasscode == passcode {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Passcode\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_passcode_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\ttwofa.LastUsedPasscode = passcode\n\t\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\t\tctx.ServerError(\"ResetPasswdPost: UpdateTwoFactor\", err)\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t}\n\n\topts := \u0026user_service.UpdateAuthOptions{\n\t\tPassword:           optional.Some(ctx.FormString(\"password\")),\n\t\tMustChangePassword: optional.Some(false),\n\t}\n\tif err := user_service.UpdateAuth(ctx, u, opts); err != nil {\n\t\tctx.Data[\"IsResetForm\"] = true\n\t\tctx.Data[\"Err_Password\"] = true\n\t\tswitch {\n\t\tcase errors.Is(err, password.ErrMinLength):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_too_short\", setting.MinPasswordLength), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrComplexity):\n\t\t\tctx.RenderWithErr(password.BuildComplexityError(ctx.Locale), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrIsPwned):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned\", \"https://haveibeenpwned.com/Passwords\"), tplResetPassword, nil)\n\t\tcase password.IsErrIsPwnedRequest(err):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned_err\"), tplResetPassword, nil)\n\t\tdefault:\n\t\t\tctx.ServerError(\"UpdateAuth\", err)\n\t\t}\n\t\treturn\n\t}\n\n\tlog.Trace(\"User password reset: %s\", u.Name)\n\tctx.Data[\"IsResetFailed\"] = true\n\tremember := len(ctx.FormString(\"remember\")) != 0\n\n\tif regenerateScratchToken {\n\t\t// Invalidate the scratch token.\n\t\t_, err := twofa.GenerateScratchToken()\n\t\tif err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\n\t\thandleSignInFull(ctx, u, remember, false)\n\t\tif ctx.Written() {\n\t\t\treturn\n\t\t}\n\t\tctx.Flash.Info(ctx.Tr(\"auth.twofa_scratch_used\"))\n\t\tctx.Redirect(setting.AppSubURL + \"/user/settings/security\")\n\t\treturn\n\t}\n\n\thandleSignIn(ctx, u, remember)\n}",
+    "vulnerability_info": {
+      "FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+        "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+        "SourceLineNum": 173,
+        "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "u, twofa := commonResetPassword(ctx)",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 158,
+          "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+        },
+        {
+          "SourceCode": "return nil, nil",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 126,
+          "ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "ResetPasswdPost",
+    "file_path": "/analysis/repo/routers/web/auth/password.go",
+    "line_number": 173,
+    "full_implementation": "func ResetPasswdPost(ctx *context.Context) {\n\tu, twofa := commonResetPassword(ctx)\n\tif ctx.Written() {\n\t\treturn\n\t}\n\n\tif u == nil {\n\t\t// Flash error has been set\n\t\tctx.HTML(http.StatusOK, tplResetPassword)\n\t\treturn\n\t}\n\n\t// Handle two-factor\n\tregenerateScratchToken := false\n\tif twofa != nil {\n\t\tif ctx.FormBool(\"scratch_code\") {\n\t\t\tif !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Token\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_scratch_token_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tregenerateScratchToken = true\n\t\t} else {\n\t\t\tpasscode := ctx.FormString(\"passcode\")\n\t\t\tok, err := twofa.ValidateTOTP(passcode)\n\t\t\tif err != nil {\n\t\t\t\tctx.Error(http.StatusInternalServerError, \"ValidateTOTP\", err.Error())\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !ok || twofa.LastUsedPasscode == passcode {\n\t\t\t\tctx.Data[\"IsResetForm\"] = true\n\t\t\t\tctx.Data[\"Err_Passcode\"] = true\n\t\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.twofa_passcode_incorrect\"), tplResetPassword, nil)\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\ttwofa.LastUsedPasscode = passcode\n\t\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\t\tctx.ServerError(\"ResetPasswdPost: UpdateTwoFactor\", err)\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t}\n\n\topts := \u0026user_service.UpdateAuthOptions{\n\t\tPassword:           optional.Some(ctx.FormString(\"password\")),\n\t\tMustChangePassword: optional.Some(false),\n\t}\n\tif err := user_service.UpdateAuth(ctx, u, opts); err != nil {\n\t\tctx.Data[\"IsResetForm\"] = true\n\t\tctx.Data[\"Err_Password\"] = true\n\t\tswitch {\n\t\tcase errors.Is(err, password.ErrMinLength):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_too_short\", setting.MinPasswordLength), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrComplexity):\n\t\t\tctx.RenderWithErr(password.BuildComplexityError(ctx.Locale), tplResetPassword, nil)\n\t\tcase errors.Is(err, password.ErrIsPwned):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned\", \"https://haveibeenpwned.com/Passwords\"), tplResetPassword, nil)\n\t\tcase password.IsErrIsPwnedRequest(err):\n\t\t\tctx.RenderWithErr(ctx.Tr(\"auth.password_pwned_err\"), tplResetPassword, nil)\n\t\tdefault:\n\t\t\tctx.ServerError(\"UpdateAuth\", err)\n\t\t}\n\t\treturn\n\t}\n\n\tlog.Trace(\"User password reset: %s\", u.Name)\n\tctx.Data[\"IsResetFailed\"] = true\n\tremember := len(ctx.FormString(\"remember\")) != 0\n\n\tif regenerateScratchToken {\n\t\t// Invalidate the scratch token.\n\t\t_, err := twofa.GenerateScratchToken()\n\t\tif err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\t\tif err = auth.UpdateTwoFactor(ctx, twofa); err != nil {\n\t\t\tctx.ServerError(\"UserSignIn\", err)\n\t\t\treturn\n\t\t}\n\n\t\thandleSignInFull(ctx, u, remember, false)\n\t\tif ctx.Written() {\n\t\t\treturn\n\t\t}\n\t\tctx.Flash.Info(ctx.Tr(\"auth.twofa_scratch_used\"))\n\t\tctx.Redirect(setting.AppSubURL + \"/user/settings/security\")\n\t\treturn\n\t}\n\n\thandleSignIn(ctx, u, remember)\n}",
+    "vulnerability_info": {
+      "FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+        "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+        "SourceLineNum": 173,
+        "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "u, twofa := commonResetPassword(ctx)",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 158,
+          "ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+        },
+        {
+          "SourceCode": "return nil, nil",
+          "SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+          "SourceLineNum": 138,
+          "ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "runCert",
+    "file_path": "/analysis/repo/cmd/cert.go",
+    "line_number": 103,
+    "full_implementation": "func runCert(c *cli.Context) error {\n\tif err := argsSet(c, \"host\"); err != nil {\n\t\treturn err\n\t}\n\n\tvar priv any\n\tvar err error\n\tswitch c.String(\"ecdsa-curve\") {\n\tcase \"\":\n\t\tpriv, err = rsa.GenerateKey(rand.Reader, c.Int(\"rsa-bits\"))\n\tcase \"P224\":\n\t\tpriv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)\n\tcase \"P256\":\n\t\tpriv, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)\n\tcase \"P384\":\n\t\tpriv, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)\n\tcase \"P521\":\n\t\tpriv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)\n\tdefault:\n\t\tlog.Fatalf(\"Unrecognized elliptic curve: %q\", c.String(\"ecdsa-curve\"))\n\t}\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to generate private key: %v\", err)\n\t}\n\n\tvar notBefore time.Time\n\tif startDate := c.String(\"start-date\"); startDate != \"\" {\n\t\tnotBefore, err = time.Parse(\"Jan 2 15:04:05 2006\", startDate)\n\t\tif err != nil {\n\t\t\tlog.Fatalf(\"Failed to parse creation date: %v\", err)\n\t\t}\n\t} else {\n\t\tnotBefore = time.Now()\n\t}\n\n\tnotAfter := notBefore.Add(c.Duration(\"duration\"))\n\n\tserialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)\n\tserialNumber, err := rand.Int(rand.Reader, serialNumberLimit)\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to generate serial number: %v\", err)\n\t}\n\n\ttemplate := x509.Certificate{\n\t\tSerialNumber: serialNumber,\n\t\tSubject: pkix.Name{\n\t\t\tOrganization: []string{\"Acme Co\"},\n\t\t\tCommonName:   \"Gitea\",\n\t\t},\n\t\tNotBefore: notBefore,\n\t\tNotAfter:  notAfter,\n\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t}\n\n\thosts := strings.Split(c.String(\"host\"), \",\")\n\tfor _, h := range hosts {\n\t\tif ip := net.ParseIP(h); ip != nil {\n\t\t\ttemplate.IPAddresses = append(template.IPAddresses, ip)\n\t\t} else {\n\t\t\ttemplate.DNSNames = append(template.DNSNames, h)\n\t\t}\n\t}\n\n\tif c.Bool(\"ca\") {\n\t\ttemplate.IsCA = true\n\t\ttemplate.KeyUsage |= x509.KeyUsageCertSign\n\t}\n\n\tderBytes, err := x509.CreateCertificate(rand.Reader, \u0026template, \u0026template, publicKey(priv), priv)\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to create certificate: %v\", err)\n\t}\n\n\tcertOut, err := os.Create(\"cert.pem\")\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to open cert.pem for writing: %v\", err)\n\t}\n\terr = pem.Encode(certOut, \u0026pem.Block{Type: \"CERTIFICATE\", Bytes: derBytes})\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to encode certificate: %v\", err)\n\t}\n\terr = certOut.Close()\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to write cert: %v\", err)\n\t}\n\tlog.Println(\"Written cert.pem\")\n\n\tkeyOut, err := os.OpenFile(\"key.pem\", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to open key.pem for writing: %v\", err)\n\t}\n\terr = pem.Encode(keyOut, pemBlockForKey(priv))\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to encode key: %v\", err)\n\t}\n\terr = keyOut.Close()\n\tif err != nil {\n\t\tlog.Fatalf(\"Failed to write key: %v\", err)\n\t}\n\tlog.Println(\"Written key.pem\")\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.P224",
+      "Message": "P224 is Acceptable but not recommended.",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)",
+        "SourceFilename": "/analysis/repo/cmd/cert.go",
+        "SourceLineNum": 103,
+        "ParentFunction": "runCert (c *github.com/urfave/cli/v2.Context) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "runHTTPS",
+    "file_path": "/analysis/repo/cmd/web_https.go",
+    "line_number": 145,
+    "full_implementation": "func runHTTPS(network, listenAddr, name, certFile, keyFile string, m http.Handler, useProxyProtocol, proxyProtocolTLSBridging bool) error {\n\ttlsConfig := \u0026tls.Config{}\n\tif tlsConfig.NextProtos == nil {\n\t\ttlsConfig.NextProtos = []string{\"h2\", \"http/1.1\"}\n\t}\n\n\tif version := toTLSVersion(setting.SSLMinimumVersion); version != 0 {\n\t\ttlsConfig.MinVersion = version\n\t}\n\tif version := toTLSVersion(setting.SSLMaximumVersion); version != 0 {\n\t\ttlsConfig.MaxVersion = version\n\t}\n\n\t// Set curve preferences\n\ttlsConfig.CurvePreferences = []tls.CurveID{\n\t\ttls.X25519,\n\t\ttls.CurveP256,\n\t}\n\tif curves := toCurvePreferences(setting.SSLCurvePreferences); len(curves) \u003e 0 {\n\t\ttlsConfig.CurvePreferences = curves\n\t}\n\n\t// Set cipher suites\n\ttlsConfig.CipherSuites = defaultCiphers()\n\tif ciphers := toTLSCiphers(setting.SSLCipherSuites); len(ciphers) \u003e 0 {\n\t\ttlsConfig.CipherSuites = ciphers\n\t}\n\n\ttlsConfig.Certificates = make([]tls.Certificate, 1)\n\n\tcertPEMBlock, err := os.ReadFile(certFile)\n\tif err != nil {\n\t\tlog.Error(\"Failed to load https cert file %s for %s:%s: %v\", certFile, network, listenAddr, err)\n\t\treturn err\n\t}\n\n\tkeyPEMBlock, err := os.ReadFile(keyFile)\n\tif err != nil {\n\t\tlog.Error(\"Failed to load https key file %s for %s:%s: %v\", keyFile, network, listenAddr, err)\n\t\treturn err\n\t}\n\n\ttlsConfig.Certificates[0], err = tls.X509KeyPair(certPEMBlock, keyPEMBlock)\n\tif err != nil {\n\t\tlog.Error(\"Failed to create certificate from cert file %s and key file %s for %s:%s: %v\", certFile, keyFile, network, listenAddr, err)\n\t\treturn err\n\t}\n\n\treturn graceful.HTTPListenAndServeTLSConfig(network, listenAddr, name, tlsConfig, m, useProxyProtocol, proxyProtocolTLSBridging)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::MinVersion",
+      "Message": "Insecure TLS Version\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.MinVersion = version",
+        "SourceFilename": "/analysis/repo/cmd/web_https.go",
+        "SourceLineNum": 145,
+        "ParentFunction": "runHTTPS (network string, listenAddr string, name string, certFile string, keyFile string, m net/http.Handler, useProxyProtocol bool, proxyProtocolTLSBridging bool) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "if version := toTLSVersion(setting.SSLMinimumVersion); version != 0 {",
+          "SourceFilename": "/analysis/repo/cmd/web_https.go",
+          "SourceLineNum": 144,
+          "ParentFunction": "runHTTPS (network string, listenAddr string, name string, certFile string, keyFile string, m net/http.Handler, useProxyProtocol bool, proxyProtocolTLSBridging bool) error"
+        },
+        {
+          "SourceCode": "return 0",
+          "SourceFilename": "/analysis/repo/cmd/web_https.go",
+          "SourceLineNum": 31,
+          "ParentFunction": "toTLSVersion (version string) uint16"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "runACME",
+    "file_path": "/analysis/repo/cmd/web_acme.go",
+    "line_number": 105,
+    "full_implementation": "func runACME(listenAddr string, m http.Handler) error {\n\t// If HTTP Challenge enabled, needs to be serving on port 80. For TLSALPN needs 443.\n\t// Due to docker port mapping this can't be checked programmatically\n\t// TODO: these are placeholders until we add options for each in settings with appropriate warning\n\tenableHTTPChallenge := true\n\tenableTLSALPNChallenge := true\n\taltHTTPPort := 0\n\taltTLSALPNPort := 0\n\n\tif p, err := strconv.Atoi(setting.PortToRedirect); err == nil {\n\t\taltHTTPPort = p\n\t}\n\tif p, err := strconv.Atoi(setting.HTTPPort); err == nil {\n\t\taltTLSALPNPort = p\n\t}\n\n\t// Try to use private CA root if provided, otherwise defaults to system's trust\n\tvar certPool *x509.CertPool\n\tif setting.AcmeCARoot != \"\" {\n\t\tvar err error\n\t\tcertPool, err = getCARoot(setting.AcmeCARoot)\n\t\tif err != nil {\n\t\t\tlog.Warn(\"Failed to parse CA Root certificate, using default CA trust: %v\", err)\n\t\t}\n\t}\n\t// FIXME: this path is not right, it uses \"AppWorkPath\" incorrectly, and writes the data into \"AppWorkPath/https\"\n\t// Ideally it should migrate to AppDataPath write to \"AppDataPath/https\"\n\t// And one more thing, no idea why we should set the global default variables here\n\t// But it seems that the current ACME code needs these global variables to make renew work.\n\t// Otherwise, \"renew\" will use incorrect storage path\n\toldDefaultACME := certmagic.DefaultACME\n\tcertmagic.Default.Storage = \u0026certmagic.FileStorage{Path: setting.AcmeLiveDirectory}\n\tcertmagic.DefaultACME = certmagic.ACMEIssuer{\n\t\t// try to use the default values provided by DefaultACME\n\t\tCA:        util.IfZero(setting.AcmeURL, oldDefaultACME.CA),\n\t\tTestCA:    oldDefaultACME.TestCA,\n\t\tLogger:    oldDefaultACME.Logger,\n\t\tHTTPProxy: oldDefaultACME.HTTPProxy,\n\n\t\tTrustedRoots:            certPool,\n\t\tEmail:                   setting.AcmeEmail,\n\t\tAgreed:                  setting.AcmeTOS,\n\t\tDisableHTTPChallenge:    !enableHTTPChallenge,\n\t\tDisableTLSALPNChallenge: !enableTLSALPNChallenge,\n\t\tListenHost:              setting.HTTPAddr,\n\t\tAltTLSALPNPort:          altTLSALPNPort,\n\t\tAltHTTPPort:             altHTTPPort,\n\t}\n\n\tmagic := certmagic.NewDefault()\n\tmyACME := certmagic.NewACMEIssuer(magic, certmagic.DefaultACME)\n\tmagic.Issuers = []certmagic.Issuer{myACME}\n\n\t// this obtains certificates or renews them if necessary\n\terr := magic.ManageSync(graceful.GetManager().HammerContext(), []string{setting.Domain})\n\tif err != nil {\n\t\treturn err\n\t}\n\n\ttlsConfig := magic.TLSConfig()\n\ttlsConfig.NextProtos = append(tlsConfig.NextProtos, \"h2\")\n\n\tif version := toTLSVersion(setting.SSLMinimumVersion); version != 0 {\n\t\ttlsConfig.MinVersion = version\n\t}\n\tif version := toTLSVersion(setting.SSLMaximumVersion); version != 0 {\n\t\ttlsConfig.MaxVersion = version\n\t}\n\n\t// Set curve preferences\n\tif curves := toCurvePreferences(setting.SSLCurvePreferences); len(curves) \u003e 0 {\n\t\ttlsConfig.CurvePreferences = curves\n\t}\n\n\t// Set cipher suites\n\tif ciphers := toTLSCiphers(setting.SSLCipherSuites); len(ciphers) \u003e 0 {\n\t\ttlsConfig.CipherSuites = ciphers\n\t}\n\n\tif enableHTTPChallenge {\n\t\tgo func() {\n\t\t\t_, _, finished := process.GetManager().AddTypedContext(graceful.GetManager().HammerContext(), \"Web: ACME HTTP challenge server\", process.SystemProcessType, true)\n\t\t\tdefer finished()\n\n\t\t\tlog.Info(\"Running Let's Encrypt handler on %s\", setting.HTTPAddr+\":\"+setting.PortToRedirect)\n\t\t\t// all traffic coming into HTTP will be redirect to HTTPS automatically (LE HTTP-01 validation happens here)\n\t\t\terr := runHTTP(\"tcp\", setting.HTTPAddr+\":\"+setting.PortToRedirect, \"Let's Encrypt HTTP Challenge\", myACME.HTTPChallengeHandler(http.HandlerFunc(runLetsEncryptFallbackHandler)), setting.RedirectorUseProxyProtocol)\n\t\t\tif err != nil {\n\t\t\t\tlog.Fatal(\"Failed to start the Let's Encrypt handler on port %s: %v\", setting.PortToRedirect, err)\n\t\t\t}\n\t\t}()\n\t}\n\n\treturn runHTTPSWithTLSConfig(\"tcp\", listenAddr, \"Web\", tlsConfig, m, setting.UseProxyProtocol, setting.ProxyProtocolTLSBridging)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::MinVersion",
+      "Message": "Insecure TLS Version\nWe Found: 0",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.MinVersion = version",
+        "SourceFilename": "/analysis/repo/cmd/web_acme.go",
+        "SourceLineNum": 105,
+        "ParentFunction": "runACME (listenAddr string, m net/http.Handler) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "if version := toTLSVersion(setting.SSLMinimumVersion); version != 0 {",
+          "SourceFilename": "/analysis/repo/cmd/web_acme.go",
+          "SourceLineNum": 104,
+          "ParentFunction": "runACME (listenAddr string, m net/http.Handler) error"
+        },
+        {
+          "SourceCode": "return 0",
+          "SourceFilename": "/analysis/repo/cmd/web_https.go",
+          "SourceLineNum": 31,
+          "ParentFunction": "toTLSVersion (version string) uint16"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

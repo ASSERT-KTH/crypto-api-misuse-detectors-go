@@ -1,0 +1,360 @@
+[
+  {
+    "function_name": "doRequest",
+    "file_path": "/analysis/repo/cmd/client/general/request.go",
+    "line_number": 234,
+    "full_implementation": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {\n\tconfig, err := GetCurrentConfig()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treq, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))\n\tif config != nil \u0026\u0026 config.GetUsername() != \"\" {\n\t\treq.SetBasicAuth(config.GetUsername(), config.GetPassword())\n\t}\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))",
+        "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+        "SourceLineNum": 234,
+        "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 229,
+          "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+        },
+        {
+          "SourceCode": "func doRequestWithBody(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, []byte, error) {",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 248,
+          "ParentFunction": "doRequestWithBody (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, []byte, error)"
+        },
+        {
+          "SourceCode": "url, err := MakeURL(path)",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 196,
+          "ParentFunction": "HandleRequest (httpMethod string, path string, yamlBody []byte) (body []byte, err error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "p := HTTPProtocol",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 52,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "doRequest",
+    "file_path": "/analysis/repo/cmd/client/general/request.go",
+    "line_number": 234,
+    "full_implementation": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {\n\tconfig, err := GetCurrentConfig()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treq, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))\n\tif config != nil \u0026\u0026 config.GetUsername() != \"\" {\n\t\treq.SetBasicAuth(config.GetUsername(), config.GetPassword())\n\t}\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))",
+        "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+        "SourceLineNum": 234,
+        "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 229,
+          "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+        },
+        {
+          "SourceCode": "func doRequestWithBody(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, []byte, error) {",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 248,
+          "ParentFunction": "doRequestWithBody (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, []byte, error)"
+        },
+        {
+          "SourceCode": "url, err := MakeURL(path)",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 196,
+          "ParentFunction": "HandleRequest (httpMethod string, path string, yamlBody []byte) (body []byte, err error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "p := HTTPProtocol",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 52,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "doRequest",
+    "file_path": "/analysis/repo/cmd/client/general/request.go",
+    "line_number": 234,
+    "full_implementation": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {\n\tconfig, err := GetCurrentConfig()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treq, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))\n\tif config != nil \u0026\u0026 config.GetUsername() != \"\" {\n\t\treq.SetBasicAuth(config.GetUsername(), config.GetPassword())\n\t}\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))",
+        "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+        "SourceLineNum": 234,
+        "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 229,
+          "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+        },
+        {
+          "SourceCode": "url, err := MakeURL(path)",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 136,
+          "ParentFunction": "HandleReqWithStreamResp (httpMethod string, path string, yamlBody []byte) (io.ReadCloser, error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "p := HTTPProtocol",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 52,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "doRequest",
+    "file_path": "/analysis/repo/cmd/client/general/request.go",
+    "line_number": 234,
+    "full_implementation": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {\n\tconfig, err := GetCurrentConfig()\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treq, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))\n\tif config != nil \u0026\u0026 config.GetUsername() != \"\" {\n\t\treq.SetBasicAuth(config.GetUsername(), config.GetPassword())\n\t}\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tresp, err := client.Do(req)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn resp, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(httpMethod, url, bytes.NewReader(jsonBody))",
+        "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+        "SourceLineNum": 234,
+        "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func doRequest(httpMethod string, url string, jsonBody []byte, client *http.Client) (*http.Response, error) {",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 229,
+          "ParentFunction": "doRequest (httpMethod string, url string, jsonBody []byte, client *net/http.Client) (*net/http.Response, error)"
+        },
+        {
+          "SourceCode": "url, err := MakeURL(path)",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 136,
+          "ParentFunction": "HandleReqWithStreamResp (httpMethod string, path string, yamlBody []byte) (io.ReadCloser, error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "return p + strings.TrimPrefix(server, HTTPProtocol) + path, nil",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        },
+        {
+          "SourceCode": "p := HTTPProtocol",
+          "SourceFilename": "/analysis/repo/cmd/client/general/request.go",
+          "SourceLineNum": 52,
+          "ParentFunction": "MakeURL (path string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "sign",
+    "file_path": "/analysis/repo/pkg/filters/proxies/stickysession.go",
+    "line_number": 201,
+    "full_implementation": "func sign(plain []byte) string {\n\tsigned := make([]byte, KeyLen+sha256.Size)\n\tkey := signed[:KeyLen]\n\tmacBytes := signed[KeyLen:]\n\n\t// use maphash to generate random key fast\n\tbinary.LittleEndian.PutUint64(key, new(maphash.Hash).Sum64())\n\tmac := hmac.New(sha256.New, key)\n\tmac.Write(plain)\n\tmac.Sum(macBytes[:0])\n\n\treturn hex.EncodeToString(signed)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\nWe Found: 8",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha256.New, key)",
+        "SourceFilename": "/analysis/repo/pkg/filters/proxies/stickysession.go",
+        "SourceLineNum": 201,
+        "ParentFunction": "sign (plain []byte) string"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "key := signed[:KeyLen]",
+          "SourceFilename": "/analysis/repo/pkg/filters/proxies/stickysession.go",
+          "SourceLineNum": 196,
+          "ParentFunction": "sign (plain []byte) string"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "getServerByLBCookie",
+    "file_path": "/analysis/repo/pkg/filters/proxies/stickysession.go",
+    "line_number": 165,
+    "full_implementation": "func (ss *HTTPSessionSticker) getServerByLBCookie(req *httpprot.Request, sg *ServerGroup) *Server {\n\tcookie, err := req.Cookie(ss.spec.LBCookieName)\n\tif err != nil {\n\t\treturn nil\n\t}\n\n\tsigned, err := hex.DecodeString(cookie.Value)\n\tif err != nil || len(signed) != KeyLen+sha256.Size {\n\t\treturn nil\n\t}\n\n\tkey := signed[:KeyLen]\n\tmacBytes := signed[KeyLen:]\n\tfor _, s := range sg.Servers {\n\t\tmac := hmac.New(sha256.New, key)\n\t\tmac.Write([]byte(s.ID()))\n\t\texpected := mac.Sum(nil)\n\t\tif hmac.Equal(expected, macBytes) {\n\t\t\treturn s\n\t\t}\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\nWe Found: 8",
+      "Slicing_Criteria": {
+        "SourceCode": "mac := hmac.New(sha256.New, key)",
+        "SourceFilename": "/analysis/repo/pkg/filters/proxies/stickysession.go",
+        "SourceLineNum": 165,
+        "ParentFunction": "getServerByLBCookie (req *github.com/megaease/easegress/v2/pkg/protocols/httpprot.Request, sg *github.com/megaease/easegress/v2/pkg/filters/proxies.ServerGroup) *github.com/megaease/easegress/v2/pkg/filters/proxies.Server"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "key := signed[:KeyLen]",
+          "SourceFilename": "/analysis/repo/pkg/filters/proxies/stickysession.go",
+          "SourceLineNum": 162,
+          "ParentFunction": "getServerByLBCookie (req *github.com/megaease/easegress/v2/pkg/protocols/httpprot.Request, sg *github.com/megaease/easegress/v2/pkg/filters/proxies.ServerGroup) *github.com/megaease/easegress/v2/pkg/filters/proxies.Server"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "tlsConfig",
+    "file_path": "/analysis/repo/pkg/filters/proxies/httpproxy/proxy.go",
+    "line_number": 253,
+    "full_implementation": "func (p *Proxy) tlsConfig() (*tls.Config, error) {\n\tmtls := p.spec.MTLS\n\n\tif mtls == nil {\n\t\treturn \u0026tls.Config{InsecureSkipVerify: true}, nil\n\t}\n\n\tcertPem, _ := base64.StdEncoding.DecodeString(mtls.CertBase64)\n\tkeyPem, _ := base64.StdEncoding.DecodeString(mtls.KeyBase64)\n\trootCertPem, _ := base64.StdEncoding.DecodeString(mtls.RootCertBase64)\n\n\tcert, err := tls.X509KeyPair(certPem, keyPem)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"failed to parse certificate: %v\", err)\n\t}\n\n\tcaCertPool := x509.NewCertPool()\n\tcaCertPool.AppendCertsFromPEM(rootCertPem)\n\n\treturn \u0026tls.Config{\n\t\tCertificates:       []tls.Certificate{cert},\n\t\tRootCAs:            caCertPool,\n\t\tInsecureSkipVerify: mtls.InsecureSkipVerify,\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "return \u0026tls.Config{InsecureSkipVerify: true}, nil",
+        "SourceFilename": "/analysis/repo/pkg/filters/proxies/httpproxy/proxy.go",
+        "SourceLineNum": 253,
+        "ParentFunction": "tlsConfig () (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "return \u0026tls.Config{InsecureSkipVerify: true}, nil",
+          "SourceFilename": "/analysis/repo/pkg/filters/proxies/httpproxy/proxy.go",
+          "SourceLineNum": 253,
+          "ParentFunction": "tlsConfig () (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "bcryptHash",
+    "file_path": "/analysis/repo/pkg/filters/validator/basicauth.go",
+    "line_number": 152,
+    "full_implementation": "func bcryptHash(data []byte) (string, error) {\n\tpw, err := bcrypt.GenerateFromPassword(data, bcrypt.DefaultCost)\n\treturn string(pw), err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "pw, err := bcrypt.GenerateFromPassword(data, bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/pkg/filters/validator/basicauth.go",
+        "SourceLineNum": 152,
+        "ParentFunction": "bcryptHash (data []byte) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pw, err := bcrypt.GenerateFromPassword(data, bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/pkg/filters/validator/basicauth.go",
+          "SourceLineNum": 152,
+          "ParentFunction": "bcryptHash (data []byte) (string, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "NewOAuth2Validator",
+    "file_path": "/analysis/repo/pkg/filters/validator/oauth2.go",
+    "line_number": 87,
+    "full_implementation": "func NewOAuth2Validator(spec *OAuth2ValidatorSpec) *OAuth2Validator {\n\tif spec.JWT != nil {\n\t\tspec.JWT.secretBytes, _ = hex.DecodeString(spec.JWT.Secret)\n\t}\n\tv := \u0026OAuth2Validator{spec: spec}\n\tif spec.TokenIntrospect != nil {\n\t\tif spec.TokenIntrospect.InsecureTLS {\n\t\t\tcfg := tls.Config{InsecureSkipVerify: true}\n\t\t\tv.client = \u0026http.Client{Transport: \u0026http.Transport{TLSClientConfig: \u0026cfg}}\n\t\t} else {\n\t\t\tv.client = http.DefaultClient\n\t\t}\n\t}\n\treturn v\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg := tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/pkg/filters/validator/oauth2.go",
+        "SourceLineNum": 87,
+        "ParentFunction": "NewOAuth2Validator (spec *github.com/megaease/easegress/v2/pkg/filters/validator.OAuth2ValidatorSpec) *github.com/megaease/easegress/v2/pkg/filters/validator.OAuth2Validator"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg := tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/pkg/filters/validator/oauth2.go",
+          "SourceLineNum": 87,
+          "ParentFunction": "NewOAuth2Validator (spec *github.com/megaease/easegress/v2/pkg/filters/validator.OAuth2ValidatorSpec) *github.com/megaease/easegress/v2/pkg/filters/validator.OAuth2Validator"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "SignRootCertAndKey",
+    "file_path": "/analysis/repo/pkg/object/meshcontroller/certmanager/meshcertprovider.go",
+    "line_number": 206,
+    "full_implementation": "func (mp *MeshCertProvider) SignRootCertAndKey(ttl time.Duration) (cert *spec.Certificate, err error) {\n\tnow := time.Now()\n\tca := \u0026x509.Certificate{\n\t\tSerialNumber: big.NewInt(defaultSerialNumber),\n\t\tSubject: pkix.Name{\n\t\t\tCommonName:   spec.DefaultCommonName,\n\t\t\tCountry:      []string{defaultRootCertCountry},\n\t\t\tLocality:     []string{defaultRootCertLocality},\n\t\t\tOrganization: []string{defaultRootCertOrganization},\n\t\t},\n\t\tNotBefore:             now,\n\t\tNotAfter:              now.Add(ttl),\n\t\tKeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,\n\t\tBasicConstraintsValid: true,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},\n\t\tIsCA:                  true,\n\t\tDNSNames:              []string{\"*\"},\n\t}\n\n\tcaPrivKey, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)\n\tif err != nil {\n\t\tlogger.Errorf(\"gen root's ca private keyfailed: %v\", err)\n\t\treturn\n\t}\n\n\t// Self-sign the root certificate\n\tcaBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, \u0026caPrivKey.PublicKey, caPrivKey)\n\tif err != nil {\n\t\tlogger.Errorf(\"create root cert failed: %v\", err)\n\t\treturn\n\t}\n\n\tcaPEM := new(bytes.Buffer)\n\tpem.Encode(caPEM, \u0026pem.Block{\n\t\tType:  typeCert,\n\t\tBytes: caBytes,\n\t})\n\n\tcaPrivKeyPEM := new(bytes.Buffer)\n\tpem.Encode(caPrivKeyPEM, \u0026pem.Block{\n\t\tType:  typeKey,\n\t\tBytes: x509.MarshalPKCS1PrivateKey(caPrivKey),\n\t})\n\n\tcert = \u0026spec.Certificate{\n\t\tServiceName: spec.DefaultCommonName,\n\t\tCertBase64:  base64.StdEncoding.EncodeToString(caPEM.Bytes()),\n\t\tKeyBase64:   base64.StdEncoding.EncodeToString(caPrivKeyPEM.Bytes()),\n\t\tTTL:         ttl.String(),\n\t\tSignTime:    now.Format(time.RFC3339),\n\t}\n\tmp.SetRootCertAndKey(cert)\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2046",
+      "Slicing_Criteria": {
+        "SourceCode": "caPrivKey, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)",
+        "SourceFilename": "/analysis/repo/pkg/object/meshcontroller/certmanager/meshcertprovider.go",
+        "SourceLineNum": 206,
+        "ParentFunction": "SignRootCertAndKey (ttl time.Duration) (cert *github.com/megaease/easegress/v2/pkg/object/meshcontroller/spec.Certificate, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "caPrivKey, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)",
+          "SourceFilename": "/analysis/repo/pkg/object/meshcontroller/certmanager/meshcertprovider.go",
+          "SourceLineNum": 206,
+          "ParentFunction": "SignRootCertAndKey (ttl time.Duration) (cert *github.com/megaease/easegress/v2/pkg/object/meshcontroller/spec.Certificate, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

@@ -1,0 +1,286 @@
+[
+  {
+    "function_name": "apply",
+    "file_path": "/analysis/repo/internal/handshake/header_protector.go",
+    "line_number": 116,
+    "full_implementation": "func (p *chachaHeaderProtector) apply(sample []byte, firstByte *byte, hdrBytes []byte) {\n\tif len(sample) != 16 {\n\t\tpanic(\"invalid sample size\")\n\t}\n\tfor i := 0; i \u003c 5; i++ {\n\t\tp.mask[i] = 0\n\t}\n\tcipher, err := chacha20.NewUnauthenticatedCipher(p.key[:], sample[4:])\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tcipher.SetCounter(binary.LittleEndian.Uint32(sample[:4]))\n\tcipher.XORKeyStream(p.mask[:], p.mask[:])\n\tp.applyMask(firstByte, hdrBytes)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+      "Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+      "Slicing_Criteria": {
+        "SourceCode": "cipher, err := chacha20.NewUnauthenticatedCipher(p.key[:], sample[4:])",
+        "SourceFilename": "/analysis/repo/internal/handshake/header_protector.go",
+        "SourceLineNum": 116,
+        "ParentFunction": "apply (sample []byte, firstByte *byte, hdrBytes []byte)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "GetRetryIntegrityTag",
+    "file_path": "/analysis/repo/internal/handshake/retry.go",
+    "line_number": 55,
+    "full_implementation": "func GetRetryIntegrityTag(retry []byte, origDestConnID protocol.ConnectionID, version protocol.Version) *[16]byte {\n\tretryMutex.Lock()\n\tdefer retryMutex.Unlock()\n\n\tretryBuf.WriteByte(uint8(origDestConnID.Len()))\n\tretryBuf.Write(origDestConnID.Bytes())\n\tretryBuf.Write(retry)\n\tdefer retryBuf.Reset()\n\n\tvar tag [16]byte\n\tvar sealed []byte\n\tif version == protocol.Version2 {\n\t\tif retryAEADv2 == nil {\n\t\t\tretryAEADv2 = initAEAD([16]byte{0x8f, 0xb4, 0xb0, 0x1b, 0x56, 0xac, 0x48, 0xe2, 0x60, 0xfb, 0xcb, 0xce, 0xad, 0x7c, 0xcc, 0x92})\n\t\t}\n\t\tsealed = retryAEADv2.Seal(tag[:0], retryNonceV2[:], nil, retryBuf.Bytes())\n\t} else {\n\t\tif retryAEADv1 == nil {\n\t\t\tretryAEADv1 = initAEAD([16]byte{0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a, 0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e})\n\t\t}\n\t\tsealed = retryAEADv1.Seal(tag[:0], retryNonceV1[:], nil, retryBuf.Bytes())\n\t}\n\tif len(sealed) != 16 {\n\t\tpanic(fmt.Sprintf(\"unexpected Retry integrity tag length: %d\", len(sealed)))\n\t}\n\treturn \u0026tag\n}",
+    "vulnerability_info": {
+      "FuncName": "(crypto/cipher.AEAD).Seal",
+      "Message": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.",
+      "Slicing_Criteria": {
+        "SourceCode": "sealed = retryAEADv2.Seal(tag[:0], retryNonceV2[:], nil, retryBuf.Bytes())",
+        "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+        "SourceLineNum": 55,
+        "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "sealed = retryAEADv2.Seal(tag[:0], retryNonceV2[:], nil, retryBuf.Bytes())",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 55,
+          "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+        },
+        {
+          "SourceCode": "retryNonceV2 = [12]byte{0xd8, 0x69, 0x69, 0xbc, 0x2d, 0x7c, 0x6d, 0x99, 0x90, 0xef, 0xb0, 0x4a}",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 36,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "NOT_CONST"
+    }
+  },
+  {
+    "function_name": "GetRetryIntegrityTag",
+    "file_path": "/analysis/repo/internal/handshake/retry.go",
+    "line_number": 60,
+    "full_implementation": "func GetRetryIntegrityTag(retry []byte, origDestConnID protocol.ConnectionID, version protocol.Version) *[16]byte {\n\tretryMutex.Lock()\n\tdefer retryMutex.Unlock()\n\n\tretryBuf.WriteByte(uint8(origDestConnID.Len()))\n\tretryBuf.Write(origDestConnID.Bytes())\n\tretryBuf.Write(retry)\n\tdefer retryBuf.Reset()\n\n\tvar tag [16]byte\n\tvar sealed []byte\n\tif version == protocol.Version2 {\n\t\tif retryAEADv2 == nil {\n\t\t\tretryAEADv2 = initAEAD([16]byte{0x8f, 0xb4, 0xb0, 0x1b, 0x56, 0xac, 0x48, 0xe2, 0x60, 0xfb, 0xcb, 0xce, 0xad, 0x7c, 0xcc, 0x92})\n\t\t}\n\t\tsealed = retryAEADv2.Seal(tag[:0], retryNonceV2[:], nil, retryBuf.Bytes())\n\t} else {\n\t\tif retryAEADv1 == nil {\n\t\t\tretryAEADv1 = initAEAD([16]byte{0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a, 0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e})\n\t\t}\n\t\tsealed = retryAEADv1.Seal(tag[:0], retryNonceV1[:], nil, retryBuf.Bytes())\n\t}\n\tif len(sealed) != 16 {\n\t\tpanic(fmt.Sprintf(\"unexpected Retry integrity tag length: %d\", len(sealed)))\n\t}\n\treturn \u0026tag\n}",
+    "vulnerability_info": {
+      "FuncName": "(crypto/cipher.AEAD).Seal",
+      "Message": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.",
+      "Slicing_Criteria": {
+        "SourceCode": "sealed = retryAEADv1.Seal(tag[:0], retryNonceV1[:], nil, retryBuf.Bytes())",
+        "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+        "SourceLineNum": 60,
+        "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "sealed = retryAEADv1.Seal(tag[:0], retryNonceV1[:], nil, retryBuf.Bytes())",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 60,
+          "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+        },
+        {
+          "SourceCode": "retryNonceV1 = [12]byte{0x46, 0x15, 0x99, 0xd3, 0x5d, 0x63, 0x2b, 0xf2, 0x23, 0x98, 0x25, 0xbb}",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 35,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "NOT_CONST"
+    }
+  },
+  {
+    "function_name": "initAEAD",
+    "file_path": "/analysis/repo/internal/handshake/retry.go",
+    "line_number": 21,
+    "full_implementation": "func initAEAD(key [16]byte) cipher.AEAD {\n\taes, err := aes.NewCipher(key[:])\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\taead, err := cipher.NewGCM(aes)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\treturn aead\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/aes.NewCipher",
+      "Message": "AES-key should be random.",
+      "Slicing_Criteria": {
+        "SourceCode": "aes, err := aes.NewCipher(key[:])",
+        "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+        "SourceLineNum": 21,
+        "ParentFunction": "initAEAD (key [16]byte) crypto/cipher.AEAD"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "aes, err := aes.NewCipher(key[:])",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 21,
+          "ParentFunction": "initAEAD (key [16]byte) crypto/cipher.AEAD"
+        },
+        {
+          "SourceCode": "func initAEAD(key [16]byte) cipher.AEAD {",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 20,
+          "ParentFunction": "initAEAD (key [16]byte) crypto/cipher.AEAD"
+        },
+        {
+          "SourceCode": "retryAEADv2 = initAEAD([16]byte{0x8f, 0xb4, 0xb0, 0x1b, 0x56, 0xac, 0x48, 0xe2, 0x60, 0xfb, 0xcb, 0xce, 0xad, 0x7c, 0xcc, 0x92})",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 53,
+          "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+        },
+        {
+          "SourceCode": "retryAEADv2 = initAEAD([16]byte{0x8f, 0xb4, 0xb0, 0x1b, 0x56, 0xac, 0x48, 0xe2, 0x60, 0xfb, 0xcb, 0xce, 0xad, 0x7c, 0xcc, 0x92})",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 53,
+          "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "initAEAD",
+    "file_path": "/analysis/repo/internal/handshake/retry.go",
+    "line_number": 21,
+    "full_implementation": "func initAEAD(key [16]byte) cipher.AEAD {\n\taes, err := aes.NewCipher(key[:])\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\taead, err := cipher.NewGCM(aes)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\treturn aead\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/aes.NewCipher",
+      "Message": "AES-key should be random.",
+      "Slicing_Criteria": {
+        "SourceCode": "aes, err := aes.NewCipher(key[:])",
+        "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+        "SourceLineNum": 21,
+        "ParentFunction": "initAEAD (key [16]byte) crypto/cipher.AEAD"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "aes, err := aes.NewCipher(key[:])",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 21,
+          "ParentFunction": "initAEAD (key [16]byte) crypto/cipher.AEAD"
+        },
+        {
+          "SourceCode": "func initAEAD(key [16]byte) cipher.AEAD {",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 20,
+          "ParentFunction": "initAEAD (key [16]byte) crypto/cipher.AEAD"
+        },
+        {
+          "SourceCode": "retryAEADv1 = initAEAD([16]byte{0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a, 0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e})",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 58,
+          "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+        },
+        {
+          "SourceCode": "retryAEADv1 = initAEAD([16]byte{0xbe, 0x0c, 0x69, 0x0b, 0x9f, 0x66, 0x57, 0x5a, 0x1d, 0x76, 0x6b, 0x54, 0xe3, 0x68, 0xc8, 0x4e})",
+          "SourceFilename": "/analysis/repo/internal/handshake/retry.go",
+          "SourceLineNum": 58,
+          "ParentFunction": "GetRetryIntegrityTag (retry []byte, origDestConnID github.com/quic-go/quic-go/internal/protocol.ConnectionID, version github.com/quic-go/quic-go/internal/protocol.Version) *[16]byte"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "generateTLSConfig",
+    "file_path": "/analysis/repo/example/echo/echo.go",
+    "line_number": 100,
+    "full_implementation": "func generateTLSConfig() *tls.Config {\n\tkey, err := rsa.GenerateKey(rand.Reader, 1024)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\ttemplate := x509.Certificate{SerialNumber: big.NewInt(1)}\n\tcertDER, err := x509.CreateCertificate(rand.Reader, \u0026template, \u0026template, \u0026key.PublicKey, key)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tkeyPEM := pem.EncodeToMemory(\u0026pem.Block{Type: \"RSA PRIVATE KEY\", Bytes: x509.MarshalPKCS1PrivateKey(key)})\n\tcertPEM := pem.EncodeToMemory(\u0026pem.Block{Type: \"CERTIFICATE\", Bytes: certDER})\n\n\ttlsCert, err := tls.X509KeyPair(certPEM, keyPEM)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\treturn \u0026tls.Config{\n\t\tCertificates: []tls.Certificate{tlsCert},\n\t\tNextProtos:   []string{\"quic-echo-example\"},\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 1024",
+      "Slicing_Criteria": {
+        "SourceCode": "key, err := rsa.GenerateKey(rand.Reader, 1024)",
+        "SourceFilename": "/analysis/repo/example/echo/echo.go",
+        "SourceLineNum": 100,
+        "ParentFunction": "generateTLSConfig () *crypto/tls.Config"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "key, err := rsa.GenerateKey(rand.Reader, 1024)",
+          "SourceFilename": "/analysis/repo/example/echo/echo.go",
+          "SourceLineNum": 100,
+          "ParentFunction": "generateTLSConfig () *crypto/tls.Config"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "clientMain",
+    "file_path": "/analysis/repo/example/echo/echo.go",
+    "line_number": 59,
+    "full_implementation": "func clientMain() error {\n\ttlsConf := \u0026tls.Config{\n\t\tInsecureSkipVerify: true,\n\t\tNextProtos:         []string{\"quic-echo-example\"},\n\t}\n\tconn, err := quic.DialAddr(context.Background(), addr, tlsConf, nil)\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer conn.CloseWithError(0, \"\")\n\n\tstream, err := conn.OpenStreamSync(context.Background())\n\tif err != nil {\n\t\treturn err\n\t}\n\tdefer stream.Close()\n\n\tfmt.Printf(\"Client: Sending '%s'\\n\", message)\n\t_, err = stream.Write([]byte(message))\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tbuf := make([]byte, len(message))\n\t_, err = io.ReadFull(stream, buf)\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"Client: Got '%s'\\n\", buf)\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/example/echo/echo.go",
+        "SourceLineNum": 59,
+        "ParentFunction": "clientMain () error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/example/echo/echo.go",
+          "SourceLineNum": 59,
+          "ParentFunction": "clientMain () error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "WriteCorpusFile",
+    "file_path": "/analysis/repo/fuzzing/internal/helper/helper.go",
+    "line_number": 34,
+    "full_implementation": "func WriteCorpusFile(path string, data []byte) error {\n\t// create the directory, if it doesn't exist yet\n\tif _, err := os.Stat(path); os.IsNotExist(err) {\n\t\tif err := os.MkdirAll(path, os.ModePerm); err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\thash := sha1.Sum(data)\n\treturn os.WriteFile(filepath.Join(path, hex.EncodeToString(hash[:])), data, 0o644)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum(data)",
+        "SourceFilename": "/analysis/repo/fuzzing/internal/helper/helper.go",
+        "SourceLineNum": 34,
+        "ParentFunction": "WriteCorpusFile (path string, data []byte) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "GenerateTLSConfigWithLongCertChain",
+    "file_path": "/analysis/repo/integrationtests/tools/crypto.go",
+    "line_number": 86,
+    "full_implementation": "func GenerateTLSConfigWithLongCertChain(ca *x509.Certificate, caPrivateKey crypto.PrivateKey) (*tls.Config, error) {\n\tconst chainLen = 7\n\tcertTempl := \u0026x509.Certificate{\n\t\tSerialNumber:          big.NewInt(2019),\n\t\tSubject:               pkix.Name{},\n\t\tNotBefore:             time.Now(),\n\t\tNotAfter:              time.Now().Add(24 * time.Hour),\n\t\tIsCA:                  true,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},\n\t\tKeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,\n\t\tBasicConstraintsValid: true,\n\t}\n\n\tlastCA := ca\n\tlastCAPrivKey := caPrivateKey\n\tprivKey, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tcerts := make([]*x509.Certificate, chainLen)\n\tfor i := 0; i \u003c chainLen; i++ {\n\t\tcaBytes, err := x509.CreateCertificate(rand.Reader, certTempl, lastCA, \u0026privKey.PublicKey, lastCAPrivKey)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tca, err := x509.ParseCertificate(caBytes)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tcerts[i] = ca\n\t\tlastCA = ca\n\t\tlastCAPrivKey = privKey\n\t}\n\tleafCert, leafPrivateKey, err := GenerateLeafCert(lastCA, lastCAPrivKey)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\trawCerts := make([][]byte, chainLen+1)\n\tfor i, cert := range certs {\n\t\trawCerts[chainLen-i] = cert.Raw\n\t}\n\trawCerts[0] = leafCert.Raw\n\n\treturn \u0026tls.Config{\n\t\tCertificates: []tls.Certificate{{\n\t\t\tCertificate: rawCerts,\n\t\t\tPrivateKey:  leafPrivateKey,\n\t\t}},\n\t\tNextProtos: []string{ALPN},\n\t}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "privKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/integrationtests/tools/crypto.go",
+        "SourceLineNum": 86,
+        "ParentFunction": "GenerateTLSConfigWithLongCertChain (ca *crypto/x509.Certificate, caPrivateKey crypto.PrivateKey) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "privKey, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/integrationtests/tools/crypto.go",
+          "SourceLineNum": 86,
+          "ParentFunction": "GenerateTLSConfigWithLongCertChain (ca *crypto/x509.Certificate, caPrivateKey crypto.PrivateKey) (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "main",
+    "file_path": "/analysis/repo/interop/client/main.go",
+    "line_number": 49,
+    "full_implementation": "func main() {\n\tlogFile, err := os.Create(\"/logs/log.txt\")\n\tif err != nil {\n\t\tfmt.Printf(\"Could not create log file: %s\\n\", err.Error())\n\t\tos.Exit(1)\n\t}\n\tdefer logFile.Close()\n\tlog.SetOutput(logFile)\n\n\tkeyLog, err := utils.GetSSLKeyLog()\n\tif err != nil {\n\t\tfmt.Printf(\"Could not create key log: %s\\n\", err.Error())\n\t\tos.Exit(1)\n\t}\n\tif keyLog != nil {\n\t\tdefer keyLog.Close()\n\t}\n\n\ttlsConf = \u0026tls.Config{\n\t\tInsecureSkipVerify: true,\n\t\tKeyLogWriter:       keyLog,\n\t}\n\ttestcase := os.Getenv(\"TESTCASE\")\n\tif err := runTestcase(testcase); err != nil {\n\t\tif err == errUnsupported {\n\t\t\tfmt.Printf(\"unsupported test case: %s\\n\", testcase)\n\t\t\tos.Exit(127)\n\t\t}\n\t\tfmt.Printf(\"Downloading files failed: %s\\n\", err.Error())\n\t\tos.Exit(1)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/interop/client/main.go",
+        "SourceLineNum": 49,
+        "ParentFunction": "main ()"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/interop/client/main.go",
+          "SourceLineNum": 49,
+          "ParentFunction": "main ()"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

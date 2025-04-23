@@ -1,0 +1,52 @@
+[
+  {
+    "function_name": "resolverDefaultTLS",
+    "file_path": "/analysis/repo/cmd/ctr/commands/resolver.go",
+    "line_number": 124,
+    "full_implementation": "func resolverDefaultTLS(cliContext *cli.Context) (*tls.Config, error) {\n\ttlsConfig := \u0026tls.Config{}\n\n\tif cliContext.Bool(\"skip-verify\") {\n\t\ttlsConfig.InsecureSkipVerify = true\n\t}\n\n\tif tlsRootPath := cliContext.String(\"tlscacert\"); tlsRootPath != \"\" {\n\t\ttlsRootData, err := os.ReadFile(tlsRootPath)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to read %q: %w\", tlsRootPath, err)\n\t\t}\n\n\t\ttlsConfig.RootCAs = x509.NewCertPool()\n\t\tif !tlsConfig.RootCAs.AppendCertsFromPEM(tlsRootData) {\n\t\t\treturn nil, fmt.Errorf(\"failed to load TLS CAs from %q: invalid data\", tlsRootPath)\n\t\t}\n\t}\n\n\ttlsCertPath := cliContext.String(\"tlscert\")\n\ttlsKeyPath := cliContext.String(\"tlskey\")\n\tif tlsCertPath != \"\" || tlsKeyPath != \"\" {\n\t\tif tlsCertPath == \"\" || tlsKeyPath == \"\" {\n\t\t\treturn nil, errors.New(\"flags --tlscert and --tlskey must be set together\")\n\t\t}\n\t\tkeyPair, err := tls.LoadX509KeyPair(tlsCertPath, tlsKeyPath)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"failed to load TLS client credentials (cert=%q, key=%q): %w\", tlsCertPath, tlsKeyPath, err)\n\t\t}\n\t\ttlsConfig.Certificates = []tls.Certificate{keyPair}\n\t}\n\n\t// If nothing was set, return nil rather than empty config\n\tif !tlsConfig.InsecureSkipVerify \u0026\u0026 tlsConfig.RootCAs == nil \u0026\u0026 tlsConfig.Certificates == nil {\n\t\treturn nil, nil\n\t}\n\n\treturn tlsConfig, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/cmd/ctr/commands/resolver.go",
+        "SourceLineNum": 124,
+        "ParentFunction": "resolverDefaultTLS (cliContext *github.com/urfave/cli/v2.Context) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/cmd/ctr/commands/resolver.go",
+          "SourceLineNum": 124,
+          "ParentFunction": "resolverDefaultTLS (cliContext *github.com/urfave/cli/v2.Context) (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "httpGetRequest",
+    "file_path": "/analysis/repo/cmd/ctr/commands/pprof/pprof.go",
+    "line_number": 272,
+    "full_implementation": "func httpGetRequest(client *http.Client, request string) (io.ReadCloser, error) {\n\tresp, err := client.Get(\"http://.\" + request)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tif resp.StatusCode != http.StatusOK {\n\t\tresp.Body.Close()\n\t\treturn nil, fmt.Errorf(\"http get failed with status: %s\", resp.Status)\n\t}\n\treturn resp.Body, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*net/http.Client).Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "resp, err := client.Get(\"http://.\" + request)",
+        "SourceFilename": "/analysis/repo/cmd/ctr/commands/pprof/pprof.go",
+        "SourceLineNum": 272,
+        "ParentFunction": "httpGetRequest (client *net/http.Client, request string) (io.ReadCloser, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "resp, err := client.Get(\"http://.\" + request)",
+          "SourceFilename": "/analysis/repo/cmd/ctr/commands/pprof/pprof.go",
+          "SourceLineNum": 272,
+          "ParentFunction": "httpGetRequest (client *net/http.Client, request string) (io.ReadCloser, error)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  }
+]

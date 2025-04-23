@@ -1,0 +1,117 @@
+[
+  {
+    "function_name": "wsAcceptKey",
+    "file_path": "/analysis/repo/server/websocket.go",
+    "line_number": 987,
+    "full_implementation": "func wsAcceptKey(key string) string {\n\th := sha1.New()\n\th.Write([]byte(key))\n\th.Write(wsGUID)\n\treturn base64.StdEncoding.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/server/websocket.go",
+        "SourceLineNum": 987,
+        "ParentFunction": "wsAcceptKey (key string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "genBlockEncryptionKey",
+    "file_path": "/analysis/repo/server/filestore.go",
+    "line_number": 762,
+    "full_implementation": "func genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\tif sc == ChaCha {\n\t\treturn chacha20.NewUnauthenticatedCipher(seed, nonce)\n\t} else if sc == AES {\n\t\tblock, err := aes.NewCipher(seed)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\treturn cipher.NewCTR(block, nonce), nil\n\t}\n\treturn nil, errUnknownCipher\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+      "Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+      "Slicing_Criteria": {
+        "SourceCode": "return chacha20.NewUnauthenticatedCipher(seed, nonce)",
+        "SourceFilename": "/analysis/repo/server/filestore.go",
+        "SourceLineNum": 762,
+        "ParentFunction": "genBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "genEncryptionKeys",
+    "file_path": "/analysis/repo/server/filestore.go",
+    "line_number": 732,
+    "full_implementation": "func (fs *fileStore) genEncryptionKeys(context string) (aek cipher.AEAD, bek cipher.Stream, seed, encrypted []byte, err error) {\n\tif fs.prf == nil {\n\t\treturn nil, nil, nil, nil, errNoEncryption\n\t}\n\t// Generate key encryption key.\n\trb, err := fs.prf([]byte(context))\n\tif err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t}\n\n\tsc := fs.fcfg.Cipher\n\n\tkek, err := genEncryptionKey(sc, rb)\n\tif err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t}\n\t// Generate random asset encryption key seed.\n\n\tconst seedSize = 32\n\tseed = make([]byte, seedSize)\n\tif n, err := rand.Read(seed); err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t} else if n != seedSize {\n\t\treturn nil, nil, nil, nil, fmt.Errorf(\"not enough seed bytes read (%d != %d\", n, seedSize)\n\t}\n\n\taek, err = genEncryptionKey(sc, seed)\n\tif err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t}\n\n\t// Generate our nonce. Use same buffer to hold encrypted seed.\n\tnonce := make([]byte, kek.NonceSize(), kek.NonceSize()+len(seed)+kek.Overhead())\n\tif n, err := rand.Read(nonce); err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t} else if n != len(nonce) {\n\t\treturn nil, nil, nil, nil, fmt.Errorf(\"not enough nonce bytes read (%d != %d)\", n, len(nonce))\n\t}\n\n\tbek, err = genBlockEncryptionKey(sc, seed[:], nonce)\n\tif err != nil {\n\t\treturn nil, nil, nil, nil, err\n\t}\n\n\treturn aek, bek, seed, kek.Seal(nonce, nonce, seed, nil), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "",
+      "Message": "R09: 随机数重复使用",
+      "Slicing_Criteria": {
+        "SourceCode": "if n, err := rand.Read(seed); err != nil {",
+        "SourceFilename": "/analysis/repo/server/filestore.go",
+        "SourceLineNum": 732,
+        "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 760,
+          "ParentFunction": "genBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)"
+        },
+        {
+          "SourceCode": "bek, err = genBlockEncryptionKey(sc, seed[:], nonce)",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 751,
+          "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+        },
+        {
+          "SourceCode": "if n, err := rand.Read(seed); err != nil {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 732,
+          "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+        },
+        {
+          "SourceCode": "func genEncryptionKey(sc StoreCipher, seed []byte) (ek cipher.AEAD, err error) {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 696,
+          "ParentFunction": "genEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte) (ek crypto/cipher.AEAD, err error)"
+        },
+        {
+          "SourceCode": "if n, err := rand.Read(seed); err != nil {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 732,
+          "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+        },
+        {
+          "SourceCode": "func genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 760,
+          "ParentFunction": "genBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)"
+        },
+        {
+          "SourceCode": "bek, err = genBlockEncryptionKey(sc, seed[:], nonce)",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 751,
+          "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+        },
+        {
+          "SourceCode": "if n, err := rand.Read(seed); err != nil {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 732,
+          "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+        },
+        {
+          "SourceCode": "func genEncryptionKey(sc StoreCipher, seed []byte) (ek cipher.AEAD, err error) {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 696,
+          "ParentFunction": "genEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte) (ek crypto/cipher.AEAD, err error)"
+        },
+        {
+          "SourceCode": "if n, err := rand.Read(seed); err != nil {",
+          "SourceFilename": "/analysis/repo/server/filestore.go",
+          "SourceLineNum": 732,
+          "ParentFunction": "genEncryptionKeys (context string) (aek crypto/cipher.AEAD, bek crypto/cipher.Stream, seed []byte, encrypted []byte, err error)"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  }
+]

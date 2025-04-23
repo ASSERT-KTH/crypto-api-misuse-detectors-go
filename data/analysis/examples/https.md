@@ -1,0 +1,1 @@
+Gopher marks all http requests as insecure it seems, instead https is controlled by the url itself.

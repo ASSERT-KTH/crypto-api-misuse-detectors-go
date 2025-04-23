@@ -1,0 +1,720 @@
+[
+  {
+    "function_name": "computeAcceptKey",
+    "file_path": "/analysis/repo/ws.go",
+    "line_number": 705,
+    "full_implementation": "func computeAcceptKey(challengeKey string) string {\n\th := sha1.New()\n\th.Write([]byte(challengeKey))\n\th.Write(keyGUID)\n\treturn base64.StdEncoding.EncodeToString(h.Sum(nil))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h := sha1.New()",
+        "SourceFilename": "/analysis/repo/ws.go",
+        "SourceLineNum": 705,
+        "ParentFunction": "computeAcceptKey (challengeKey string) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "generateKeyPair",
+    "file_path": "/analysis/repo/gost.go",
+    "line_number": 107,
+    "full_implementation": "func generateKeyPair() (rawCert, rawKey []byte, err error) {\n\t// Create private key and self-signed certificate\n\t// Adapted from https://golang.org/src/crypto/tls/generate_cert.go\n\n\tpriv, err := rsa.GenerateKey(rand.Reader, 2048)\n\tif err != nil {\n\t\treturn\n\t}\n\tvalidFor := time.Hour * 24 * 365 * 10 // ten years\n\tnotBefore := time.Now()\n\tnotAfter := notBefore.Add(validFor)\n\tserialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)\n\tserialNumber, err := rand.Int(rand.Reader, serialNumberLimit)\n\ttemplate := x509.Certificate{\n\t\tSerialNumber: serialNumber,\n\t\tSubject: pkix.Name{\n\t\t\tOrganization: []string{\"gost\"},\n\t\t},\n\t\tNotBefore: notBefore,\n\t\tNotAfter:  notAfter,\n\n\t\tKeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,\n\t\tExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},\n\t\tBasicConstraintsValid: true,\n\t}\n\tderBytes, err := x509.CreateCertificate(rand.Reader, \u0026template, \u0026template, \u0026priv.PublicKey, priv)\n\tif err != nil {\n\t\treturn\n\t}\n\n\trawCert = pem.EncodeToMemory(\u0026pem.Block{Type: \"CERTIFICATE\", Bytes: derBytes})\n\trawKey = pem.EncodeToMemory(\u0026pem.Block{Type: \"RSA PRIVATE KEY\", Bytes: x509.MarshalPKCS1PrivateKey(priv)})\n\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.GenerateKey",
+      "Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+        "SourceFilename": "/analysis/repo/gost.go",
+        "SourceLineNum": 107,
+        "ParentFunction": "generateKeyPair () (rawCert []byte, rawKey []byte, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "priv, err := rsa.GenerateKey(rand.Reader, 2048)",
+          "SourceFilename": "/analysis/repo/gost.go",
+          "SourceLineNum": 107,
+          "ParentFunction": "generateKeyPair () (rawCert []byte, rawKey []byte, err error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Handshake",
+    "file_path": "/analysis/repo/ssh.go",
+    "line_number": 339,
+    "full_implementation": "func (tr *sshTunnelTransporter) Handshake(conn net.Conn, options ...HandshakeOption) (net.Conn, error) {\n\topts := \u0026HandshakeOptions{}\n\tfor _, option := range options {\n\t\toption(opts)\n\t}\n\n\ttimeout := opts.Timeout\n\tif timeout \u003c= 0 {\n\t\ttimeout = HandshakeTimeout\n\t}\n\n\tconfig := ssh.ClientConfig{\n\t\tTimeout:         timeout,\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t}\n\tif opts.User != nil {\n\t\tconfig.User = opts.User.Username()\n\t\tif password, _ := opts.User.Password(); password != \"\" {\n\t\t\tconfig.Auth = []ssh.AuthMethod{\n\t\t\t\tssh.Password(password),\n\t\t\t}\n\t\t}\n\t}\n\tif opts.SSHConfig != nil \u0026\u0026 opts.SSHConfig.Key != nil {\n\t\tconfig.Auth = append(config.Auth, ssh.PublicKeys(opts.SSHConfig.Key))\n\t}\n\n\ttr.sessionMutex.Lock()\n\tdefer tr.sessionMutex.Unlock()\n\n\tconn.SetDeadline(time.Now().Add(timeout))\n\tdefer conn.SetDeadline(time.Time{})\n\n\tsession, ok := tr.sessions[opts.Addr]\n\tif !ok || session.client == nil {\n\t\tsshConn, chans, reqs, err := ssh.NewClientConn(conn, opts.Addr, \u0026config)\n\t\tif err != nil {\n\t\t\tconn.Close()\n\t\t\tdelete(tr.sessions, opts.Addr)\n\t\t\treturn nil, err\n\t\t}\n\n\t\tsession = \u0026sshSession{\n\t\t\taddr:   opts.Addr,\n\t\t\tconn:   conn,\n\t\t\tclient: ssh.NewClient(sshConn, chans, reqs),\n\t\t\tclosed: make(chan struct{}),\n\t\t\tdeaded: make(chan struct{}),\n\t\t}\n\t\ttr.sessions[opts.Addr] = session\n\t\tgo session.Ping(opts.Interval, opts.Timeout, opts.Retry)\n\t\tgo session.waitServer()\n\t\tgo session.waitClose()\n\t}\n\n\tif session.Closed() {\n\t\tdelete(tr.sessions, opts.Addr)\n\t\treturn nil, errSessionDead\n\t}\n\n\tchannel, reqs, err := session.client.OpenChannel(GostSSHTunnelRequest, nil)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tgo ssh.DiscardRequests(reqs)\n\treturn \u0026sshConn{channel: channel, conn: conn}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/ssh.go",
+        "SourceLineNum": 339,
+        "ParentFunction": "Handshake (conn net.Conn, options ...github.com/ginuerzh/gost.HandshakeOption) (net.Conn, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "Handshake",
+    "file_path": "/analysis/repo/ssh.go",
+    "line_number": 225,
+    "full_implementation": "func (tr *sshForwardTransporter) Handshake(conn net.Conn, options ...HandshakeOption) (net.Conn, error) {\n\topts := \u0026HandshakeOptions{}\n\tfor _, option := range options {\n\t\toption(opts)\n\t}\n\n\ttimeout := opts.Timeout\n\tif timeout \u003c= 0 {\n\t\ttimeout = HandshakeTimeout\n\t}\n\n\tconfig := ssh.ClientConfig{\n\t\tTimeout:         timeout,\n\t\tHostKeyCallback: ssh.InsecureIgnoreHostKey(),\n\t}\n\tif opts.User != nil {\n\t\tconfig.User = opts.User.Username()\n\t\tif password, _ := opts.User.Password(); password != \"\" {\n\t\t\tconfig.Auth = []ssh.AuthMethod{\n\t\t\t\tssh.Password(password),\n\t\t\t}\n\t\t}\n\t}\n\tif opts.SSHConfig != nil \u0026\u0026 opts.SSHConfig.Key != nil {\n\t\tconfig.Auth = append(config.Auth, ssh.PublicKeys(opts.SSHConfig.Key))\n\t}\n\n\ttr.sessionMutex.Lock()\n\tdefer tr.sessionMutex.Unlock()\n\n\tconn.SetDeadline(time.Now().Add(timeout))\n\tdefer conn.SetDeadline(time.Time{})\n\n\tsession, ok := tr.sessions[opts.Addr]\n\tif !ok || session.client == nil {\n\t\tsshConn, chans, reqs, err := ssh.NewClientConn(conn, opts.Addr, \u0026config)\n\t\tif err != nil {\n\t\t\tlog.Log(\"ssh\", err)\n\t\t\tconn.Close()\n\t\t\tdelete(tr.sessions, opts.Addr)\n\t\t\treturn nil, err\n\t\t}\n\n\t\tsession = \u0026sshSession{\n\t\t\taddr:     opts.Addr,\n\t\t\tconn:     conn,\n\t\t\tclient:   ssh.NewClient(sshConn, chans, reqs),\n\t\t\tclosed:   make(chan struct{}),\n\t\t\tdeaded:   make(chan struct{}),\n\t\t\tconnChan: make(chan net.Conn, 1024),\n\t\t}\n\t\ttr.sessions[opts.Addr] = session\n\t\tgo session.Ping(opts.Interval, opts.Timeout, opts.Retry)\n\t\tgo session.waitServer()\n\t\tgo session.waitClose()\n\t}\n\tif session.Closed() {\n\t\tdelete(tr.sessions, opts.Addr)\n\t\treturn nil, errSessionDead\n\t}\n\n\treturn \u0026sshNopConn{session: session}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+      "Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+      "Slicing_Criteria": {
+        "SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+        "SourceFilename": "/analysis/repo/ssh.go",
+        "SourceLineNum": 225,
+        "ParentFunction": "Handshake (conn net.Conn, options ...github.com/ginuerzh/gost.HandshakeOption) (net.Conn, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "blockCrypt",
+    "file_path": "/analysis/repo/kcp.go",
+    "line_number": 415,
+    "full_implementation": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {\n\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\n\tswitch crypt {\n\tcase \"sm4\":\n\t\tblock, _ = kcp.NewSM4BlockCrypt(pass[:16])\n\tcase \"tea\":\n\t\tblock, _ = kcp.NewTEABlockCrypt(pass[:16])\n\tcase \"xor\":\n\t\tblock, _ = kcp.NewSimpleXORBlockCrypt(pass)\n\tcase \"none\":\n\t\tblock, _ = kcp.NewNoneBlockCrypt(pass)\n\tcase \"aes-128\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:16])\n\tcase \"aes-192\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:24])\n\tcase \"blowfish\":\n\t\tblock, _ = kcp.NewBlowfishBlockCrypt(pass)\n\tcase \"twofish\":\n\t\tblock, _ = kcp.NewTwofishBlockCrypt(pass)\n\tcase \"cast5\":\n\t\tblock, _ = kcp.NewCast5BlockCrypt(pass[:16])\n\tcase \"3des\":\n\t\tblock, _ = kcp.NewTripleDESBlockCrypt(pass[:24])\n\tcase \"xtea\":\n\t\tblock, _ = kcp.NewXTEABlockCrypt(pass[:16])\n\tcase \"salsa20\":\n\t\tblock, _ = kcp.NewSalsa20BlockCrypt(pass)\n\tcase \"aes\":\n\t\tfallthrough\n\tdefault: // aes\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass)\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 4096",
+      "Slicing_Criteria": {
+        "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/kcp.go",
+        "SourceLineNum": 415,
+        "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 415,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "Handshake",
+    "file_path": "/analysis/repo/ws.go",
+    "line_number": 216,
+    "full_implementation": "func (tr *wssTransporter) Handshake(conn net.Conn, options ...HandshakeOption) (net.Conn, error) {\n\topts := \u0026HandshakeOptions{}\n\tfor _, option := range options {\n\t\toption(opts)\n\t}\n\twsOptions := tr.options\n\tif opts.WSOptions != nil {\n\t\twsOptions = opts.WSOptions\n\t}\n\tif wsOptions == nil {\n\t\twsOptions = \u0026WSOptions{}\n\t}\n\n\tif opts.TLSConfig == nil {\n\t\topts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\tpath := wsOptions.Path\n\tif path == \"\" {\n\t\tpath = defaultWSPath\n\t}\n\turl := url.URL{Scheme: \"wss\", Host: opts.Host, Path: path}\n\treturn websocketClientConn(url.String(), conn, opts.TLSConfig, wsOptions)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "opts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/ws.go",
+        "SourceLineNum": 216,
+        "ParentFunction": "Handshake (conn net.Conn, options ...github.com/ginuerzh/gost.HandshakeOption) (net.Conn, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "opts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/ws.go",
+          "SourceLineNum": 216,
+          "ParentFunction": "Handshake (conn net.Conn, options ...github.com/ginuerzh/gost.HandshakeOption) (net.Conn, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "HTTP2Transporter",
+    "file_path": "/analysis/repo/http2.go",
+    "line_number": 124,
+    "full_implementation": "func HTTP2Transporter(config *tls.Config) Transporter {\n\tif config == nil {\n\t\tconfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\treturn \u0026http2Transporter{\n\t\tclients:   make(map[string]*http.Client),\n\t\ttlsConfig: config,\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/http2.go",
+        "SourceLineNum": 124,
+        "ParentFunction": "HTTP2Transporter (config *crypto/tls.Config) github.com/ginuerzh/gost.Transporter"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/http2.go",
+          "SourceLineNum": 124,
+          "ParentFunction": "HTTP2Transporter (config *crypto/tls.Config) github.com/ginuerzh/gost.Transporter"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "NewDoTExchanger",
+    "file_path": "/analysis/repo/resolver.go",
+    "line_number": 803,
+    "full_implementation": "func NewDoTExchanger(addr string, tlsConfig *tls.Config, opts ...ExchangerOption) Exchanger {\n\tvar options exchangerOptions\n\tfor _, opt := range opts {\n\t\topt(\u0026options)\n\t}\n\n\tif _, port, _ := net.SplitHostPort(addr); port == \"\" {\n\t\taddr = net.JoinHostPort(addr, \"53\")\n\t}\n\n\tif tlsConfig == nil {\n\t\ttlsConfig = \u0026tls.Config{\n\t\t\tInsecureSkipVerify: true,\n\t\t}\n\t}\n\treturn \u0026dotExchanger{\n\t\taddr:      addr,\n\t\ttlsConfig: tlsConfig,\n\t\toptions:   options,\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/resolver.go",
+        "SourceLineNum": 803,
+        "ParentFunction": "NewDoTExchanger (addr string, tlsConfig *crypto/tls.Config, opts ...github.com/ginuerzh/gost.ExchangerOption) github.com/ginuerzh/gost.Exchanger"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/resolver.go",
+          "SourceLineNum": 803,
+          "ParentFunction": "NewDoTExchanger (addr string, tlsConfig *crypto/tls.Config, opts ...github.com/ginuerzh/gost.ExchangerOption) github.com/ginuerzh/gost.Exchanger"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "initSession",
+    "file_path": "/analysis/repo/quic.go",
+    "line_number": 109,
+    "full_implementation": "func (tr *quicTransporter) initSession(addr net.Addr, conn net.PacketConn) (*quicSession, error) {\n\tconfig := tr.config\n\tif config == nil {\n\t\tconfig = \u0026QUICConfig{}\n\t}\n\tif config.TLSConfig == nil {\n\t\tconfig.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\n\tquicConfig := \u0026quic.Config{\n\t\tHandshakeIdleTimeout: config.Timeout,\n\t\tMaxIdleTimeout:       config.IdleTimeout,\n\t\tKeepAlivePeriod:      config.KeepAlivePeriod,\n\t\tVersions: []quic.VersionNumber{\n\t\t\tquic.Version1,\n\t\t\tquic.Version2,\n\t\t},\n\t}\n\tsession, err := quic.DialEarly(context.Background(), conn, addr, tlsConfigQUICALPN(config.TLSConfig), quicConfig)\n\tif err != nil {\n\t\tlog.Logf(\"quic dial %s: %v\", addr, err)\n\t\treturn nil, err\n\t}\n\treturn \u0026quicSession{session: session}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/quic.go",
+        "SourceLineNum": 109,
+        "ParentFunction": "initSession (addr net.Addr, conn net.PacketConn) (*github.com/ginuerzh/gost.quicSession, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/quic.go",
+          "SourceLineNum": 109,
+          "ParentFunction": "initSession (addr net.Addr, conn net.PacketConn) (*github.com/ginuerzh/gost.quicSession, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "blockCrypt",
+    "file_path": "/analysis/repo/kcp.go",
+    "line_number": 415,
+    "full_implementation": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {\n\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\n\tswitch crypt {\n\tcase \"sm4\":\n\t\tblock, _ = kcp.NewSM4BlockCrypt(pass[:16])\n\tcase \"tea\":\n\t\tblock, _ = kcp.NewTEABlockCrypt(pass[:16])\n\tcase \"xor\":\n\t\tblock, _ = kcp.NewSimpleXORBlockCrypt(pass)\n\tcase \"none\":\n\t\tblock, _ = kcp.NewNoneBlockCrypt(pass)\n\tcase \"aes-128\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:16])\n\tcase \"aes-192\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:24])\n\tcase \"blowfish\":\n\t\tblock, _ = kcp.NewBlowfishBlockCrypt(pass)\n\tcase \"twofish\":\n\t\tblock, _ = kcp.NewTwofishBlockCrypt(pass)\n\tcase \"cast5\":\n\t\tblock, _ = kcp.NewCast5BlockCrypt(pass[:16])\n\tcase \"3des\":\n\t\tblock, _ = kcp.NewTripleDESBlockCrypt(pass[:24])\n\tcase \"xtea\":\n\t\tblock, _ = kcp.NewXTEABlockCrypt(pass[:16])\n\tcase \"salsa20\":\n\t\tblock, _ = kcp.NewSalsa20BlockCrypt(pass)\n\tcase \"aes\":\n\t\tfallthrough\n\tdefault: // aes\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass)\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\nWe Found: 6",
+      "Slicing_Criteria": {
+        "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/kcp.go",
+        "SourceLineNum": 415,
+        "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 415,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 414,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt), config.DataShard, config.ParityShard)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 303,
+          "ParentFunction": "KCPListener (addr string, config *github.com/ginuerzh/gost.KCPConfig) (github.com/ginuerzh/gost.Listener, error)"
+        },
+        {
+          "SourceCode": "KCPSalt = \"kcp-go\"",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 25,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "initSession",
+    "file_path": "/analysis/repo/ws.go",
+    "line_number": 326,
+    "full_implementation": "func (tr *mwssTransporter) initSession(addr string, conn net.Conn, opts *HandshakeOptions) (*muxSession, error) {\n\tif opts == nil {\n\t\topts = \u0026HandshakeOptions{}\n\t}\n\twsOptions := tr.options\n\tif opts.WSOptions != nil {\n\t\twsOptions = opts.WSOptions\n\t}\n\tif wsOptions == nil {\n\t\twsOptions = \u0026WSOptions{}\n\t}\n\n\ttlsConfig := opts.TLSConfig\n\tif tlsConfig == nil {\n\t\ttlsConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\tpath := wsOptions.Path\n\tif path == \"\" {\n\t\tpath = defaultWSPath\n\t}\n\turl := url.URL{Scheme: \"wss\", Host: opts.Host, Path: path}\n\tconn, err := websocketClientConn(url.String(), conn, tlsConfig, wsOptions)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\t// stream multiplex\n\tsmuxConfig := smux.DefaultConfig()\n\tsession, err := smux.Client(conn, smuxConfig)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn \u0026muxSession{conn: conn, session: session}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/ws.go",
+        "SourceLineNum": 326,
+        "ParentFunction": "initSession (addr string, conn net.Conn, opts *github.com/ginuerzh/gost.HandshakeOptions) (*github.com/ginuerzh/gost.muxSession, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/ws.go",
+          "SourceLineNum": 326,
+          "ParentFunction": "initSession (addr string, conn net.Conn, opts *github.com/ginuerzh/gost.HandshakeOptions) (*github.com/ginuerzh/gost.muxSession, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "authenticate",
+    "file_path": "/analysis/repo/http2.go",
+    "line_number": 508,
+    "full_implementation": "func (h *http2Handler) authenticate(w http.ResponseWriter, r *http.Request, resp *http.Response) (ok bool) {\n\tladdr := h.options.Addr\n\tu, p, _ := basicProxyAuth(r.Header.Get(\"Proxy-Authorization\"))\n\tif Debug \u0026\u0026 (u != \"\" || p != \"\") {\n\t\tlog.Logf(\"[http2] %s - %s : Authorization '%s' '%s'\", r.RemoteAddr, laddr, u, p)\n\t}\n\tif h.options.Authenticator == nil || h.options.Authenticator.Authenticate(u, p) {\n\t\treturn true\n\t}\n\n\t// probing resistance is enabled, and knocking host is mismatch.\n\tif ss := strings.SplitN(h.options.ProbeResist, \":\", 2); len(ss) == 2 \u0026\u0026\n\t\t(h.options.KnockingHost == \"\" || !strings.EqualFold(r.URL.Hostname(), h.options.KnockingHost)) {\n\t\tresp.StatusCode = http.StatusServiceUnavailable // default status code\n\t\tw.Header().Del(\"Proxy-Agent\")\n\n\t\tswitch ss[0] {\n\t\tcase \"code\":\n\t\t\tresp.StatusCode, _ = strconv.Atoi(ss[1])\n\t\tcase \"web\":\n\t\t\turl := ss[1]\n\t\t\tif !strings.HasPrefix(url, \"http\") {\n\t\t\t\turl = \"http://\" + url\n\t\t\t}\n\t\t\tif r, err := http.Get(url); err == nil {\n\t\t\t\tresp = r\n\t\t\t}\n\t\tcase \"host\":\n\t\t\tcc, err := net.Dial(\"tcp\", ss[1])\n\t\t\tif err == nil {\n\t\t\t\tdefer cc.Close()\n\t\t\t\tlog.Logf(\"[http2] %s \u003c-\u003e %s : forward to %s\", r.RemoteAddr, laddr, ss[1])\n\t\t\t\tif err := h.forwardRequest(w, r, cc); err != nil {\n\t\t\t\t\tlog.Logf(\"[http2] %s - %s : %s\", r.RemoteAddr, laddr, err)\n\t\t\t\t}\n\t\t\t\tlog.Logf(\"[http2] %s \u003e-\u003c %s : forward to %s\", r.RemoteAddr, laddr, ss[1])\n\t\t\t\treturn\n\t\t\t}\n\t\tcase \"file\":\n\t\t\tf, _ := os.Open(ss[1])\n\t\t\tif f != nil {\n\t\t\t\tresp.StatusCode = http.StatusOK\n\t\t\t\tif finfo, _ := f.Stat(); finfo != nil {\n\t\t\t\t\tresp.ContentLength = finfo.Size()\n\t\t\t\t}\n\t\t\t\tresp.Body = f\n\t\t\t}\n\t\t}\n\t}\n\n\tif resp.StatusCode == 0 {\n\t\tlog.Logf(\"[http2] %s \u003c- %s : proxy authentication required\", r.RemoteAddr, laddr)\n\t\tresp.StatusCode = http.StatusProxyAuthRequired\n\t\tresp.Header.Add(\"Proxy-Authenticate\", \"Basic realm=\\\"gost\\\"\")\n\t} else {\n\t\tresp.Header = http.Header{}\n\t\tresp.Header.Set(\"Server\", \"nginx/1.14.1\")\n\t\tresp.Header.Set(\"Date\", time.Now().UTC().Format(http.TimeFormat))\n\t\tif resp.ContentLength \u003e 0 {\n\t\t\tresp.Header.Set(\"Content-Type\", \"text/html\")\n\t\t}\n\t\tif resp.StatusCode == http.StatusOK {\n\t\t\tresp.Header.Set(\"Connection\", \"keep-alive\")\n\t\t}\n\t}\n\n\tif Debug {\n\t\tdump, _ := httputil.DumpResponse(resp, false)\n\t\tlog.Logf(\"[http2] %s \u003c- %s\\n%s\", r.RemoteAddr, laddr, string(dump))\n\t}\n\n\th.writeResponse(w, resp)\n\tresp.Body.Close()\n\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "if r, err := http.Get(url); err == nil {",
+        "SourceFilename": "/analysis/repo/http2.go",
+        "SourceLineNum": 508,
+        "ParentFunction": "authenticate (w net/http.ResponseWriter, r *net/http.Request, resp *net/http.Response) (ok bool)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "url := ss[1]",
+          "SourceFilename": "/analysis/repo/http2.go",
+          "SourceLineNum": 504,
+          "ParentFunction": "authenticate (w net/http.ResponseWriter, r *net/http.Request, resp *net/http.Response) (ok bool)"
+        },
+        {
+          "SourceCode": "url = \"http://\" + url",
+          "SourceFilename": "/analysis/repo/http2.go",
+          "SourceLineNum": 506,
+          "ParentFunction": "authenticate (w net/http.ResponseWriter, r *net/http.Request, resp *net/http.Response) (ok bool)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "blockCrypt",
+    "file_path": "/analysis/repo/kcp.go",
+    "line_number": 415,
+    "full_implementation": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {\n\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\n\tswitch crypt {\n\tcase \"sm4\":\n\t\tblock, _ = kcp.NewSM4BlockCrypt(pass[:16])\n\tcase \"tea\":\n\t\tblock, _ = kcp.NewTEABlockCrypt(pass[:16])\n\tcase \"xor\":\n\t\tblock, _ = kcp.NewSimpleXORBlockCrypt(pass)\n\tcase \"none\":\n\t\tblock, _ = kcp.NewNoneBlockCrypt(pass)\n\tcase \"aes-128\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:16])\n\tcase \"aes-192\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:24])\n\tcase \"blowfish\":\n\t\tblock, _ = kcp.NewBlowfishBlockCrypt(pass)\n\tcase \"twofish\":\n\t\tblock, _ = kcp.NewTwofishBlockCrypt(pass)\n\tcase \"cast5\":\n\t\tblock, _ = kcp.NewCast5BlockCrypt(pass[:16])\n\tcase \"3des\":\n\t\tblock, _ = kcp.NewTripleDESBlockCrypt(pass[:24])\n\tcase \"xtea\":\n\t\tblock, _ = kcp.NewXTEABlockCrypt(pass[:16])\n\tcase \"salsa20\":\n\t\tblock, _ = kcp.NewSalsa20BlockCrypt(pass)\n\tcase \"aes\":\n\t\tfallthrough\n\tdefault: // aes\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass)\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "Salt should be random",
+      "Slicing_Criteria": {
+        "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/kcp.go",
+        "SourceLineNum": 415,
+        "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 415,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 414,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt), config.DataShard, config.ParityShard)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 303,
+          "ParentFunction": "KCPListener (addr string, config *github.com/ginuerzh/gost.KCPConfig) (github.com/ginuerzh/gost.Listener, error)"
+        },
+        {
+          "SourceCode": "KCPSalt = \"kcp-go\"",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 25,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "blockCrypt",
+    "file_path": "/analysis/repo/kcp.go",
+    "line_number": 415,
+    "full_implementation": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {\n\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\n\tswitch crypt {\n\tcase \"sm4\":\n\t\tblock, _ = kcp.NewSM4BlockCrypt(pass[:16])\n\tcase \"tea\":\n\t\tblock, _ = kcp.NewTEABlockCrypt(pass[:16])\n\tcase \"xor\":\n\t\tblock, _ = kcp.NewSimpleXORBlockCrypt(pass)\n\tcase \"none\":\n\t\tblock, _ = kcp.NewNoneBlockCrypt(pass)\n\tcase \"aes-128\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:16])\n\tcase \"aes-192\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:24])\n\tcase \"blowfish\":\n\t\tblock, _ = kcp.NewBlowfishBlockCrypt(pass)\n\tcase \"twofish\":\n\t\tblock, _ = kcp.NewTwofishBlockCrypt(pass)\n\tcase \"cast5\":\n\t\tblock, _ = kcp.NewCast5BlockCrypt(pass[:16])\n\tcase \"3des\":\n\t\tblock, _ = kcp.NewTripleDESBlockCrypt(pass[:24])\n\tcase \"xtea\":\n\t\tblock, _ = kcp.NewXTEABlockCrypt(pass[:16])\n\tcase \"salsa20\":\n\t\tblock, _ = kcp.NewSalsa20BlockCrypt(pass)\n\tcase \"aes\":\n\t\tfallthrough\n\tdefault: // aes\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass)\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\nWe Found: 6",
+      "Slicing_Criteria": {
+        "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/kcp.go",
+        "SourceLineNum": 415,
+        "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 415,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 414,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt), config.DataShard, config.ParityShard)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 303,
+          "ParentFunction": "KCPListener (addr string, config *github.com/ginuerzh/gost.KCPConfig) (github.com/ginuerzh/gost.Listener, error)"
+        },
+        {
+          "SourceCode": "KCPSalt = \"kcp-go\"",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 25,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "socks5Handshake",
+    "file_path": "/analysis/repo/socks.go",
+    "line_number": 1867,
+    "full_implementation": "func socks5Handshake(conn net.Conn, opts ...socks5HandshakeOption) (net.Conn, error) {\n\toptions := socks5HandshakeOptions{}\n\tfor _, opt := range opts {\n\t\topt(\u0026options)\n\t}\n\tselector := options.selector\n\tif selector == nil {\n\t\tcs := \u0026clientSelector{\n\t\t\tTLSConfig: \u0026tls.Config{InsecureSkipVerify: true},\n\t\t\tUser:      options.user,\n\t\t}\n\t\tcs.AddMethod(\n\t\t\tgosocks5.MethodNoAuth,\n\t\t\tgosocks5.MethodUserPass,\n\t\t)\n\t\tif !options.noTLS {\n\t\t\tcs.AddMethod(MethodTLS)\n\t\t}\n\t\tselector = cs\n\t}\n\n\tcc := gosocks5.ClientConn(conn, selector)\n\tif err := cc.Handleshake(); err != nil {\n\t\treturn nil, err\n\t}\n\treturn cc, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "TLSConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+        "SourceFilename": "/analysis/repo/socks.go",
+        "SourceLineNum": 1867,
+        "ParentFunction": "socks5Handshake (conn net.Conn, opts ...github.com/ginuerzh/gost.socks5HandshakeOption) (net.Conn, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "TLSConfig: \u0026tls.Config{InsecureSkipVerify: true},",
+          "SourceFilename": "/analysis/repo/socks.go",
+          "SourceLineNum": 1867,
+          "ParentFunction": "socks5Handshake (conn net.Conn, opts ...github.com/ginuerzh/gost.socks5HandshakeOption) (net.Conn, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Init",
+    "file_path": "/analysis/repo/resolver.go",
+    "line_number": 83,
+    "full_implementation": "func (ns *NameServer) Init(opts ...NameServerOption) error {\n\tfor _, opt := range opts {\n\t\topt(\u0026ns.options)\n\t}\n\n\toptions := []ExchangerOption{\n\t\tTimeoutExchangerOption(ns.options.timeout),\n\t}\n\tprotocol := strings.ToLower(ns.Protocol)\n\tswitch protocol {\n\tcase \"tcp\", \"tcp-chain\":\n\t\tif protocol == \"tcp-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tns.exchanger = NewDNSTCPExchanger(ns.Addr, options...)\n\tcase \"tls\", \"tls-chain\":\n\t\tif protocol == \"tls-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tcfg := \u0026tls.Config{\n\t\t\tServerName: ns.Hostname,\n\t\t}\n\t\tif cfg.ServerName == \"\" {\n\t\t\tcfg.InsecureSkipVerify = true\n\t\t}\n\t\tns.exchanger = NewDoTExchanger(ns.Addr, cfg, options...)\n\tcase \"https\", \"https-chain\":\n\t\tif protocol == \"https-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tu, err := url.Parse(ns.Addr)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tu.Scheme = \"https\"\n\t\tcfg := \u0026tls.Config{ServerName: ns.Hostname}\n\t\tif cfg.ServerName == \"\" {\n\t\t\tcfg.InsecureSkipVerify = true\n\t\t}\n\t\tns.exchanger = NewDoHExchanger(u, cfg, options...)\n\tcase \"udp\", \"udp-chain\":\n\t\tfallthrough\n\tdefault:\n\t\tif protocol == \"udp-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tns.exchanger = NewDNSExchanger(ns.Addr, options...)\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/resolver.go",
+        "SourceLineNum": 83,
+        "ParentFunction": "Init (opts ...github.com/ginuerzh/gost.NameServerOption) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/resolver.go",
+          "SourceLineNum": 83,
+          "ParentFunction": "Init (opts ...github.com/ginuerzh/gost.NameServerOption) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "authenticate",
+    "file_path": "/analysis/repo/http.go",
+    "line_number": 378,
+    "full_implementation": "func (h *httpHandler) authenticate(conn net.Conn, req *http.Request, resp *http.Response) (ok bool) {\n\tu, p, _ := basicProxyAuth(req.Header.Get(\"Proxy-Authorization\"))\n\tif Debug \u0026\u0026 (u != \"\" || p != \"\") {\n\t\tlog.Logf(\"[http] %s -\u003e %s : Authorization '%s' '%s'\",\n\t\t\tconn.RemoteAddr(), conn.LocalAddr(), u, p)\n\t}\n\tif h.options.Authenticator == nil || h.options.Authenticator.Authenticate(u, p) {\n\t\treturn true\n\t}\n\n\t// probing resistance is enabled, and knocking host is mismatch.\n\tif ss := strings.SplitN(h.options.ProbeResist, \":\", 2); len(ss) == 2 \u0026\u0026\n\t\t(h.options.KnockingHost == \"\" || !strings.EqualFold(req.URL.Hostname(), h.options.KnockingHost)) {\n\t\tresp.StatusCode = http.StatusServiceUnavailable // default status code\n\n\t\tswitch ss[0] {\n\t\tcase \"code\":\n\t\t\tresp.StatusCode, _ = strconv.Atoi(ss[1])\n\t\tcase \"web\":\n\t\t\turl := ss[1]\n\t\t\tif !strings.HasPrefix(url, \"http\") {\n\t\t\t\turl = \"http://\" + url\n\t\t\t}\n\t\t\tif r, err := http.Get(url); err == nil {\n\t\t\t\tresp = r\n\t\t\t}\n\t\tcase \"host\":\n\t\t\tcc, err := net.Dial(\"tcp\", ss[1])\n\t\t\tif err == nil {\n\t\t\t\tdefer cc.Close()\n\n\t\t\t\treq.Write(cc)\n\t\t\t\tlog.Logf(\"[http] %s \u003c-\u003e %s : forward to %s\",\n\t\t\t\t\tconn.RemoteAddr(), conn.LocalAddr(), ss[1])\n\t\t\t\ttransport(conn, cc)\n\t\t\t\tlog.Logf(\"[http] %s \u003e-\u003c %s : forward to %s\",\n\t\t\t\t\tconn.RemoteAddr(), conn.LocalAddr(), ss[1])\n\t\t\t\treturn\n\t\t\t}\n\t\tcase \"file\":\n\t\t\tf, _ := os.Open(ss[1])\n\t\t\tif f != nil {\n\t\t\t\tresp.StatusCode = http.StatusOK\n\t\t\t\tif finfo, _ := f.Stat(); finfo != nil {\n\t\t\t\t\tresp.ContentLength = finfo.Size()\n\t\t\t\t}\n\t\t\t\tresp.Header.Set(\"Content-Type\", \"text/html\")\n\t\t\t\tresp.Body = f\n\t\t\t}\n\t\t}\n\t}\n\n\tif resp.StatusCode == 0 {\n\t\tlog.Logf(\"[http] %s \u003c- %s : proxy authentication required\",\n\t\t\tconn.RemoteAddr(), conn.LocalAddr())\n\t\tresp.StatusCode = http.StatusProxyAuthRequired\n\t\tresp.Header.Add(\"Proxy-Authenticate\", \"Basic realm=\\\"gost\\\"\")\n\t\tif strings.ToLower(req.Header.Get(\"Proxy-Connection\")) == \"keep-alive\" {\n\t\t\t// XXX libcurl will keep sending auth request in same conn\n\t\t\t// which we don't supported yet.\n\t\t\tresp.Header.Add(\"Connection\", \"close\")\n\t\t\tresp.Header.Add(\"Proxy-Connection\", \"close\")\n\t\t}\n\t} else {\n\t\tresp.Header = http.Header{}\n\t\tresp.Header.Set(\"Server\", \"nginx/1.14.1\")\n\t\tresp.Header.Set(\"Date\", time.Now().UTC().Format(http.TimeFormat))\n\t\tif resp.StatusCode == http.StatusOK {\n\t\t\tresp.Header.Set(\"Connection\", \"keep-alive\")\n\t\t}\n\t}\n\n\tif Debug {\n\t\tdump, _ := httputil.DumpResponse(resp, false)\n\t\tlog.Logf(\"[http] %s \u003c- %s\\n%s\",\n\t\t\tconn.RemoteAddr(), conn.LocalAddr(), string(dump))\n\t}\n\n\tresp.Write(conn)\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "if r, err := http.Get(url); err == nil {",
+        "SourceFilename": "/analysis/repo/http.go",
+        "SourceLineNum": 378,
+        "ParentFunction": "authenticate (conn net.Conn, req *net/http.Request, resp *net/http.Response) (ok bool)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "url := ss[1]",
+          "SourceFilename": "/analysis/repo/http.go",
+          "SourceLineNum": 374,
+          "ParentFunction": "authenticate (conn net.Conn, req *net/http.Request, resp *net/http.Response) (ok bool)"
+        },
+        {
+          "SourceCode": "url = \"http://\" + url",
+          "SourceFilename": "/analysis/repo/http.go",
+          "SourceLineNum": 376,
+          "ParentFunction": "authenticate (conn net.Conn, req *net/http.Request, resp *net/http.Response) (ok bool)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "Init",
+    "file_path": "/analysis/repo/resolver.go",
+    "line_number": 97,
+    "full_implementation": "func (ns *NameServer) Init(opts ...NameServerOption) error {\n\tfor _, opt := range opts {\n\t\topt(\u0026ns.options)\n\t}\n\n\toptions := []ExchangerOption{\n\t\tTimeoutExchangerOption(ns.options.timeout),\n\t}\n\tprotocol := strings.ToLower(ns.Protocol)\n\tswitch protocol {\n\tcase \"tcp\", \"tcp-chain\":\n\t\tif protocol == \"tcp-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tns.exchanger = NewDNSTCPExchanger(ns.Addr, options...)\n\tcase \"tls\", \"tls-chain\":\n\t\tif protocol == \"tls-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tcfg := \u0026tls.Config{\n\t\t\tServerName: ns.Hostname,\n\t\t}\n\t\tif cfg.ServerName == \"\" {\n\t\t\tcfg.InsecureSkipVerify = true\n\t\t}\n\t\tns.exchanger = NewDoTExchanger(ns.Addr, cfg, options...)\n\tcase \"https\", \"https-chain\":\n\t\tif protocol == \"https-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tu, err := url.Parse(ns.Addr)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tu.Scheme = \"https\"\n\t\tcfg := \u0026tls.Config{ServerName: ns.Hostname}\n\t\tif cfg.ServerName == \"\" {\n\t\t\tcfg.InsecureSkipVerify = true\n\t\t}\n\t\tns.exchanger = NewDoHExchanger(u, cfg, options...)\n\tcase \"udp\", \"udp-chain\":\n\t\tfallthrough\n\tdefault:\n\t\tif protocol == \"udp-chain\" {\n\t\t\toptions = append(options, ChainExchangerOption(ns.options.chain))\n\t\t}\n\t\tns.exchanger = NewDNSExchanger(ns.Addr, options...)\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/resolver.go",
+        "SourceLineNum": 97,
+        "ParentFunction": "Init (opts ...github.com/ginuerzh/gost.NameServerOption) error"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/resolver.go",
+          "SourceLineNum": 97,
+          "ParentFunction": "Init (opts ...github.com/ginuerzh/gost.NameServerOption) error"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "blockCrypt",
+    "file_path": "/analysis/repo/kcp.go",
+    "line_number": 415,
+    "full_implementation": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {\n\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\n\tswitch crypt {\n\tcase \"sm4\":\n\t\tblock, _ = kcp.NewSM4BlockCrypt(pass[:16])\n\tcase \"tea\":\n\t\tblock, _ = kcp.NewTEABlockCrypt(pass[:16])\n\tcase \"xor\":\n\t\tblock, _ = kcp.NewSimpleXORBlockCrypt(pass)\n\tcase \"none\":\n\t\tblock, _ = kcp.NewNoneBlockCrypt(pass)\n\tcase \"aes-128\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:16])\n\tcase \"aes-192\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:24])\n\tcase \"blowfish\":\n\t\tblock, _ = kcp.NewBlowfishBlockCrypt(pass)\n\tcase \"twofish\":\n\t\tblock, _ = kcp.NewTwofishBlockCrypt(pass)\n\tcase \"cast5\":\n\t\tblock, _ = kcp.NewCast5BlockCrypt(pass[:16])\n\tcase \"3des\":\n\t\tblock, _ = kcp.NewTripleDESBlockCrypt(pass[:24])\n\tcase \"xtea\":\n\t\tblock, _ = kcp.NewXTEABlockCrypt(pass[:16])\n\tcase \"salsa20\":\n\t\tblock, _ = kcp.NewSalsa20BlockCrypt(pass)\n\tcase \"aes\":\n\t\tfallthrough\n\tdefault: // aes\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass)\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\nWe Found: 6",
+      "Slicing_Criteria": {
+        "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/kcp.go",
+        "SourceLineNum": 415,
+        "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 415,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 414,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt),",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 223,
+          "ParentFunction": "initSession (addr string, conn net.Conn, config *github.com/ginuerzh/gost.KCPConfig) (*github.com/ginuerzh/gost.muxSession, error)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt), config.DataShard, config.ParityShard)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 303,
+          "ParentFunction": "KCPListener (addr string, config *github.com/ginuerzh/gost.KCPConfig) (github.com/ginuerzh/gost.Listener, error)"
+        },
+        {
+          "SourceCode": "KCPSalt = \"kcp-go\"",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 25,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "BYTE_LENGTH"
+    }
+  },
+  {
+    "function_name": "initSession",
+    "file_path": "/analysis/repo/tls.go",
+    "line_number": 131,
+    "full_implementation": "func (tr *mtlsTransporter) initSession(addr string, conn net.Conn, opts *HandshakeOptions) (*muxSession, error) {\n\tif opts == nil {\n\t\topts = \u0026HandshakeOptions{}\n\t}\n\tif opts.TLSConfig == nil {\n\t\topts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\tconn, err := wrapTLSClient(conn, opts.TLSConfig, opts.Timeout)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\t// stream multiplex\n\tsmuxConfig := smux.DefaultConfig()\n\tsession, err := smux.Client(conn, smuxConfig)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn \u0026muxSession{conn: conn, session: session}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "opts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/tls.go",
+        "SourceLineNum": 131,
+        "ParentFunction": "initSession (addr string, conn net.Conn, opts *github.com/ginuerzh/gost.HandshakeOptions) (*github.com/ginuerzh/gost.muxSession, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "opts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/tls.go",
+          "SourceLineNum": 131,
+          "ParentFunction": "initSession (addr string, conn net.Conn, opts *github.com/ginuerzh/gost.HandshakeOptions) (*github.com/ginuerzh/gost.muxSession, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Handshake",
+    "file_path": "/analysis/repo/tls.go",
+    "line_number": 30,
+    "full_implementation": "func (tr *tlsTransporter) Handshake(conn net.Conn, options ...HandshakeOption) (net.Conn, error) {\n\topts := \u0026HandshakeOptions{}\n\tfor _, option := range options {\n\t\toption(opts)\n\t}\n\tif opts.TLSConfig == nil {\n\t\topts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\n\ttimeout := opts.Timeout\n\tif timeout \u003c= 0 {\n\t\ttimeout = HandshakeTimeout\n\t}\n\n\treturn wrapTLSClient(conn, opts.TLSConfig, timeout)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "opts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/tls.go",
+        "SourceLineNum": 30,
+        "ParentFunction": "Handshake (conn net.Conn, options ...github.com/ginuerzh/gost.HandshakeOption) (net.Conn, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "opts.TLSConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/tls.go",
+          "SourceLineNum": 30,
+          "ParentFunction": "Handshake (conn net.Conn, options ...github.com/ginuerzh/gost.HandshakeOption) (net.Conn, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "H2Transporter",
+    "file_path": "/analysis/repo/http2.go",
+    "line_number": 203,
+    "full_implementation": "func H2Transporter(config *tls.Config, path string) Transporter {\n\tif config == nil {\n\t\tconfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t}\n\treturn \u0026h2Transporter{\n\t\tclients:   make(map[string]*http.Client),\n\t\ttlsConfig: config,\n\t\tpath:      path,\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/http2.go",
+        "SourceLineNum": 203,
+        "ParentFunction": "H2Transporter (config *crypto/tls.Config, path string) github.com/ginuerzh/gost.Transporter"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/http2.go",
+          "SourceLineNum": 203,
+          "ParentFunction": "H2Transporter (config *crypto/tls.Config, path string) github.com/ginuerzh/gost.Transporter"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "blockCrypt",
+    "file_path": "/analysis/repo/kcp.go",
+    "line_number": 415,
+    "full_implementation": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {\n\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\n\tswitch crypt {\n\tcase \"sm4\":\n\t\tblock, _ = kcp.NewSM4BlockCrypt(pass[:16])\n\tcase \"tea\":\n\t\tblock, _ = kcp.NewTEABlockCrypt(pass[:16])\n\tcase \"xor\":\n\t\tblock, _ = kcp.NewSimpleXORBlockCrypt(pass)\n\tcase \"none\":\n\t\tblock, _ = kcp.NewNoneBlockCrypt(pass)\n\tcase \"aes-128\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:16])\n\tcase \"aes-192\":\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass[:24])\n\tcase \"blowfish\":\n\t\tblock, _ = kcp.NewBlowfishBlockCrypt(pass)\n\tcase \"twofish\":\n\t\tblock, _ = kcp.NewTwofishBlockCrypt(pass)\n\tcase \"cast5\":\n\t\tblock, _ = kcp.NewCast5BlockCrypt(pass[:16])\n\tcase \"3des\":\n\t\tblock, _ = kcp.NewTripleDESBlockCrypt(pass[:24])\n\tcase \"xtea\":\n\t\tblock, _ = kcp.NewXTEABlockCrypt(pass[:16])\n\tcase \"salsa20\":\n\t\tblock, _ = kcp.NewSalsa20BlockCrypt(pass)\n\tcase \"aes\":\n\t\tfallthrough\n\tdefault: // aes\n\t\tblock, _ = kcp.NewAESBlockCrypt(pass)\n\t}\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "Salt should be random",
+      "Slicing_Criteria": {
+        "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/kcp.go",
+        "SourceLineNum": 415,
+        "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "pass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 415,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "func blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 414,
+          "ParentFunction": "blockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt),",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 223,
+          "ParentFunction": "initSession (addr string, conn net.Conn, config *github.com/ginuerzh/gost.KCPConfig) (*github.com/ginuerzh/gost.muxSession, error)"
+        },
+        {
+          "SourceCode": "blockCrypt(config.Key, config.Crypt, KCPSalt), config.DataShard, config.ParityShard)",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 303,
+          "ParentFunction": "KCPListener (addr string, config *github.com/ginuerzh/gost.KCPConfig) (github.com/ginuerzh/gost.Listener, error)"
+        },
+        {
+          "SourceCode": "KCPSalt = \"kcp-go\"",
+          "SourceFilename": "/analysis/repo/kcp.go",
+          "SourceLineNum": 25,
+          "ParentFunction": "init ()"
+        }
+      ],
+      "Predicate_Type": "RANDOM_BYTES"
+    }
+  },
+  {
+    "function_name": "SSHTunnelListener",
+    "file_path": "/analysis/repo/ssh.go",
+    "line_number": 749,
+    "full_implementation": "func SSHTunnelListener(addr string, config *SSHConfig) (Listener, error) {\n\tln, err := net.Listen(\"tcp\", addr)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tif config == nil {\n\t\tconfig = \u0026SSHConfig{}\n\t}\n\n\tsshConfig := \u0026ssh.ServerConfig{\n\t\tPasswordCallback:  defaultSSHPasswordCallback(config.Authenticator),\n\t\tPublicKeyCallback: defaultSSHPublicKeyCallback(config.AuthorizedKeys),\n\t}\n\n\tif config.Authenticator == nil \u0026\u0026 len(config.AuthorizedKeys) == 0 {\n\t\tsshConfig.NoClientAuth = true\n\t}\n\n\tsigner := config.Key\n\tif signer == nil {\n\t\tsigner, err = ssh.NewSignerFromKey(DefaultTLSConfig.Certificates[0].PrivateKey)\n\t\tif err != nil {\n\t\t\tln.Close()\n\t\t\treturn nil, err\n\t\t}\n\t}\n\tsshConfig.AddHostKey(signer)\n\n\tl := \u0026sshTunnelListener{\n\t\tListener: tcpKeepAliveListener{ln.(*net.TCPListener)},\n\t\tconfig:   sshConfig,\n\t\tconnChan: make(chan net.Conn, 1024),\n\t\terrChan:  make(chan error, 1),\n\t}\n\n\tgo l.listenLoop()\n\n\treturn l, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.ServerConfig::NoClientAuth",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "sshConfig.NoClientAuth = true",
+        "SourceFilename": "/analysis/repo/ssh.go",
+        "SourceLineNum": 749,
+        "ParentFunction": "SSHTunnelListener (addr string, config *github.com/ginuerzh/gost.SSHConfig) (github.com/ginuerzh/gost.Listener, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "sshConfig.NoClientAuth = true",
+          "SourceFilename": "/analysis/repo/ssh.go",
+          "SourceLineNum": 749,
+          "ParentFunction": "SSHTunnelListener (addr string, config *github.com/ginuerzh/gost.SSHConfig) (github.com/ginuerzh/gost.Listener, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Init",
+    "file_path": "/analysis/repo/ssh.go",
+    "line_number": 522,
+    "full_implementation": "func (h *sshForwardHandler) Init(options ...HandlerOption) {\n\tif h.options == nil {\n\t\th.options = \u0026HandlerOptions{}\n\t}\n\n\tfor _, opt := range options {\n\t\topt(h.options)\n\t}\n\th.config = \u0026ssh.ServerConfig{}\n\n\th.config.PasswordCallback = defaultSSHPasswordCallback(h.options.Authenticator)\n\tif h.options.Authenticator == nil {\n\t\th.config.NoClientAuth = true\n\t}\n\ttlsConfig := h.options.TLSConfig\n\tif tlsConfig == nil {\n\t\ttlsConfig = DefaultTLSConfig\n\t}\n\tif tlsConfig != nil \u0026\u0026 len(tlsConfig.Certificates) \u003e 0 {\n\t\tsigner, err := ssh.NewSignerFromKey(tlsConfig.Certificates[0].PrivateKey)\n\t\tif err != nil {\n\t\t\tlog.Log(\"[ssh-forward]\", err)\n\t\t}\n\t\th.config.AddHostKey(signer)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/ssh.ServerConfig::NoClientAuth",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "h.config.NoClientAuth = true",
+        "SourceFilename": "/analysis/repo/ssh.go",
+        "SourceLineNum": 522,
+        "ParentFunction": "Init (options ...github.com/ginuerzh/gost.HandlerOption)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "h.config.NoClientAuth = true",
+          "SourceFilename": "/analysis/repo/ssh.go",
+          "SourceLineNum": 522,
+          "ParentFunction": "Init (options ...github.com/ginuerzh/gost.HandlerOption)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

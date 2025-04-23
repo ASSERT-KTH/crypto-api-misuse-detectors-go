@@ -1,0 +1,58 @@
+[
+  {
+    "function_name": "ipinfo",
+    "file_path": "/analysis/repo/modules/ipaddresses/ipapi/widget.go",
+    "line_number": 91,
+    "full_implementation": "func (widget *Widget) ipinfo() {\n\tclient := \u0026http.Client{}\n\treq, err := http.NewRequest(\"GET\", \"http://ip-api.com/json?fields=66846719\", http.NoBody)\n\tif err != nil {\n\t\twidget.result = err.Error()\n\t\treturn\n\t}\n\treq.Header.Set(\"User-Agent\", \"curl\")\n\tresponse, err := client.Do(req)\n\tif err != nil {\n\t\twidget.result = err.Error()\n\t\treturn\n\t}\n\tdefer func() { _ = response.Body.Close() }()\n\tvar info ipinfo\n\terr = json.NewDecoder(response.Body).Decode(\u0026info)\n\tif err != nil {\n\t\twidget.result = err.Error()\n\t\treturn\n\t}\n\n\twidget.setResult(\u0026info)\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(\"GET\", \"http://ip-api.com/json?fields=66846719\", http.NoBody)",
+        "SourceFilename": "/analysis/repo/modules/ipaddresses/ipapi/widget.go",
+        "SourceLineNum": 91,
+        "ParentFunction": "ipinfo ()"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(\"GET\", \"http://ip-api.com/json?fields=66846719\", http.NoBody)",
+          "SourceFilename": "/analysis/repo/modules/ipaddresses/ipapi/widget.go",
+          "SourceLineNum": 91,
+          "ParentFunction": "ipinfo ()"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  },
+  {
+    "function_name": "nbascore",
+    "file_path": "/analysis/repo/modules/nbascore/widget.go",
+    "line_number": 50,
+    "full_implementation": "func (widget *Widget) nbascore() (string, string, bool) {\n\ttitle := widget.CommonSettings().Title\n\tcur := time.Now().AddDate(0, 0, offset) // Go back/forward offset days\n\tcurString := cur.Format(\"20060102\")     // Need 20060102 format to feed to api\n\tclient := \u0026http.Client{}\n\treq, err := http.NewRequest(\"GET\", \"http://data.nba.net/10s/prod/v1/\"+curString+\"/scoreboard.json\", http.NoBody)\n\tif err != nil {\n\t\treturn title, err.Error(), true\n\t}\n\n\treq.Header.Set(\"Accept-Language\", widget.language)\n\treq.Header.Set(\"User-Agent\", \"curl\")\n\tresponse, err := client.Do(req)\n\tif err != nil {\n\t\treturn title, err.Error(), true\n\t}\n\tdefer func() { _ = response.Body.Close() }()\n\tif response.StatusCode != 200 {\n\t\treturn title, err.Error(), true\n\t} // Get data from data.nba.net and check if successful\n\n\tcontents, err := io.ReadAll(response.Body)\n\tif err != nil {\n\t\treturn title, err.Error(), true\n\t}\n\tresult := map[string]interface{}{}\n\terr = json.Unmarshal(contents, \u0026result)\n\tif err != nil {\n\t\treturn title, err.Error(), true\n\t}\n\n\tallGame := fmt.Sprintf(\" [%s]\", widget.settings.Colors.Subheading) + (cur.Format(utils.FriendlyDateFormat) + \"\\n\\n\") + \"[white]\"\n\n\tfor _, game := range result[\"games\"].([]interface{}) {\n\t\tvTeam, hTeam, vScore, hScore := \"\", \"\", \"\", \"\"\n\t\tquarter := 0.\n\t\tactivate := false\n\t\tfor keyGame, team := range game.(map[string]interface{}) { // assertion\n\t\t\tswitch keyGame {\n\t\t\tcase \"vTeam\", \"hTeam\":\n\t\t\t\tfor keyTeam, stat := range team.(map[string]interface{}) {\n\t\t\t\t\tif keyTeam == \"triCode\" {\n\t\t\t\t\t\tif keyGame == \"vTeam\" {\n\t\t\t\t\t\t\tvTeam = stat.(string)\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\thTeam = stat.(string)\n\t\t\t\t\t\t}\n\t\t\t\t\t} else if keyTeam == \"score\" {\n\t\t\t\t\t\tif keyGame == \"vTeam\" {\n\t\t\t\t\t\t\tvScore = stat.(string)\n\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\thScore = stat.(string)\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\tcase \"period\":\n\t\t\t\tfor keyTeam, stat := range team.(map[string]interface{}) {\n\t\t\t\t\tif keyTeam == \"current\" {\n\t\t\t\t\t\tquarter = stat.(float64)\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\tcase \"isGameActivated\":\n\t\t\t\tactivate = team.(bool)\n\t\t\t}\n\t\t}\n\t\tvNum, _ := strconv.Atoi(vScore)\n\t\thNum, _ := strconv.Atoi(hScore)\n\t\thColor := \"\"\n\t\tif quarter != 0 { // Compare the score\n\t\t\tswitch {\n\t\t\tcase vNum \u003e hNum:\n\t\t\t\tvTeam = \"[orange]\" + vTeam\n\t\t\tcase hNum \u003e vNum:\n\t\t\t\t// hScore = \"[orange]\" + hScore\n\t\t\t\thColor = \"[orange]\" // For correct padding\n\t\t\t\thTeam += \"[white]\"\n\t\t\tdefault:\n\t\t\t\tvTeam = \"[orange]\" + vTeam\n\t\t\t\thColor = \"[orange]\"\n\t\t\t\thTeam += \"[white]\"\n\t\t\t}\n\t\t}\n\t\tqColor := \"[white]\"\n\t\tif activate {\n\t\t\tqColor = \"[sandybrown]\"\n\t\t}\n\t\tallGame += fmt.Sprintf(\"%s%5s%v[white] %s %3s [white]vs %s%-3s %s\\n\", qColor, \"Q\", quarter, vTeam, vScore, hColor, hScore, hTeam) // Format the score and store in allgame\n\t}\n\treturn title, allGame, false\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.NewRequest",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "req, err := http.NewRequest(\"GET\", \"http://data.nba.net/10s/prod/v1/\"+curString+\"/scoreboard.json\", http.NoBody)",
+        "SourceFilename": "/analysis/repo/modules/nbascore/widget.go",
+        "SourceLineNum": 50,
+        "ParentFunction": "nbascore () (string, string, bool)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "req, err := http.NewRequest(\"GET\", \"http://data.nba.net/10s/prod/v1/\"+curString+\"/scoreboard.json\", http.NoBody)",
+          "SourceFilename": "/analysis/repo/modules/nbascore/widget.go",
+          "SourceLineNum": 50,
+          "ParentFunction": "nbascore () (string, string, bool)"
+        },
+        {
+          "SourceCode": "req, err := http.NewRequest(\"GET\", \"http://data.nba.net/10s/prod/v1/\"+curString+\"/scoreboard.json\", http.NoBody)",
+          "SourceFilename": "/analysis/repo/modules/nbascore/widget.go",
+          "SourceLineNum": 50,
+          "ParentFunction": "nbascore () (string, string, bool)"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  }
+]

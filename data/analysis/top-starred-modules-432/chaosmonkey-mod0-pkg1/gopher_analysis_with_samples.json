@@ -1,0 +1,45 @@
+[
+  {
+    "function_name": "getClientX509",
+    "file_path": "/analysis/repo/spinnaker/spinnaker.go",
+    "line_number": 98,
+    "full_implementation": "func getClientX509(x509Cert, x509Key string) (*http.Client, error) {\n\tcert, err := tls.LoadX509KeyPair(x509Cert, x509Key)\n\tif err != nil {\n\t\treturn nil, errors.Wrap(err, \"tls.X509KeyPair failed\")\n\t}\n\ttlsConfig := \u0026tls.Config{\n\t\tCertificates:       []tls.Certificate{cert},\n\t\tInsecureSkipVerify: true,\n\t}\n\ttransport := \u0026http.Transport{TLSClientConfig: tlsConfig}\n\treturn \u0026http.Client{Transport: transport}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "InsecureSkipVerify: true,",
+        "SourceFilename": "/analysis/repo/spinnaker/spinnaker.go",
+        "SourceLineNum": 98,
+        "ParentFunction": "getClientX509 (x509Cert string, x509Key string) (*net/http.Client, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "InsecureSkipVerify: true,",
+          "SourceFilename": "/analysis/repo/spinnaker/spinnaker.go",
+          "SourceLineNum": 98,
+          "ParentFunction": "getClientX509 (x509Cert string, x509Key string) (*net/http.Client, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "getClient",
+    "file_path": "/analysis/repo/spinnaker/spinnaker.go",
+    "line_number": 68,
+    "full_implementation": "func getClient(pfxData []byte, password string) (*http.Client, error) {\n\tblocks, err := pkcs12.ToPEM(pfxData, password)\n\tif err != nil {\n\t\treturn nil, errors.Wrap(err, \"pkcs.ToPEM failed\")\n\t}\n\n\t// The first block is the cert and the last block is the private key\n\tcertPEMBlock := pem.EncodeToMemory(blocks[0])\n\tkeyPEMBlock := pem.EncodeToMemory(blocks[len(blocks)-1])\n\n\tcert, err := tls.X509KeyPair(certPEMBlock, keyPEMBlock)\n\tif err != nil {\n\t\treturn nil, errors.Wrap(err, \"tls.X509KeyPair failed\")\n\t}\n\n\ttlsConfig := \u0026tls.Config{\n\t\tCertificates: []tls.Certificate{cert},\n\t}\n\ttransport := \u0026http.Transport{TLSClientConfig: tlsConfig}\n\treturn \u0026http.Client{Transport: transport}, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pkcs12.ToPEM",
+      "Message": "This package is frozen. If it's missing functionality you need, consider an alternative like software.sslmate.com/src/go-pkcs12.",
+      "Slicing_Criteria": {
+        "SourceCode": "blocks, err := pkcs12.ToPEM(pfxData, password)",
+        "SourceFilename": "/analysis/repo/spinnaker/spinnaker.go",
+        "SourceLineNum": 68,
+        "ParentFunction": "getClient (pfxData []byte, password string) (*net/http.Client, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  }
+]

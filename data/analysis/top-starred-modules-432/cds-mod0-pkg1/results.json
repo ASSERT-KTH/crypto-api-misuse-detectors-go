@@ -1,0 +1,241 @@
+[
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hash := md5.New()",
+			"SourceFilename": "/analysis/repo/sdk/common.go",
+			"SourceLineNum": 142,
+			"ParentFunction": "FileMd5sum (filePath string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 4096",
+		"Slicing_Criteria": {
+			"SourceCode": "keyBytes := pbkdf2.Key([]byte(pass), []byte(hookSecretKey), 4096, 128, sha512.New)",
+			"SourceFilename": "/analysis/repo/sdk/hooks_repository_event.go",
+			"SourceLineNum": 192,
+			"ParentFunction": "GenerateRepositoryWebHookSecret (hookSecretKey string, vcsName string, repoName string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "keyBytes := pbkdf2.Key([]byte(pass), []byte(hookSecretKey), 4096, 128, sha512.New)",
+				"SourceFilename": "/analysis/repo/sdk/hooks_repository_event.go",
+				"SourceLineNum": 192,
+				"ParentFunction": "GenerateRepositoryWebHookSecret (hookSecretKey string, vcsName string, repoName string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Hash := md5.New()",
+			"SourceFilename": "/analysis/repo/sdk/cdsclient/client_cdn.go",
+			"SourceLineNum": 40,
+			"ParentFunction": "CDNItemDownload (ctx context.Context, cdnAddr string, hash string, itemType github.com/ovh/cds/sdk.CDNItemType, md5Sum string, writer io.WriteSeeker) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", md5.Sum(dataBts))",
+			"SourceFilename": "/analysis/repo/engine/gorpmapper/table_mapping.go",
+			"SourceLineNum": 141,
+			"ParentFunction": "NewTableMapping$3 (i interface{}) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/engine/gorpmapper/table_mapping.go",
+			"SourceLineNum": 117,
+			"ParentFunction": "NewTableMapping (target interface{}, name string, autoIncrement bool, keys ...string) github.com/ovh/cds/engine/gorpmapper.TableMapping"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/engine/gorpmapper/signature.go",
+			"SourceLineNum": 111,
+			"ParentFunction": "getSigner (f *github.com/ovh/cds/engine/gorpmapper.CanonicalForm) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "return rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/sdk/jws/jws.go",
+			"SourceLineNum": 33,
+			"ParentFunction": "NewRandomRSAKey () (*crypto/rsa.PrivateKey, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "return rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/sdk/jws/jws.go",
+				"SourceLineNum": 33,
+				"ParentFunction": "NewRandomRSAKey () (*crypto/rsa.PrivateKey, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "err = l.conn.StartTLS(\u0026tls.Config{InsecureSkipVerify: true})",
+			"SourceFilename": "/analysis/repo/engine/api/driver/ldap/ldap.go",
+			"SourceLineNum": 120,
+			"ParentFunction": "openLDAP (ctx context.Context, conf github.com/ovh/cds/engine/api/driver/ldap.Config) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "err = l.conn.StartTLS(\u0026tls.Config{InsecureSkipVerify: true})",
+				"SourceFilename": "/analysis/repo/engine/api/driver/ldap/ldap.go",
+				"SourceLineNum": 120,
+				"ParentFunction": "openLDAP (ctx context.Context, conf github.com/ovh/cds/engine/api/driver/ldap.Config) error"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+		"Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+		"Slicing_Criteria": {
+			"SourceCode": "hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+			"SourceFilename": "/analysis/repo/engine/api/authentication/local/password.go",
+			"SourceLineNum": 11,
+			"ParentFunction": "HashPassword (password string) ([]byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+				"SourceFilename": "/analysis/repo/engine/api/authentication/local/password.go",
+				"SourceLineNum": 11,
+				"ParentFunction": "HashPassword (password string) ([]byte, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 4096",
+		"Slicing_Criteria": {
+			"SourceCode": "hashLocator := hex.EncodeToString(pbkdf2.Key([]byte(loc), salt, 4096, 32, sha1.New))",
+			"SourceFilename": "/analysis/repo/engine/cdn/storage/types.go",
+			"SourceLineNum": 252,
+			"ParentFunction": "HashLocator (loc string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "hashLocator := hex.EncodeToString(pbkdf2.Key([]byte(loc), salt, 4096, 32, sha1.New))",
+				"SourceFilename": "/analysis/repo/engine/cdn/storage/types.go",
+				"SourceLineNum": 252,
+				"ParentFunction": "HashLocator (loc string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Hash := md5.New()",
+			"SourceFilename": "/analysis/repo/engine/cdn/cdn_item.go",
+			"SourceLineNum": 434,
+			"ParentFunction": "completeItem (ctx context.Context, tx github.com/ovh/cds/engine/gorpmapper.SqlExecutorWithTx, itemUnit github.com/ovh/cds/sdk.CDNItemUnit) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Hash := md5.New()",
+			"SourceFilename": "/analysis/repo/engine/cdn/cdn_file.go",
+			"SourceLineNum": 118,
+			"ParentFunction": "storeFile (ctx context.Context, sig github.com/ovh/cds/sdk/cdn.Signature, reader io.ReadCloser, storeFileOptions github.com/ovh/cds/engine/cdn.StoreFileOptions) (*github.com/ovh/cds/sdk.CDNItem, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hasher := md5.New()",
+			"SourceFilename": "/analysis/repo/engine/hooks/gerrit.go",
+			"SourceLineNum": 332,
+			"ParentFunction": "ListenGerritStreamEvent (ctx context.Context, store github.com/ovh/cds/engine/cache.Store, goRoutines *github.com/ovh/cds/sdk.GoRoutines, vcsGerritConfig github.com/ovh/cds/sdk.VCSGerritConfiguration, gerritEventChan chan\u003c- github.com/ovh/cds/engine/hooks.GerritEvent) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+		"Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+		"Slicing_Criteria": {
+			"SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+			"SourceFilename": "/analysis/repo/engine/hooks/gerrit.go",
+			"SourceLineNum": 261,
+			"ParentFunction": "ListenGerritStreamEvent (ctx context.Context, store github.com/ovh/cds/engine/cache.Store, goRoutines *github.com/ovh/cds/sdk.GoRoutines, vcsGerritConfig github.com/ovh/cds/sdk.VCSGerritConfiguration, gerritEventChan chan\u003c- github.com/ovh/cds/engine/hooks.GerritEvent) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hashedName := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/engine/worker/internal/run_directory.go",
+			"SourceLineNum": 21,
+			"ParentFunction": "setupDirectory (ctx context.Context, fs github.com/spf13/afero.Fs, jobName string, suffixes ...string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "suffix := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/engine/worker/internal/types.go",
+			"SourceLineNum": 420,
+			"ParentFunction": "Environ () []string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "suffix := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/engine/worker/internal/types.go",
+			"SourceLineNum": 386,
+			"ParentFunction": "Environ () []string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

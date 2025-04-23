@@ -1,0 +1,211 @@
+[
+  {
+    "function_name": "newMember",
+    "file_path": "/analysis/repo/etcdserver/api/membership/member.go",
+    "line_number": 86,
+    "full_implementation": "func newMember(name string, peerURLs types.URLs, clusterName string, now *time.Time, isLearner bool) *Member {\n\tm := \u0026Member{\n\t\tRaftAttributes: RaftAttributes{\n\t\t\tPeerURLs:  peerURLs.StringSlice(),\n\t\t\tIsLearner: isLearner,\n\t\t},\n\t\tAttributes: Attributes{Name: name},\n\t}\n\n\tvar b []byte\n\tsort.Strings(m.PeerURLs)\n\tfor _, p := range m.PeerURLs {\n\t\tb = append(b, []byte(p)...)\n\t}\n\n\tb = append(b, []byte(clusterName)...)\n\tif now != nil {\n\t\tb = append(b, []byte(fmt.Sprintf(\"%d\", now.Unix()))...)\n\t}\n\n\thash := sha1.Sum(b)\n\tm.ID = types.ID(binary.BigEndian.Uint64(hash[:8]))\n\treturn m\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum(b)",
+        "SourceFilename": "/analysis/repo/etcdserver/api/membership/member.go",
+        "SourceLineNum": 86,
+        "ParentFunction": "newMember (name string, peerURLs go.etcd.io/etcd/pkg/types.URLs, clusterName string, now *time.Time, isLearner bool) *go.etcd.io/etcd/etcdserver/api/membership.Member"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "genID",
+    "file_path": "/analysis/repo/etcdserver/api/membership/cluster.go",
+    "line_number": 232,
+    "full_implementation": "func (c *RaftCluster) genID() {\n\tmIDs := c.MemberIDs()\n\tb := make([]byte, 8*len(mIDs))\n\tfor i, id := range mIDs {\n\t\tbinary.BigEndian.PutUint64(b[8*i:], uint64(id))\n\t}\n\thash := sha1.Sum(b)\n\tc.cid = types.ID(binary.BigEndian.Uint64(hash[:8]))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hash := sha1.Sum(b)",
+        "SourceFilename": "/analysis/repo/etcdserver/api/membership/cluster.go",
+        "SourceLineNum": 232,
+        "ParentFunction": "genID ()"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "ClientConfig",
+    "file_path": "/analysis/repo/pkg/transport/listener.go",
+    "line_number": 432,
+    "full_implementation": "func (info TLSInfo) ClientConfig() (*tls.Config, error) {\n\tvar cfg *tls.Config\n\tvar err error\n\n\tif !info.Empty() {\n\t\tcfg, err = info.baseConfig()\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t} else {\n\t\tcfg = \u0026tls.Config{ServerName: info.ServerName}\n\t}\n\tcfg.InsecureSkipVerify = info.InsecureSkipVerify\n\n\tcs := info.cafiles()\n\tif len(cs) \u003e 0 {\n\t\tcfg.RootCAs, err = tlsutil.NewCertPool(cs)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\tif info.selfCert {\n\t\tcfg.InsecureSkipVerify = true\n\t}\n\n\tif info.EmptyCN {\n\t\thasNonEmptyCN := false\n\t\tcn := \"\"\n\t\ttlsutil.NewCert(info.CertFile, info.KeyFile, func(certPEMBlock []byte, keyPEMBlock []byte) (tls.Certificate, error) {\n\t\t\tvar block *pem.Block\n\t\t\tblock, _ = pem.Decode(certPEMBlock)\n\t\t\tcert, err := x509.ParseCertificate(block.Bytes)\n\t\t\tif err != nil {\n\t\t\t\treturn tls.Certificate{}, err\n\t\t\t}\n\t\t\tif len(cert.Subject.CommonName) != 0 {\n\t\t\t\thasNonEmptyCN = true\n\t\t\t\tcn = cert.Subject.CommonName\n\t\t\t}\n\t\t\treturn tls.X509KeyPair(certPEMBlock, keyPEMBlock)\n\t\t})\n\t\tif hasNonEmptyCN {\n\t\t\treturn nil, fmt.Errorf(\"cert has non empty Common Name (%s)\", cn)\n\t\t}\n\t}\n\n\treturn cfg, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/pkg/transport/listener.go",
+        "SourceLineNum": 432,
+        "ParentFunction": "ClientConfig () (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/pkg/transport/listener.go",
+          "SourceLineNum": 432,
+          "ParentFunction": "ClientConfig () (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "checkCRL",
+    "file_path": "/analysis/repo/pkg/transport/listener_tls.go",
+    "line_number": 175,
+    "full_implementation": "func checkCRL(crlPath string, cert []*x509.Certificate) error {\n\t// TODO: cache\n\tcrlBytes, err := ioutil.ReadFile(crlPath)\n\tif err != nil {\n\t\treturn err\n\t}\n\tcertList, err := x509.ParseCRL(crlBytes)\n\tif err != nil {\n\t\treturn err\n\t}\n\trevokedSerials := make(map[string]struct{})\n\tfor _, rc := range certList.TBSCertList.RevokedCertificates {\n\t\trevokedSerials[string(rc.SerialNumber.Bytes())] = struct{}{}\n\t}\n\tfor _, c := range cert {\n\t\tserial := string(c.SerialNumber.Bytes())\n\t\tif _, ok := revokedSerials[serial]; ok {\n\t\t\treturn fmt.Errorf(\"transport: certificate serial %x revoked\", serial)\n\t\t}\n\t}\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.ParseCRL",
+      "Message": "Deprecated: Use ParseRevocationList instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "certList, err := x509.ParseCRL(crlBytes)",
+        "SourceFilename": "/analysis/repo/pkg/transport/listener_tls.go",
+        "SourceLineNum": 175,
+        "ParentFunction": "checkCRL (crlPath string, cert []*crypto/x509.Certificate) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "HashPassword",
+    "file_path": "/analysis/repo/etcdserver/api/v2auth/auth.go",
+    "line_number": 169,
+    "full_implementation": "func (passwordStore) HashPassword(password string) (string, error) {\n\thash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)\n\treturn string(hash), err\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+      "Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+      "Slicing_Criteria": {
+        "SourceCode": "hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+        "SourceFilename": "/analysis/repo/etcdserver/api/v2auth/auth.go",
+        "SourceLineNum": 169,
+        "ParentFunction": "HashPassword (password string) (string, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)",
+          "SourceFilename": "/analysis/repo/etcdserver/api/v2auth/auth.go",
+          "SourceLineNum": 169,
+          "ParentFunction": "HashPassword (password string) (string, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "grpcGatewayDial",
+    "file_path": "/analysis/repo/embed/etcd.go",
+    "line_number": 844,
+    "full_implementation": "func (e *Etcd) grpcGatewayDial(splitHttp bool) (grpcDial func(ctx context.Context) (*grpc.ClientConn, error)) {\n\tif !e.cfg.EnableGRPCGateway {\n\t\treturn nil\n\t}\n\tsctx := e.pickGrpcGatewayServeContext(splitHttp)\n\taddr := sctx.addr\n\tif network := sctx.network; network == \"unix\" {\n\t\t// explicitly define unix network for gRPC socket support\n\t\taddr = fmt.Sprintf(\"%s://%s\", network, addr)\n\t}\n\n\topts := []grpc.DialOption{grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(math.MaxInt32))}\n\tif sctx.secure {\n\t\ttlscfg, tlsErr := e.cfg.ClientTLSInfo.ServerConfig()\n\t\tif tlsErr != nil {\n\t\t\treturn func(ctx context.Context) (*grpc.ClientConn, error) {\n\t\t\t\treturn nil, tlsErr\n\t\t\t}\n\t\t}\n\t\tdtls := tlscfg.Clone()\n\t\t// trust local server\n\t\tdtls.InsecureSkipVerify = true\n\t\tbundle := credentials.NewBundle(credentials.Config{TLSConfig: dtls})\n\t\topts = append(opts, grpc.WithTransportCredentials(bundle.TransportCredentials()))\n\t} else {\n\t\topts = append(opts, grpc.WithInsecure())\n\t}\n\n\treturn func(ctx context.Context) (*grpc.ClientConn, error) {\n\t\tconn, err := grpc.DialContext(ctx, addr, opts...)\n\t\tif err != nil {\n\t\t\tsctx.lg.Error(\"grpc gateway failed to dial\", zap.String(\"addr\", addr), zap.Error(err))\n\t\t\treturn nil, err\n\t\t}\n\t\treturn conn, err\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "dtls.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/embed/etcd.go",
+        "SourceLineNum": 844,
+        "ParentFunction": "grpcGatewayDial (splitHttp bool) (grpcDial "
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "dtls.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/embed/etcd.go",
+          "SourceLineNum": 844,
+          "ParentFunction": "grpcGatewayDial (splitHttp bool) (grpcDial "
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "newHTTPTransport",
+    "file_path": "/analysis/repo/etcdmain/grpc_proxy.go",
+    "line_number": 461,
+    "full_implementation": "func newHTTPTransport(ca, cert, key string) (*http.Transport, error) {\n\ttr := \u0026http.Transport{}\n\n\tif ca != \"\" \u0026\u0026 cert != \"\" \u0026\u0026 key != \"\" {\n\t\tcaCert, err := ioutil.ReadFile(ca)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tkeyPair, err := tls.LoadX509KeyPair(cert, key)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tcaPool := x509.NewCertPool()\n\t\tcaPool.AppendCertsFromPEM(caCert)\n\n\t\ttlsConfig := \u0026tls.Config{\n\t\t\tCertificates: []tls.Certificate{keyPair},\n\t\t\tRootCAs:      caPool,\n\t\t}\n\t\ttlsConfig.BuildNameToCertificate()\n\t\ttr.TLSClientConfig = tlsConfig\n\t} else if grpcProxyInsecureSkipTLSVerify {\n\t\ttlsConfig := \u0026tls.Config{InsecureSkipVerify: grpcProxyInsecureSkipTLSVerify}\n\t\ttr.TLSClientConfig = tlsConfig\n\t}\n\treturn tr, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/etcdmain/grpc_proxy.go",
+        "SourceLineNum": 461,
+        "ParentFunction": "newHTTPTransport (ca string, cert string, key string) (*net/http.Transport, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "newClientCfg",
+    "file_path": "/analysis/repo/etcdctl/ctlv3/command/global.go",
+    "line_number": 237,
+    "full_implementation": "func newClientCfg(endpoints []string, dialTimeout, keepAliveTime, keepAliveTimeout time.Duration, scfg *secureCfg, acfg *authCfg) (*clientv3.Config, error) {\n\t// set tls if any one tls option set\n\tvar cfgtls *transport.TLSInfo\n\ttlsinfo := transport.TLSInfo{}\n\ttlsinfo.Logger, _ = zap.NewProduction()\n\tif scfg.cert != \"\" {\n\t\ttlsinfo.CertFile = scfg.cert\n\t\tcfgtls = \u0026tlsinfo\n\t}\n\n\tif scfg.key != \"\" {\n\t\ttlsinfo.KeyFile = scfg.key\n\t\tcfgtls = \u0026tlsinfo\n\t}\n\n\tif scfg.cacert != \"\" {\n\t\ttlsinfo.TrustedCAFile = scfg.cacert\n\t\tcfgtls = \u0026tlsinfo\n\t}\n\n\tif scfg.serverName != \"\" {\n\t\ttlsinfo.ServerName = scfg.serverName\n\t\tcfgtls = \u0026tlsinfo\n\t}\n\n\tcfg := \u0026clientv3.Config{\n\t\tEndpoints:            endpoints,\n\t\tDialTimeout:          dialTimeout,\n\t\tDialKeepAliveTime:    keepAliveTime,\n\t\tDialKeepAliveTimeout: keepAliveTimeout,\n\t}\n\n\tif cfgtls != nil {\n\t\tclientTLS, err := cfgtls.ClientConfig()\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\tcfg.TLS = clientTLS\n\t}\n\n\t// if key/cert is not given but user wants secure connection, we\n\t// should still setup an empty tls configuration for gRPC to setup\n\t// secure connection.\n\tif cfg.TLS == nil \u0026\u0026 !scfg.insecureTransport {\n\t\tcfg.TLS = \u0026tls.Config{}\n\t}\n\n\t// If the user wants to skip TLS verification then we should set\n\t// the InsecureSkipVerify flag in tls configuration.\n\tif scfg.insecureSkipVerify \u0026\u0026 cfg.TLS != nil {\n\t\tcfg.TLS.InsecureSkipVerify = true\n\t}\n\n\tif acfg != nil {\n\t\tcfg.Username = acfg.username\n\t\tcfg.Password = acfg.password\n\t}\n\n\treturn cfg, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "cfg.TLS.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/etcdctl/ctlv3/command/global.go",
+        "SourceLineNum": 237,
+        "ParentFunction": "newClientCfg (endpoints []string, dialTimeout time.Duration, keepAliveTime time.Duration, keepAliveTimeout time.Duration, scfg *go.etcd.io/etcd/etcdctl/ctlv3/command.secureCfg, acfg *go.etcd.io/etcd/etcdctl/ctlv3/command.authCfg) (*go.etcd.io/etcd/clientv3.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "cfg.TLS.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/etcdctl/ctlv3/command/global.go",
+          "SourceLineNum": 237,
+          "ParentFunction": "newClientCfg (endpoints []string, dialTimeout time.Duration, keepAliveTime time.Duration, keepAliveTimeout time.Duration, scfg *go.etcd.io/etcd/etcdctl/ctlv3/command.secureCfg, acfg *go.etcd.io/etcd/etcdctl/ctlv3/command.authCfg) (*go.etcd.io/etcd/clientv3.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "endpointMemoryMetrics",
+    "file_path": "/analysis/repo/etcdctl/ctlv3/command/util.go",
+    "line_number": 114,
+    "full_implementation": "func endpointMemoryMetrics(host string, scfg *secureCfg) float64 {\n\tresidentMemoryKey := \"process_resident_memory_bytes\"\n\tvar residentMemoryValue string\n\tif !strings.HasPrefix(host, \"http://\") \u0026\u0026 !strings.HasPrefix(host, \"https://\") {\n\t\thost = \"http://\" + host\n\t}\n\turl := host + \"/metrics\"\n\tif strings.HasPrefix(host, \"https://\") {\n\t\t// load client certificate\n\t\tcert, err := tls.LoadX509KeyPair(scfg.cert, scfg.key)\n\t\tif err != nil {\n\t\t\tfmt.Println(fmt.Sprintf(\"client certificate error: %v\", err))\n\t\t\treturn 0.0\n\t\t}\n\t\thttp.DefaultTransport.(*http.Transport).TLSClientConfig = \u0026tls.Config{\n\t\t\tCertificates:       []tls.Certificate{cert},\n\t\t\tInsecureSkipVerify: scfg.insecureSkipVerify,\n\t\t}\n\t}\n\tresp, err := http.Get(url)\n\tif err != nil {\n\t\tfmt.Println(fmt.Sprintf(\"fetch error: %v\", err))\n\t\treturn 0.0\n\t}\n\tbyts, readerr := ioutil.ReadAll(resp.Body)\n\tresp.Body.Close()\n\tif readerr != nil {\n\t\tfmt.Println(fmt.Sprintf(\"fetch error: reading %s: %v\", url, readerr))\n\t\treturn 0.0\n\t}\n\n\tfor _, line := range strings.Split(string(byts), \"\\n\") {\n\t\tif strings.HasPrefix(line, residentMemoryKey) {\n\t\t\tresidentMemoryValue = strings.TrimSpace(strings.TrimPrefix(line, residentMemoryKey))\n\t\t\tbreak\n\t\t}\n\t}\n\tif residentMemoryValue == \"\" {\n\t\tfmt.Println(fmt.Sprintf(\"could not find: %v\", residentMemoryKey))\n\t\treturn 0.0\n\t}\n\tresidentMemoryBytes, parseErr := strconv.ParseFloat(residentMemoryValue, 64)\n\tif parseErr != nil {\n\t\tfmt.Println(fmt.Sprintf(\"parse error: %v\", parseErr))\n\t\treturn 0.0\n\t}\n\n\treturn residentMemoryBytes\n}",
+    "vulnerability_info": {
+      "FuncName": "net/http.Get",
+      "Message": "HTTP connection is very dangerous",
+      "Slicing_Criteria": {
+        "SourceCode": "resp, err := http.Get(url)",
+        "SourceFilename": "/analysis/repo/etcdctl/ctlv3/command/util.go",
+        "SourceLineNum": 114,
+        "ParentFunction": "endpointMemoryMetrics (host string, scfg *go.etcd.io/etcd/etcdctl/ctlv3/command.secureCfg) float64"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "url := host + \"/metrics\"",
+          "SourceFilename": "/analysis/repo/etcdctl/ctlv3/command/util.go",
+          "SourceLineNum": 101,
+          "ParentFunction": "endpointMemoryMetrics (host string, scfg *go.etcd.io/etcd/etcdctl/ctlv3/command.secureCfg) float64"
+        },
+        {
+          "SourceCode": "func endpointMemoryMetrics(host string, scfg *secureCfg) float64 {",
+          "SourceFilename": "/analysis/repo/etcdctl/ctlv3/command/util.go",
+          "SourceLineNum": 95,
+          "ParentFunction": "endpointMemoryMetrics (host string, scfg *go.etcd.io/etcd/etcdctl/ctlv3/command.secureCfg) float64"
+        },
+        {
+          "SourceCode": "host = \"http://\" + host",
+          "SourceFilename": "/analysis/repo/etcdctl/ctlv3/command/util.go",
+          "SourceLineNum": 99,
+          "ParentFunction": "endpointMemoryMetrics (host string, scfg *go.etcd.io/etcd/etcdctl/ctlv3/command.secureCfg) float64"
+        }
+      ],
+      "Predicate_Type": "HTTPS"
+    }
+  }
+]

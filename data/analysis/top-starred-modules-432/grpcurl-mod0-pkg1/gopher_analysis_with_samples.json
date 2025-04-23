@@ -1,0 +1,27 @@
+[
+  {
+    "function_name": "ClientTLSConfig",
+    "file_path": "/analysis/repo/grpcurl.go",
+    "line_number": 544,
+    "full_implementation": "func ClientTLSConfig(insecureSkipVerify bool, cacertFile, clientCertFile, clientKeyFile string) (*tls.Config, error) {\n\tvar tlsConf tls.Config\n\n\tif clientCertFile != \"\" {\n\t\t// Load the client certificates from disk\n\t\tcertificate, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"could not load client key pair: %v\", err)\n\t\t}\n\t\ttlsConf.Certificates = []tls.Certificate{certificate}\n\t}\n\n\tif insecureSkipVerify {\n\t\ttlsConf.InsecureSkipVerify = true\n\t} else if cacertFile != \"\" {\n\t\t// Create a certificate pool from the certificate authority\n\t\tcertPool := x509.NewCertPool()\n\t\tca, err := os.ReadFile(cacertFile)\n\t\tif err != nil {\n\t\t\treturn nil, fmt.Errorf(\"could not read ca certificate: %v\", err)\n\t\t}\n\n\t\t// Append the certificates from the CA\n\t\tif ok := certPool.AppendCertsFromPEM(ca); !ok {\n\t\t\treturn nil, errors.New(\"failed to append ca certs\")\n\t\t}\n\n\t\ttlsConf.RootCAs = certPool\n\t}\n\n\treturn \u0026tlsConf, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConf.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/grpcurl.go",
+        "SourceLineNum": 544,
+        "ParentFunction": "ClientTLSConfig (insecureSkipVerify bool, cacertFile string, clientCertFile string, clientKeyFile string) (*crypto/tls.Config, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tlsConf.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/grpcurl.go",
+          "SourceLineNum": 544,
+          "ParentFunction": "ClientTLSConfig (insecureSkipVerify bool, cacertFile string, clientCertFile string, clientKeyFile string) (*crypto/tls.Config, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  }
+]

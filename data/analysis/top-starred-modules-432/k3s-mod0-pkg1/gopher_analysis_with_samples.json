@@ -1,0 +1,77 @@
+[
+  {
+    "function_name": "GetClient",
+    "file_path": "/analysis/repo/pkg/etcd/s3/s3.go",
+    "line_number": 182,
+    "full_implementation": "func (c *Controller) GetClient(ctx context.Context, etcdS3 *config.EtcdS3) (*Client, error) {\n\tif etcdS3 == nil {\n\t\treturn nil, errors.New(\"nil s3 configuration\")\n\t}\n\n\t// update ConfigSecret in defaults so that comparisons between current and default config\n\t// ignore ConfigSecret when deciding if CLI configuration is present.\n\tdefaultEtcdS3.ConfigSecret = etcdS3.ConfigSecret\n\n\t// If config is default, try to load config from secret, and fail if it cannot be retrieved or if the secret name is not set.\n\t// If config is not default, and secret name is set, warn that the secret is being ignored\n\tisDefault := reflect.DeepEqual(defaultEtcdS3, etcdS3)\n\tif etcdS3.ConfigSecret != \"\" {\n\t\tif isDefault {\n\t\t\te, err := c.getConfigFromSecret(etcdS3.ConfigSecret)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, pkgerrors.WithMessagef(err, \"failed to get config from etcd-s3-config-secret %q\", etcdS3.ConfigSecret)\n\t\t\t}\n\t\t\tlogrus.Infof(\"Using etcd s3 configuration from etcd-s3-config-secret %q\", etcdS3.ConfigSecret)\n\t\t\tetcdS3 = e\n\t\t} else {\n\t\t\tlogrus.Warnf(\"Ignoring s3 configuration from etcd-s3-config-secret %q due to existing configuration from CLI or config file\", etcdS3.ConfigSecret)\n\t\t}\n\t} else if isDefault {\n\t\treturn nil, errors.New(\"s3 configuration was not set\")\n\t}\n\n\t// used just for logging\n\tscheme := \"https://\"\n\tif etcdS3.Insecure {\n\t\tscheme = \"http://\"\n\t}\n\n\t// Try to get an existing client from cache.  The entire EtcdS3 struct\n\t// (including the key id and secret) is used as the cache key, but we only\n\t// print the endpoint and bucket name to avoid leaking creds into the logs.\n\tif client, ok := c.clientCache.Get(*etcdS3); ok {\n\t\tlogrus.Infof(\"Reusing cached S3 client for endpoint=%q bucket=%q folder=%q\", scheme+etcdS3.Endpoint, etcdS3.Bucket, etcdS3.Folder)\n\t\treturn client.(*Client), nil\n\t}\n\tlogrus.Infof(\"Attempting to create new S3 client for endpoint=%q bucket=%q folder=%q\", scheme+etcdS3.Endpoint, etcdS3.Bucket, etcdS3.Folder)\n\n\tif etcdS3.Bucket == \"\" {\n\t\treturn nil, errors.New(\"s3 bucket name was not set\")\n\t}\n\ttr := http.DefaultTransport.(*http.Transport).Clone()\n\n\t// Set this value so that the underlying transport round-tripper\n\t// doesn't try to auto decode the body of objects with\n\t// content-encoding set to `gzip`.\n\t// Ref: https://github.com/minio/minio-go/pull/752\n\ttr.DisableCompression = true\n\n\t// You can either disable SSL verification or use a custom CA bundle,\n\t// it doesn't make sense to do both - if verification is disabled,\n\t// the CA is not checked!\n\tif etcdS3.SkipSSLVerify {\n\t\ttr.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}\n\t} else if etcdS3.EndpointCA != \"\" {\n\t\ttlsConfig, err := loadEndpointCAs(etcdS3.EndpointCA)\n\t\tif err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t\ttr.TLSClientConfig = tlsConfig\n\t}\n\n\t// Set a fixed proxy URL, if requested by the user. This replaces the default,\n\t// which calls ProxyFromEnvironment to read proxy settings from the environment.\n\tif etcdS3.Proxy != \"\" {\n\t\tvar u *url.URL\n\t\tvar err error\n\t\t// proxy address of literal \"none\" disables all use of a proxy by S3\n\t\tif etcdS3.Proxy != \"none\" {\n\t\t\tu, err = url.Parse(etcdS3.Proxy)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, pkgerrors.WithMessage(err, \"failed to parse etcd-s3-proxy value as URL\")\n\t\t\t}\n\t\t\tif u.Scheme == \"\" || u.Host == \"\" {\n\t\t\t\treturn nil, fmt.Errorf(\"proxy URL must include scheme and host\")\n\t\t\t}\n\t\t}\n\t\ttr.Proxy = http.ProxyURL(u)\n\t}\n\n\tcreds := credentials.NewChainCredentials([]credentials.Provider{\n\t\t\u0026credentials.Static{\n\t\t\tValue: credentials.Value{\n\t\t\t\tAccessKeyID:     etcdS3.AccessKey,\n\t\t\t\tSecretAccessKey: etcdS3.SecretKey,\n\t\t\t\tSessionToken:    etcdS3.SessionToken,\n\t\t\t\tSignerType:      credentials.SignatureV4,\n\t\t\t},\n\t\t},\n\t\t\u0026credentials.FileAWSCredentials{},\n\t\t\u0026credentials.IAM{},\n\t})\n\n\tif _, err := creds.Get(); err != nil {\n\t\treturn nil, pkgerrors.WithMessage(err, \"failed to get credentials\")\n\t}\n\n\topt := minio.Options{\n\t\tCreds:        creds,\n\t\tSecure:       !etcdS3.Insecure,\n\t\tRegion:       etcdS3.Region,\n\t\tTransport:    tr,\n\t\tBucketLookup: bucketLookupType(etcdS3.Endpoint),\n\t}\n\tmc, err := minio.New(etcdS3.Endpoint, \u0026opt)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tlogrus.Infof(\"Checking if S3 bucket %s exists\", etcdS3.Bucket)\n\n\tctx, cancel := context.WithTimeout(ctx, etcdS3.Timeout.Duration)\n\tdefer cancel()\n\n\texists, err := mc.BucketExists(ctx, etcdS3.Bucket)\n\tif err != nil {\n\t\treturn nil, pkgerrors.WithMessagef(err, \"failed to test for existence of bucket %s\", etcdS3.Bucket)\n\t}\n\tif !exists {\n\t\treturn nil, fmt.Errorf(\"bucket %s does not exist\", etcdS3.Bucket)\n\t}\n\tlogrus.Infof(\"S3 bucket %s exists\", etcdS3.Bucket)\n\n\tclient := \u0026Client{\n\t\tmc:         mc,\n\t\tetcdS3:     etcdS3,\n\t\tcontroller: c,\n\t}\n\tlogrus.Infof(\"Adding S3 client to cache\")\n\tc.clientCache.Add(*etcdS3, client)\n\treturn client, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "tr.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/pkg/etcd/s3/s3.go",
+        "SourceLineNum": 182,
+        "ParentFunction": "GetClient (ctx context.Context, etcdS3 *github.com/k3s-io/k3s/pkg/daemons/config.EtcdS3) (*github.com/k3s-io/k3s/pkg/etcd/s3.Client, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "tr.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/pkg/etcd/s3/s3.go",
+          "SourceLineNum": 182,
+          "ParentFunction": "GetClient (ctx context.Context, etcdS3 *github.com/k3s-io/k3s/pkg/daemons/config.EtcdS3) (*github.com/k3s-io/k3s/pkg/etcd/s3.Client, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "decrypt",
+    "file_path": "/analysis/repo/pkg/cluster/encrypt.go",
+    "line_number": 60,
+    "full_implementation": "func decrypt(passphrase string, ciphertext []byte) ([]byte, error) {\n\tparts := strings.SplitN(string(ciphertext), \":\", 2)\n\tif len(parts) != 2 {\n\t\treturn nil, fmt.Errorf(\"invalid cipher text, not : delimited\")\n\t}\n\n\tclearKey := pbkdf2.Key([]byte(passphrase), []byte(parts[0]), 4096, 32, sha1.New)\n\tkey, err := aes.NewCipher(clearKey)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tgcm, err := cipher.NewGCM(key)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tdata, err := base64.StdEncoding.DecodeString(parts[1])\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treturn gcm.Open(nil, data[:gcm.NonceSize()], data[gcm.NonceSize():], nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 4096",
+      "Slicing_Criteria": {
+        "SourceCode": "clearKey := pbkdf2.Key([]byte(passphrase), []byte(parts[0]), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/pkg/cluster/encrypt.go",
+        "SourceLineNum": 60,
+        "ParentFunction": "decrypt (passphrase string, ciphertext []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "clearKey := pbkdf2.Key([]byte(passphrase), []byte(parts[0]), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/pkg/cluster/encrypt.go",
+          "SourceLineNum": 60,
+          "ParentFunction": "decrypt (passphrase string, ciphertext []byte) ([]byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  },
+  {
+    "function_name": "encrypt",
+    "file_path": "/analysis/repo/pkg/cluster/encrypt.go",
+    "line_number": 31,
+    "full_implementation": "func encrypt(passphrase string, plaintext []byte) ([]byte, error) {\n\tsalt, err := util.Random(8)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tclearKey := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha1.New)\n\tkey, err := aes.NewCipher(clearKey)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tgcm, err := cipher.NewGCM(key)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tnonce := make([]byte, gcm.NonceSize())\n\t_, err = io.ReadFull(rand.Reader, nonce)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tsealed := gcm.Seal(nonce, nonce, plaintext, nil)\n\treturn []byte(salt + \":\" + base64.StdEncoding.EncodeToString(sealed)), nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pbkdf2.Key",
+      "Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 4096",
+      "Slicing_Criteria": {
+        "SourceCode": "clearKey := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha1.New)",
+        "SourceFilename": "/analysis/repo/pkg/cluster/encrypt.go",
+        "SourceLineNum": 31,
+        "ParentFunction": "encrypt (passphrase string, plaintext []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "clearKey := pbkdf2.Key([]byte(passphrase), []byte(salt), 4096, 32, sha1.New)",
+          "SourceFilename": "/analysis/repo/pkg/cluster/encrypt.go",
+          "SourceLineNum": 31,
+          "ParentFunction": "encrypt (passphrase string, plaintext []byte) ([]byte, error)"
+        }
+      ],
+      "Predicate_Type": "GEQ"
+    }
+  }
+]

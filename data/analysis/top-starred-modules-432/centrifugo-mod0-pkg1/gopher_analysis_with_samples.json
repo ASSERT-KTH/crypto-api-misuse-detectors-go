@@ -1,0 +1,20 @@
+[
+  {
+    "function_name": "SetId",
+    "file_path": "/analysis/repo/internal/usage/metric.go",
+    "line_number": 39,
+    "full_implementation": "func (m *metric) SetId() {\n\tsort.Strings(m.Tags)\n\n\tbuffer := bytes.NewBufferString(m.Metric)\n\tbuffer.WriteByte(0)\n\tbuffer.WriteString(m.Unit)\n\tbuffer.WriteByte(0)\n\tbuffer.WriteString(m.Type)\n\tbuffer.WriteByte(0)\n\t_, _ = fmt.Fprintf(buffer, \"%d\", m.Interval)\n\n\tfor _, k := range m.Tags {\n\t\tbuffer.WriteByte(0)\n\t\tbuffer.WriteString(k)\n\t}\n\tm.Id = fmt.Sprintf(\"%d.%x\", m.OrgId, md5.Sum(buffer.Bytes()))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "m.Id = fmt.Sprintf(\"%d.%x\", m.OrgId, md5.Sum(buffer.Bytes()))",
+        "SourceFilename": "/analysis/repo/internal/usage/metric.go",
+        "SourceLineNum": 39,
+        "ParentFunction": "SetId ()"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]

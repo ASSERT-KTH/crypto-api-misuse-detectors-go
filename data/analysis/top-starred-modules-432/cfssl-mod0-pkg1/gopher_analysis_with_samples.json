@@ -1,0 +1,720 @@
+[
+  {
+    "function_name": "ParsePKCS7",
+    "file_path": "/analysis/repo/crypto/pkcs7/pkcs7.go",
+    "line_number": 162,
+    "full_implementation": "func ParsePKCS7(raw []byte) (msg *PKCS7, err error) {\n\n\tvar pkcs7 initPKCS7\n\t_, err = asn1.Unmarshal(raw, \u0026pkcs7)\n\tif err != nil {\n\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, err)\n\t}\n\n\tmsg = new(PKCS7)\n\tmsg.Raw = pkcs7.Raw\n\tmsg.ContentInfo = pkcs7.ContentType.String()\n\tswitch {\n\tcase msg.ContentInfo == ObjIDData:\n\t\tmsg.ContentInfo = \"Data\"\n\t\t_, err = asn1.Unmarshal(pkcs7.Content.Bytes, \u0026msg.Content.Data)\n\t\tif err != nil {\n\t\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, err)\n\t\t}\n\tcase msg.ContentInfo == ObjIDSignedData:\n\t\tmsg.ContentInfo = \"SignedData\"\n\t\tvar signedData signedData\n\t\t_, err = asn1.Unmarshal(pkcs7.Content.Bytes, \u0026signedData)\n\t\tif err != nil {\n\t\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, err)\n\t\t}\n\t\tif len(signedData.Certificates.Bytes) != 0 {\n\t\t\tmsg.Content.SignedData.Certificates, err = x509.ParseCertificates(signedData.Certificates.Bytes)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, err)\n\t\t\t}\n\t\t}\n\t\tif len(signedData.Crls.Bytes) != 0 {\n\t\t\tmsg.Content.SignedData.Crl, err = x509.ParseDERCRL(signedData.Crls.Bytes)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, err)\n\t\t\t}\n\t\t}\n\t\tmsg.Content.SignedData.Version = signedData.Version\n\t\tmsg.Content.SignedData.Raw = pkcs7.Content.Bytes\n\tcase msg.ContentInfo == ObjIDEncryptedData:\n\t\tmsg.ContentInfo = \"EncryptedData\"\n\t\tvar encryptedData EncryptedData\n\t\t_, err = asn1.Unmarshal(pkcs7.Content.Bytes, \u0026encryptedData)\n\t\tif err != nil {\n\t\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, err)\n\t\t}\n\t\tif encryptedData.Version != 0 {\n\t\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, errors.New(\"Only support for PKCS #7 encryptedData version 0\"))\n\t\t}\n\t\tmsg.Content.EncryptedData = encryptedData\n\n\tdefault:\n\t\treturn nil, cferr.Wrap(cferr.CertificateError, cferr.ParseFailed, errors.New(\"Attempt to parse PKCS# 7 Content not of type data, signed data or encrypted data\"))\n\t}\n\n\treturn msg, nil\n\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.ParseDERCRL",
+      "Message": "Deprecated: Use ParseRevocationList instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "msg.Content.SignedData.Crl, err = x509.ParseDERCRL(signedData.Crls.Bytes)",
+        "SourceFilename": "/analysis/repo/crypto/pkcs7/pkcs7.go",
+        "SourceLineNum": 162,
+        "ParentFunction": "ParsePKCS7 (raw []byte) (msg *github.com/cloudflare/cfssl/crypto/pkcs7.PKCS7, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "GetKeyDERFromPEM",
+    "file_path": "/analysis/repo/helpers/helpers.go",
+    "line_number": 406,
+    "full_implementation": "func GetKeyDERFromPEM(in []byte, password []byte) ([]byte, error) {\n\t// Ignore any EC PARAMETERS blocks when looking for a key (openssl includes\n\t// them by default).\n\tvar keyDER *pem.Block\n\tfor {\n\t\tkeyDER, in = pem.Decode(in)\n\t\tif keyDER == nil || keyDER.Type != \"EC PARAMETERS\" {\n\t\t\tbreak\n\t\t}\n\t}\n\tif keyDER != nil {\n\t\tif procType, ok := keyDER.Headers[\"Proc-Type\"]; ok {\n\t\t\tif strings.Contains(procType, \"ENCRYPTED\") {\n\t\t\t\tif password != nil {\n\t\t\t\t\treturn x509.DecryptPEMBlock(keyDER, password)\n\t\t\t\t}\n\t\t\t\treturn nil, cferr.New(cferr.PrivateKeyError, cferr.Encrypted)\n\t\t\t}\n\t\t}\n\t\treturn keyDER.Bytes, nil\n\t}\n\n\treturn nil, cferr.New(cferr.PrivateKeyError, cferr.DecodeFailed)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.DecryptPEMBlock",
+      "Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+      "Slicing_Criteria": {
+        "SourceCode": "return x509.DecryptPEMBlock(keyDER, password)",
+        "SourceFilename": "/analysis/repo/helpers/helpers.go",
+        "SourceLineNum": 406,
+        "ParentFunction": "GetKeyDERFromPEM (in []byte, password []byte) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "ParseCertificatesDER",
+    "file_path": "/analysis/repo/helpers/helpers.go",
+    "line_number": 262,
+    "full_implementation": "func ParseCertificatesDER(certsDER []byte, password string) (certs []*x509.Certificate, key crypto.Signer, err error) {\n\tcertsDER = bytes.TrimSpace(certsDER)\n\tpkcs7data, err := pkcs7.ParsePKCS7(certsDER)\n\tif err != nil {\n\t\tvar pkcs12data interface{}\n\t\tcerts = make([]*x509.Certificate, 1)\n\t\tpkcs12data, certs[0], err = pkcs12.Decode(certsDER, password)\n\t\tif err != nil {\n\t\t\tcerts, err = x509.ParseCertificates(certsDER)\n\t\t\tif err != nil {\n\t\t\t\treturn nil, nil, cferr.New(cferr.CertificateError, cferr.DecodeFailed)\n\t\t\t}\n\t\t} else {\n\t\t\tkey = pkcs12data.(crypto.Signer)\n\t\t}\n\t} else {\n\t\tif pkcs7data.ContentInfo != \"SignedData\" {\n\t\t\treturn nil, nil, cferr.Wrap(cferr.CertificateError, cferr.DecodeFailed, errors.New(\"can only extract certificates from signed data content info\"))\n\t\t}\n\t\tcerts = pkcs7data.Content.SignedData.Certificates\n\t}\n\tif certs == nil {\n\t\treturn nil, key, cferr.New(cferr.CertificateError, cferr.DecodeFailed)\n\t}\n\treturn certs, key, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "golang.org/x/crypto/pkcs12.Decode",
+      "Message": "This package is frozen. If it's missing functionality you need, consider an alternative like software.sslmate.com/src/go-pkcs12.",
+      "Slicing_Criteria": {
+        "SourceCode": "pkcs12data, certs[0], err = pkcs12.Decode(certsDER, password)",
+        "SourceFilename": "/analysis/repo/helpers/helpers.go",
+        "SourceLineNum": 262,
+        "ParentFunction": "ParseCertificatesDER (certsDER []byte, password string) (certs []*crypto/x509.Certificate, key crypto.Signer, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "SHA1RawPublicKey",
+    "file_path": "/analysis/repo/ubiquity/ubiquity_platform.go",
+    "line_number": 22,
+    "full_implementation": "func SHA1RawPublicKey(cert *x509.Certificate) string {\n\treturn fmt.Sprintf(\"%x\", sha1.Sum(cert.RawSubjectPublicKeyInfo))\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "return fmt.Sprintf(\"%x\", sha1.Sum(cert.RawSubjectPublicKeyInfo))",
+        "SourceFilename": "/analysis/repo/ubiquity/ubiquity_platform.go",
+        "SourceLineNum": 22,
+        "ParentFunction": "SHA1RawPublicKey (cert *crypto/x509.Certificate) string"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "BundleFromRemote",
+    "file_path": "/analysis/repo/bundler/bundler.go",
+    "line_number": 301,
+    "full_implementation": "func (b *Bundler) BundleFromRemote(serverName, ip string, flavor BundleFlavor) (*Bundle, error) {\n\tconfig := \u0026tls.Config{\n\t\tRootCAs:    b.RootPool,\n\t\tServerName: serverName,\n\t}\n\n\t// Dial by IP if present\n\tvar dialName string\n\tif ip != \"\" {\n\t\tdialName = ip + \":443\"\n\t} else {\n\t\tdialName = serverName + \":443\"\n\t}\n\n\tlog.Debugf(\"bundling from remote %s\", dialName)\n\n\tdialer := \u0026net.Dialer{Timeout: time.Duration(5) * time.Second}\n\tconn, err := tls.DialWithDialer(dialer, \"tcp\", dialName, config)\n\tvar dialError string\n\t// If there's an error in tls.Dial, try again with\n\t// InsecureSkipVerify to fetch the remote bundle to (re-)bundle\n\t// with. If the bundle is indeed not usable (expired, mismatched\n\t// hostnames, etc.), report the error.  Otherwise, create a\n\t// working bundle and insert the tls error in the bundle.Status.\n\tif err != nil {\n\t\tlog.Debugf(\"dial failed: %v\", err)\n\t\t// record the error msg\n\t\tdialError = fmt.Sprintf(\"Failed rigid TLS handshake with %s: %v\", dialName, err)\n\t\t// dial again with InsecureSkipVerify\n\t\tlog.Debugf(\"try again with InsecureSkipVerify.\")\n\t\tconfig.InsecureSkipVerify = true\n\t\tconn, err = tls.DialWithDialer(dialer, \"tcp\", dialName, config)\n\t\tif err != nil {\n\t\t\tlog.Debugf(\"dial with InsecureSkipVerify failed: %v\", err)\n\t\t\treturn nil, errors.Wrap(errors.DialError, errors.Unknown, err)\n\t\t}\n\t}\n\n\tconnState := conn.ConnectionState()\n\n\tcerts := connState.PeerCertificates\n\n\terr = conn.VerifyHostname(serverName)\n\tif err != nil {\n\t\tlog.Debugf(\"failed to verify hostname: %v\", err)\n\t\treturn nil, errors.Wrap(errors.CertificateError, errors.VerifyFailed, err)\n\t}\n\n\t// Bundle with remote certs. Inject the initial dial error, if any, to the status reporting.\n\tbundle, err := b.Bundle(certs, nil, flavor)\n\tif err != nil {\n\t\treturn nil, err\n\t} else if dialError != \"\" {\n\t\tbundle.Status.Messages = append(bundle.Status.Messages, dialError)\n\t}\n\treturn bundle, err\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config.InsecureSkipVerify = true",
+        "SourceFilename": "/analysis/repo/bundler/bundler.go",
+        "SourceLineNum": 301,
+        "ParentFunction": "BundleFromRemote (serverName string, ip string, flavor github.com/cloudflare/cfssl/bundler.BundleFlavor) (*github.com/cloudflare/cfssl/bundler.Bundle, error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config.InsecureSkipVerify = true",
+          "SourceFilename": "/analysis/repo/bundler/bundler.go",
+          "SourceLineNum": 301,
+          "ParentFunction": "BundleFromRemote (serverName string, ip string, flavor github.com/cloudflare/cfssl/bundler.BundleFlavor) (*github.com/cloudflare/cfssl/bundler.Bundle, error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "ParseCertificateDomain",
+    "file_path": "/analysis/repo/certinfo/certinfo.go",
+    "line_number": 155,
+    "full_implementation": "func ParseCertificateDomain(domain string) (cert *Certificate, err error) {\n\tvar host, port string\n\tif host, port, err = net.SplitHostPort(domain); err != nil {\n\t\thost = domain\n\t\tport = \"443\"\n\t}\n\n\tvar conn *tls.Conn\n\tconn, err = tls.DialWithDialer(\u0026net.Dialer{Timeout: 10 * time.Second}, \"tcp\", net.JoinHostPort(host, port), \u0026tls.Config{InsecureSkipVerify: true})\n\tif err != nil {\n\t\treturn\n\t}\n\tdefer conn.Close()\n\n\tif len(conn.ConnectionState().PeerCertificates) == 0 {\n\t\treturn nil, errors.New(\"received no server certificates\")\n\t}\n\n\tcert = ParseCertificate(conn.ConnectionState().PeerCertificates[0])\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "conn, err = tls.DialWithDialer(\u0026net.Dialer{Timeout: 10 * time.Second}, \"tcp\", net.JoinHostPort(host, port), \u0026tls.Config{InsecureSkipVerify: true})",
+        "SourceFilename": "/analysis/repo/certinfo/certinfo.go",
+        "SourceLineNum": 155,
+        "ParentFunction": "ParseCertificateDomain (domain string) (cert *github.com/cloudflare/cfssl/certinfo.Certificate, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "conn, err = tls.DialWithDialer(\u0026net.Dialer{Timeout: 10 * time.Second}, \"tcp\", net.JoinHostPort(host, port), \u0026tls.Config{InsecureSkipVerify: true})",
+          "SourceFilename": "/analysis/repo/certinfo/certinfo.go",
+          "SourceLineNum": 155,
+          "ParentFunction": "ParseCertificateDomain (domain string) (cert *github.com/cloudflare/cfssl/certinfo.Certificate, err error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "createTransport",
+    "file_path": "/analysis/repo/api/client/client.go",
+    "line_number": 124,
+    "full_implementation": "func (srv *server) createTransport() *http.Transport {\n\t// Start with defaults from http.DefaultTransport\n\ttransport := \u0026http.Transport{\n\t\tProxy: http.ProxyFromEnvironment,\n\t\tDialContext: (\u0026net.Dialer{\n\t\t\tTimeout:   30 * time.Second,\n\t\t\tKeepAlive: 30 * time.Second,\n\t\t\tDualStack: true,\n\t\t}).DialContext,\n\t\tMaxIdleConns:          100,\n\t\tIdleConnTimeout:       90 * time.Second,\n\t\tTLSHandshakeTimeout:   10 * time.Second,\n\t\tExpectContinueTimeout: 1 * time.Second,\n\t}\n\t// Setup HTTPS client\n\ttlsConfig := srv.TLSConfig\n\ttlsConfig.BuildNameToCertificate()\n\ttransport.TLSClientConfig = tlsConfig\n\t// Setup Proxy\n\tif srv.proxy != nil {\n\t\ttransport.Proxy = srv.proxy\n\t}\n\treturn transport\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+      "Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+      "Slicing_Criteria": {
+        "SourceCode": "tlsConfig.BuildNameToCertificate()",
+        "SourceFilename": "/analysis/repo/api/client/client.go",
+        "SourceLineNum": 124,
+        "ParentFunction": "createTransport () *net/http.Transport"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "CreateGenericCRL",
+    "file_path": "/analysis/repo/crl/crl.go",
+    "line_number": 101,
+    "full_implementation": "func CreateGenericCRL(certList []pkix.RevokedCertificate, key crypto.Signer, issuingCert *x509.Certificate, expiryTime time.Time) ([]byte, error) {\n\tcrlBytes, err := issuingCert.CreateCRL(rand.Reader, key, certList, time.Now(), expiryTime)\n\tif err != nil {\n\t\tlog.Debugf(\"error creating CRL: %s\", err)\n\t}\n\n\treturn crlBytes, err\n\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/x509.Certificate).CreateCRL",
+      "Message": "Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL. To generate a standards compliant CRL, use CreateRevocationList instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "crlBytes, err := issuingCert.CreateCRL(rand.Reader, key, certList, time.Now(), expiryTime)",
+        "SourceFilename": "/analysis/repo/crl/crl.go",
+        "SourceLineNum": 101,
+        "ParentFunction": "CreateGenericCRL (certList []crypto/x509/pkix.RevokedCertificate, key crypto.Signer, issuingCert *crypto/x509.Certificate, expiryTime time.Time) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "gencrlHandler",
+    "file_path": "/analysis/repo/api/gencrl/gencrl.go",
+    "line_number": 88,
+    "full_implementation": "func gencrlHandler(w http.ResponseWriter, r *http.Request) error {\n\tvar revokedCerts []pkix.RevokedCertificate\n\tvar oneWeek = time.Duration(604800) * time.Second\n\tvar newExpiryTime = time.Now()\n\n\tbody, err := io.ReadAll(r.Body)\n\tif err != nil {\n\t\treturn err\n\t}\n\tr.Body.Close()\n\n\treq := \u0026jsonCRLRequest{}\n\terr = json.Unmarshal(body, req)\n\tif err != nil {\n\t\tlog.Error(err)\n\t}\n\n\tif req.ExpiryTime != \"\" {\n\t\texpiryTime := strings.TrimSpace(req.ExpiryTime)\n\t\texpiryInt, err := strconv.ParseInt(expiryTime, 0, 32)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\n\t\tnewExpiryTime = time.Now().Add((time.Duration(expiryInt) * time.Second))\n\t}\n\n\tif req.ExpiryTime == \"\" {\n\t\tnewExpiryTime = time.Now().Add(oneWeek)\n\t}\n\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tcert, err := helpers.ParseCertificatePEM([]byte(req.Certificate))\n\tif err != nil {\n\t\tlog.Error(\"error from ParseCertificatePEM\", err)\n\t\treturn errors.NewBadRequestString(\"malformed certificate\")\n\t}\n\n\tfor _, value := range req.SerialNumber {\n\t\ttempBigInt := new(big.Int)\n\t\ttempBigInt.SetString(value, 10)\n\t\ttempCert := pkix.RevokedCertificate{\n\t\t\tSerialNumber:   tempBigInt,\n\t\t\tRevocationTime: time.Now(),\n\t\t}\n\t\trevokedCerts = append(revokedCerts, tempCert)\n\t}\n\n\tkey, err := helpers.ParsePrivateKeyPEM([]byte(req.PrivateKey))\n\tif err != nil {\n\t\tlog.Debugf(\"malformed private key %v\", err)\n\t\treturn errors.NewBadRequestString(\"malformed Private Key\")\n\t}\n\n\tresult, err := cert.CreateCRL(rand.Reader, key, revokedCerts, time.Now(), newExpiryTime)\n\tif err != nil {\n\t\tlog.Debugf(\"unable to create CRL: %v\", err)\n\t\treturn err\n\t}\n\n\treturn api.SendResponse(w, result)\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/x509.Certificate).CreateCRL",
+      "Message": "Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL. To generate a standards compliant CRL, use CreateRevocationList instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "result, err := cert.CreateCRL(rand.Reader, key, revokedCerts, time.Now(), newExpiryTime)",
+        "SourceFilename": "/analysis/repo/api/gencrl/gencrl.go",
+        "SourceLineNum": 88,
+        "ParentFunction": "gencrlHandler (w net/http.ResponseWriter, r *net/http.Request) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "ComputeSKI",
+    "file_path": "/analysis/repo/signer/signer.go",
+    "line_number": 281,
+    "full_implementation": "func ComputeSKI(template *x509.Certificate) ([]byte, error) {\n\tpub := template.PublicKey\n\tencodedPub, err := x509.MarshalPKIXPublicKey(pub)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tvar subPKI subjectPublicKeyInfo\n\t_, err = asn1.Unmarshal(encodedPub, \u0026subPKI)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpubHash := sha1.Sum(subPKI.SubjectPublicKey.Bytes)\n\treturn pubHash[:], nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "pubHash := sha1.Sum(subPKI.SubjectPublicKey.Bytes)",
+        "SourceFilename": "/analysis/repo/signer/signer.go",
+        "SourceLineNum": 281,
+        "ParentFunction": "ComputeSKI (template *crypto/x509.Certificate) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "computeSum",
+    "file_path": "/analysis/repo/api/generator/generator.go",
+    "line_number": 100,
+    "full_implementation": "func computeSum(in []byte) (sum Sum, err error) {\n\tvar data []byte\n\tp, _ := pem.Decode(in)\n\tif p == nil {\n\t\terr = errors.NewBadRequestString(\"not a CSR or certificate\")\n\t\treturn\n\t}\n\n\tswitch p.Type {\n\tcase \"CERTIFICATE REQUEST\":\n\t\tvar req *x509.CertificateRequest\n\t\treq, err = x509.ParseCertificateRequest(p.Bytes)\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\t\tdata = req.Raw\n\tcase \"CERTIFICATE\":\n\t\tvar cert *x509.Certificate\n\t\tcert, err = x509.ParseCertificate(p.Bytes)\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\t\tdata = cert.Raw\n\tdefault:\n\t\terr = errors.NewBadRequestString(\"not a CSR or certificate\")\n\t\treturn\n\t}\n\n\tmd5Sum := md5.Sum(data)\n\tsha1Sum := sha1.Sum(data)\n\tsha256Sum := sha256.Sum256(data)\n\tsum.MD5 = fmt.Sprintf(\"%X\", md5Sum[:])\n\tsum.SHA1 = fmt.Sprintf(\"%X\", sha1Sum[:])\n\tsum.SHA256 = fmt.Sprintf(\"%X\", sha256Sum[:])\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.Sum",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "md5Sum := md5.Sum(data)",
+        "SourceFilename": "/analysis/repo/api/generator/generator.go",
+        "SourceLineNum": 100,
+        "ParentFunction": "computeSum (in []byte) (sum github.com/cloudflare/cfssl/api/generator.Sum, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "computeSum",
+    "file_path": "/analysis/repo/api/generator/generator.go",
+    "line_number": 101,
+    "full_implementation": "func computeSum(in []byte) (sum Sum, err error) {\n\tvar data []byte\n\tp, _ := pem.Decode(in)\n\tif p == nil {\n\t\terr = errors.NewBadRequestString(\"not a CSR or certificate\")\n\t\treturn\n\t}\n\n\tswitch p.Type {\n\tcase \"CERTIFICATE REQUEST\":\n\t\tvar req *x509.CertificateRequest\n\t\treq, err = x509.ParseCertificateRequest(p.Bytes)\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\t\tdata = req.Raw\n\tcase \"CERTIFICATE\":\n\t\tvar cert *x509.Certificate\n\t\tcert, err = x509.ParseCertificate(p.Bytes)\n\t\tif err != nil {\n\t\t\treturn\n\t\t}\n\t\tdata = cert.Raw\n\tdefault:\n\t\terr = errors.NewBadRequestString(\"not a CSR or certificate\")\n\t\treturn\n\t}\n\n\tmd5Sum := md5.Sum(data)\n\tsha1Sum := sha1.Sum(data)\n\tsha256Sum := sha256.Sum256(data)\n\tsum.MD5 = fmt.Sprintf(\"%X\", md5Sum[:])\n\tsum.SHA1 = fmt.Sprintf(\"%X\", sha1Sum[:])\n\tsum.SHA256 = fmt.Sprintf(\"%X\", sha256Sum[:])\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.Sum",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha1Sum := sha1.Sum(data)",
+        "SourceFilename": "/analysis/repo/api/generator/generator.go",
+        "SourceLineNum": 101,
+        "ParentFunction": "computeSum (in []byte) (sum github.com/cloudflare/cfssl/api/generator.Sum, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "fetchCRL",
+    "file_path": "/analysis/repo/revoke/revoke.go",
+    "line_number": 112,
+    "full_implementation": "func fetchCRL(url string) (*pkix.CertificateList, error) {\n\tresp, err := HTTPClient.Get(url)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer resp.Body.Close()\n\n\tif resp.StatusCode \u003e= 300 {\n\t\treturn nil, errors.New(\"failed to retrieve CRL\")\n\t}\n\n\tbody, err := crlRead(resp.Body)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn x509.ParseCRL(body)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/x509.ParseCRL",
+      "Message": "Deprecated: Use ParseRevocationList instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "return x509.ParseCRL(body)",
+        "SourceFilename": "/analysis/repo/revoke/revoke.go",
+        "SourceLineNum": 112,
+        "ParentFunction": "fetchCRL (url string) (*crypto/x509/pkix.CertificateList, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "certIsRevokedCRL",
+    "file_path": "/analysis/repo/revoke/revoke.go",
+    "line_number": 160,
+    "full_implementation": "func certIsRevokedCRL(cert *x509.Certificate, url string) (revoked, ok bool, err error) {\n\tcrlLock.Lock()\n\tcrl, ok := CRLSet[url]\n\tif ok \u0026\u0026 crl == nil {\n\t\tok = false\n\t\tdelete(CRLSet, url)\n\t}\n\tcrlLock.Unlock()\n\n\tvar shouldFetchCRL = true\n\tif ok {\n\t\tif !crl.HasExpired(time.Now()) {\n\t\t\tshouldFetchCRL = false\n\t\t}\n\t}\n\n\tissuer := getIssuer(cert)\n\n\tif shouldFetchCRL {\n\t\tvar err error\n\t\tcrl, err = fetchCRL(url)\n\t\tif err != nil {\n\t\t\tlog.Warningf(\"failed to fetch CRL: %v\", err)\n\t\t\treturn false, false, err\n\t\t}\n\n\t\t// check CRL signature\n\t\tif issuer != nil {\n\t\t\terr = issuer.CheckCRLSignature(crl)\n\t\t\tif err != nil {\n\t\t\t\tlog.Warningf(\"failed to verify CRL: %v\", err)\n\t\t\t\treturn false, false, err\n\t\t\t}\n\t\t}\n\n\t\tcrlLock.Lock()\n\t\tCRLSet[url] = crl\n\t\tcrlLock.Unlock()\n\t}\n\n\tfor _, revoked := range crl.TBSCertList.RevokedCertificates {\n\t\tif cert.SerialNumber.Cmp(revoked.SerialNumber) == 0 {\n\t\t\tlog.Info(\"Serial number match: intermediate is revoked.\")\n\t\t\treturn true, true, err\n\t\t}\n\t}\n\n\treturn false, true, err\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/x509.Certificate).CheckCRLSignature",
+      "Message": "Deprecated: Use RevocationList.CheckSignatureFrom instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "err = issuer.CheckCRLSignature(crl)",
+        "SourceFilename": "/analysis/repo/revoke/revoke.go",
+        "SourceLineNum": 160,
+        "ParentFunction": "certIsRevokedCRL (cert *crypto/x509.Certificate, url string) (revoked bool, ok bool, err error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "pHash",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 27,
+    "full_implementation": "func pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\th := hmac.New(hash, secret)\n\th.Write(seed)\n\ta := h.Sum(nil)\n\n\tj := 0\n\tfor j \u003c len(result) {\n\t\th.Reset()\n\t\th.Write(a)\n\t\th.Write(seed)\n\t\tb := h.Sum(nil)\n\t\ttodo := len(b)\n\t\tif j+todo \u003e len(result) {\n\t\t\ttodo = len(result) - j\n\t\t}\n\t\tcopy(result[j:j+todo], b)\n\t\tj += todo\n\n\t\th.Reset()\n\t\th.Write(a)\n\t\ta = h.Sum(nil)\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/hmac.New",
+      "Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+      "Slicing_Criteria": {
+        "SourceCode": "h := hmac.New(hash, secret)",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 27,
+        "ParentFunction": "pHash (result []byte, secret []byte, seed []byte, hash "
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "func pHash(result, secret, seed []byte, hash func() hash.Hash) {",
+          "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+          "SourceLineNum": 26,
+          "ParentFunction": "pHash (result []byte, secret []byte, seed []byte, hash "
+        },
+        {
+          "SourceCode": "pHash(result, s1, labelAndSeed, hashMD5)",
+          "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+          "SourceLineNum": 60,
+          "ParentFunction": "prf10 (result []byte, secret []byte, label []byte, seed []byte)"
+        }
+      ],
+      "Predicate_Type": "SECURE_HMAC_HASH"
+    }
+  },
+  {
+    "function_name": "md5SHA1Hash",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 101,
+    "full_implementation": "func md5SHA1Hash(slices [][]byte) []byte {\n\tmd5sha1 := make([]byte, md5.Size+sha1.Size)\n\thmd5 := md5.New()\n\tfor _, slice := range slices {\n\t\thmd5.Write(slice)\n\t}\n\tcopy(md5sha1, hmd5.Sum(nil))\n\tcopy(md5sha1[md5.Size:], sha1Hash(slices))\n\treturn md5sha1\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hmd5 := md5.New()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 101,
+        "ParentFunction": "md5SHA1Hash (slices [][]byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "prf30",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 84,
+    "full_implementation": "func prf30(result, secret, label, seed []byte) {\n\thashSHA1 := sha1.New()\n\thashMD5 := md5.New()\n\n\tdone := 0\n\ti := 0\n\t// RFC5246 section 6.3 says that the largest PRF output needed is 128\n\t// bytes. Since no more ciphersuites will be added to SSLv3, this will\n\t// remain true. Each iteration gives us 16 bytes so 10 iterations will\n\t// be sufficient.\n\tvar b [11]byte\n\tfor done \u003c len(result) {\n\t\tfor j := 0; j \u003c= i; j++ {\n\t\t\tb[j] = 'A' + byte(i)\n\t\t}\n\n\t\thashSHA1.Reset()\n\t\thashSHA1.Write(b[:i+1])\n\t\thashSHA1.Write(secret)\n\t\thashSHA1.Write(seed)\n\t\tdigest := hashSHA1.Sum(nil)\n\n\t\thashMD5.Reset()\n\t\thashMD5.Write(secret)\n\t\thashMD5.Write(digest)\n\n\t\tdone += copy(result[done:], hashMD5.Sum(nil))\n\t\ti++\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "hashMD5 := md5.New()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 84,
+        "ParentFunction": "prf30 (result []byte, secret []byte, label []byte, seed []byte)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "hashForClientCertificate",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 341,
+    "full_implementation": "func (h finishedHash) hashForClientCertificate(signatureAndHash signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error) {\n\tif (h.version == VersionSSL30 || h.version \u003e= VersionTLS12) \u0026\u0026 h.buffer == nil {\n\t\tpanic(\"a handshake hash for a client-certificate was requested after discarding the handshake buffer\")\n\t}\n\n\tif h.version == VersionSSL30 {\n\t\tif signatureAndHash.signature != signatureRSA {\n\t\t\treturn nil, 0, errors.New(\"tls: unsupported signature type for client certificate\")\n\t\t}\n\n\t\tmd5Hash := md5.New()\n\t\tmd5Hash.Write(h.buffer)\n\t\tsha1Hash := sha1.New()\n\t\tsha1Hash.Write(h.buffer)\n\t\treturn finishedSum30(md5Hash, sha1Hash, masterSecret, nil), crypto.MD5SHA1, nil\n\t}\n\tif h.version \u003e= VersionTLS12 {\n\t\thashAlg, err := lookupTLSHash(signatureAndHash.hash)\n\t\tif err != nil {\n\t\t\treturn nil, 0, err\n\t\t}\n\t\thash := hashAlg.New()\n\t\thash.Write(h.buffer)\n\t\treturn hash.Sum(nil), hashAlg, nil\n\t}\n\n\tif signatureAndHash.signature == signatureECDSA {\n\t\treturn h.server.Sum(nil), crypto.SHA1, nil\n\t}\n\n\treturn h.Sum(), crypto.MD5SHA1, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "md5Hash := md5.New()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 341,
+        "ParentFunction": "hashForClientCertificate (signatureAndHash github.com/cloudflare/cfssl/scan/crypto/tls.signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newFinishedHash",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 208,
+    "full_implementation": "func newFinishedHash(version uint16, cipherSuite *cipherSuite) finishedHash {\n\tvar buffer []byte\n\tif version == VersionSSL30 || version \u003e= VersionTLS12 {\n\t\tbuffer = []byte{}\n\t}\n\n\tprf, hash := prfAndHashForVersion(version, cipherSuite)\n\tif hash != 0 {\n\t\treturn finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}\n\t}\n\n\treturn finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 208,
+        "ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newFinishedHash",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 208,
+    "full_implementation": "func newFinishedHash(version uint16, cipherSuite *cipherSuite) finishedHash {\n\tvar buffer []byte\n\tif version == VersionSSL30 || version \u003e= VersionTLS12 {\n\t\tbuffer = []byte{}\n\t}\n\n\tprf, hash := prfAndHashForVersion(version, cipherSuite)\n\tif hash != 0 {\n\t\treturn finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}\n\t}\n\n\treturn finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/md5.New",
+      "Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+      "Slicing_Criteria": {
+        "SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 208,
+        "ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "cipherRC4",
+    "file_path": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+    "line_number": 98,
+    "full_implementation": "func cipherRC4(key, iv []byte, isRead bool) interface{} {\n\tcipher, _ := rc4.NewCipher(key)\n\treturn cipher\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rc4.NewCipher",
+      "Message": "RC4 - RFC 7465 - Prohibiting RC4 Cipher Suites",
+      "Slicing_Criteria": {
+        "SourceCode": "cipher, _ := rc4.NewCipher(key)",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+        "SourceLineNum": 98,
+        "ParentFunction": "cipherRC4 (key []byte, iv []byte, isRead bool) interface{}"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "generateClientKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 76,
+    "full_implementation": "func (ka rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {\n\tpreMasterSecret := make([]byte, 48)\n\tpreMasterSecret[0] = byte(clientHello.vers \u003e\u003e 8)\n\tpreMasterSecret[1] = byte(clientHello.vers)\n\t_, err := io.ReadFull(config.rand(), preMasterSecret[2:])\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\n\tencrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\tckx := new(clientKeyExchangeMsg)\n\tckx.ciphertext = make([]byte, len(encrypted)+2)\n\tckx.ciphertext[0] = byte(len(encrypted) \u003e\u003e 8)\n\tckx.ciphertext[1] = byte(len(encrypted))\n\tcopy(ckx.ciphertext[2:], encrypted)\n\treturn preMasterSecret, ckx, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/rsa.EncryptPKCS1v15",
+      "Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
+      "Slicing_Criteria": {
+        "SourceCode": "encrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 76,
+        "ParentFunction": "generateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "prf30",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 83,
+    "full_implementation": "func prf30(result, secret, label, seed []byte) {\n\thashSHA1 := sha1.New()\n\thashMD5 := md5.New()\n\n\tdone := 0\n\ti := 0\n\t// RFC5246 section 6.3 says that the largest PRF output needed is 128\n\t// bytes. Since no more ciphersuites will be added to SSLv3, this will\n\t// remain true. Each iteration gives us 16 bytes so 10 iterations will\n\t// be sufficient.\n\tvar b [11]byte\n\tfor done \u003c len(result) {\n\t\tfor j := 0; j \u003c= i; j++ {\n\t\t\tb[j] = 'A' + byte(i)\n\t\t}\n\n\t\thashSHA1.Reset()\n\t\thashSHA1.Write(b[:i+1])\n\t\thashSHA1.Write(secret)\n\t\thashSHA1.Write(seed)\n\t\tdigest := hashSHA1.Sum(nil)\n\n\t\thashMD5.Reset()\n\t\thashMD5.Write(secret)\n\t\thashMD5.Write(digest)\n\n\t\tdone += copy(result[done:], hashMD5.Sum(nil))\n\t\ti++\n\t}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hashSHA1 := sha1.New()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 83,
+        "ParentFunction": "prf30 (result []byte, secret []byte, label []byte, seed []byte)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "hashForClientCertificate",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 343,
+    "full_implementation": "func (h finishedHash) hashForClientCertificate(signatureAndHash signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error) {\n\tif (h.version == VersionSSL30 || h.version \u003e= VersionTLS12) \u0026\u0026 h.buffer == nil {\n\t\tpanic(\"a handshake hash for a client-certificate was requested after discarding the handshake buffer\")\n\t}\n\n\tif h.version == VersionSSL30 {\n\t\tif signatureAndHash.signature != signatureRSA {\n\t\t\treturn nil, 0, errors.New(\"tls: unsupported signature type for client certificate\")\n\t\t}\n\n\t\tmd5Hash := md5.New()\n\t\tmd5Hash.Write(h.buffer)\n\t\tsha1Hash := sha1.New()\n\t\tsha1Hash.Write(h.buffer)\n\t\treturn finishedSum30(md5Hash, sha1Hash, masterSecret, nil), crypto.MD5SHA1, nil\n\t}\n\tif h.version \u003e= VersionTLS12 {\n\t\thashAlg, err := lookupTLSHash(signatureAndHash.hash)\n\t\tif err != nil {\n\t\t\treturn nil, 0, err\n\t\t}\n\t\thash := hashAlg.New()\n\t\thash.Write(h.buffer)\n\t\treturn hash.Sum(nil), hashAlg, nil\n\t}\n\n\tif signatureAndHash.signature == signatureECDSA {\n\t\treturn h.server.Sum(nil), crypto.SHA1, nil\n\t}\n\n\treturn h.Sum(), crypto.MD5SHA1, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "sha1Hash := sha1.New()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 343,
+        "ParentFunction": "hashForClientCertificate (signatureAndHash github.com/cloudflare/cfssl/scan/crypto/tls.signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newFinishedHash",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 208,
+    "full_implementation": "func newFinishedHash(version uint16, cipherSuite *cipherSuite) finishedHash {\n\tvar buffer []byte\n\tif version == VersionSSL30 || version \u003e= VersionTLS12 {\n\t\tbuffer = []byte{}\n\t}\n\n\tprf, hash := prfAndHashForVersion(version, cipherSuite)\n\tif hash != 0 {\n\t\treturn finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}\n\t}\n\n\treturn finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 208,
+        "ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "newFinishedHash",
+    "file_path": "/analysis/repo/scan/crypto/tls/prf.go",
+    "line_number": 208,
+    "full_implementation": "func newFinishedHash(version uint16, cipherSuite *cipherSuite) finishedHash {\n\tvar buffer []byte\n\tif version == VersionSSL30 || version \u003e= VersionTLS12 {\n\t\tbuffer = []byte{}\n\t}\n\n\tprf, hash := prfAndHashForVersion(version, cipherSuite)\n\tif hash != 0 {\n\t\treturn finishedHash{hash.New(), hash.New(), nil, nil, buffer, version, prf}\n\t}\n\n\treturn finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+        "SourceLineNum": 208,
+        "ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "sha1Hash",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 90,
+    "full_implementation": "func sha1Hash(slices [][]byte) []byte {\n\thsha1 := sha1.New()\n\tfor _, slice := range slices {\n\t\thsha1.Write(slice)\n\t}\n\treturn hsha1.Sum(nil)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "hsha1 := sha1.New()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 90,
+        "ParentFunction": "sha1Hash (slices [][]byte) []byte"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "macSHA1",
+    "file_path": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+    "line_number": 122,
+    "full_implementation": "func macSHA1(version uint16, key []byte) macFunction {\n\tif version == VersionSSL30 {\n\t\tmac := ssl30MAC{\n\t\t\th:   sha1.New(),\n\t\t\tkey: make([]byte, len(key)),\n\t\t}\n\t\tcopy(mac.key, key)\n\t\treturn mac\n\t}\n\treturn tls10MAC{hmac.New(sha1.New, key)}\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "h:   sha1.New(),",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+        "SourceLineNum": 122,
+        "ParentFunction": "macSHA1 (version uint16, key []byte) github.com/cloudflare/cfssl/scan/crypto/tls.macFunction"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  },
+  {
+    "function_name": "cipher3DES",
+    "file_path": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+    "line_number": 103,
+    "full_implementation": "func cipher3DES(key, iv []byte, isRead bool) interface{} {\n\tblock, _ := des.NewTripleDESCipher(key)\n\tif isRead {\n\t\treturn cipher.NewCBCDecrypter(block, iv)\n\t}\n\treturn cipher.NewCBCEncrypter(block, iv)\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/des.NewTripleDESCipher",
+      "Message": "3DES is aceptable but not recommended, AES can be used instead.",
+      "Slicing_Criteria": {
+        "SourceCode": "block, _ := des.NewTripleDESCipher(key)",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+        "SourceLineNum": 103,
+        "ParentFunction": "cipher3DES (key []byte, iv []byte, isRead bool) interface{}"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "generateServerKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 209,
+    "full_implementation": "func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {\n\tvar curveid CurveID\n\tpreferredCurves := config.curvePreferences()\n\nNextCandidate:\n\tfor _, candidate := range preferredCurves {\n\t\tfor _, c := range clientHello.supportedCurves {\n\t\t\tif candidate == c {\n\t\t\t\tcurveid = c\n\t\t\t\tbreak NextCandidate\n\t\t\t}\n\t\t}\n\t}\n\n\tif curveid == 0 {\n\t\treturn nil, errors.New(\"tls: no supported elliptic curves offered\")\n\t}\n\n\tvar ok bool\n\tif ka.curve, ok = curveForCurveID(curveid); !ok {\n\t\treturn nil, errors.New(\"tls: preferredCurves includes unsupported curve\")\n\t}\n\n\tvar x, y *big.Int\n\tvar err error\n\tka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tecdhePublic := elliptic.Marshal(ka.curve, x, y)\n\n\t// http://tools.ietf.org/html/rfc4492#section-5.4\n\tserverECDHParams := make([]byte, 1+2+1+len(ecdhePublic))\n\tserverECDHParams[0] = 3 // named curve\n\tserverECDHParams[1] = byte(curveid \u003e\u003e 8)\n\tserverECDHParams[2] = byte(curveid)\n\tserverECDHParams[3] = byte(len(ecdhePublic))\n\tcopy(serverECDHParams[4:], ecdhePublic)\n\n\tsigAndHash := signatureAndHash{signature: ka.sigType}\n\n\tif ka.version \u003e= VersionTLS12 {\n\t\tif sigAndHash.hash, err = pickTLS12HashForSignature(ka.sigType, clientHello.signatureAndHashes); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\tdigest, hashFunc, err := hashForServerKeyExchange(sigAndHash, ka.version, clientHello.random, hello.random, serverECDHParams)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpriv, ok := cert.PrivateKey.(crypto.Signer)\n\tif !ok {\n\t\treturn nil, errors.New(\"tls: certificate private key does not implement crypto.Signer\")\n\t}\n\tvar sig []byte\n\tswitch ka.sigType {\n\tcase signatureECDSA:\n\t\t_, ok := priv.Public().(*ecdsa.PublicKey)\n\t\tif !ok {\n\t\t\treturn nil, errors.New(\"ECDHE ECDSA requires an ECDSA server key\")\n\t\t}\n\tcase signatureRSA:\n\t\t_, ok := priv.Public().(*rsa.PublicKey)\n\t\tif !ok {\n\t\t\treturn nil, errors.New(\"ECDHE RSA requires a RSA server key\")\n\t\t}\n\tdefault:\n\t\treturn nil, errors.New(\"unknown ECDHE signature algorithm\")\n\t}\n\tsig, err = priv.Sign(config.rand(), digest, hashFunc)\n\tif err != nil {\n\t\treturn nil, errors.New(\"failed to sign ECDHE parameters: \" + err.Error())\n\t}\n\n\tskx := new(serverKeyExchangeMsg)\n\tsigAndHashLen := 0\n\tif ka.version \u003e= VersionTLS12 {\n\t\tsigAndHashLen = 2\n\t}\n\tskx.key = make([]byte, len(serverECDHParams)+sigAndHashLen+2+len(sig))\n\tcopy(skx.key, serverECDHParams)\n\tk := skx.key[len(serverECDHParams):]\n\tif ka.version \u003e= VersionTLS12 {\n\t\tk[0] = sigAndHash.hash\n\t\tk[1] = sigAndHash.signature\n\t\tk = k[2:]\n\t}\n\tk[0] = byte(len(sig) \u003e\u003e 8)\n\tk[1] = byte(len(sig))\n\tcopy(k[2:], sig)\n\n\treturn skx, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.GenerateKey",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "ka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 209,
+        "ParentFunction": "generateServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, hello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg) (*github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "generateClientKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 388,
+    "full_implementation": "func (ka *ecdheKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {\n\tif ka.curve == nil {\n\t\treturn nil, nil, errors.New(\"missing ServerKeyExchange message\")\n\t}\n\tpriv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\tx, _ := ka.curve.ScalarMult(ka.x, ka.y, priv)\n\tpreMasterSecret := make([]byte, (ka.curve.Params().BitSize+7)\u003e\u003e3)\n\txBytes := x.Bytes()\n\tcopy(preMasterSecret[len(preMasterSecret)-len(xBytes):], xBytes)\n\n\tserialized := elliptic.Marshal(ka.curve, mx, my)\n\n\tckx := new(clientKeyExchangeMsg)\n\tckx.ciphertext = make([]byte, 1+len(serialized))\n\tckx.ciphertext[0] = byte(len(serialized))\n\tcopy(ckx.ciphertext[1:], serialized)\n\n\treturn preMasterSecret, ckx, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.GenerateKey",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "priv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 388,
+        "ParentFunction": "generateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "generateServerKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 213,
+    "full_implementation": "func (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {\n\tvar curveid CurveID\n\tpreferredCurves := config.curvePreferences()\n\nNextCandidate:\n\tfor _, candidate := range preferredCurves {\n\t\tfor _, c := range clientHello.supportedCurves {\n\t\t\tif candidate == c {\n\t\t\t\tcurveid = c\n\t\t\t\tbreak NextCandidate\n\t\t\t}\n\t\t}\n\t}\n\n\tif curveid == 0 {\n\t\treturn nil, errors.New(\"tls: no supported elliptic curves offered\")\n\t}\n\n\tvar ok bool\n\tif ka.curve, ok = curveForCurveID(curveid); !ok {\n\t\treturn nil, errors.New(\"tls: preferredCurves includes unsupported curve\")\n\t}\n\n\tvar x, y *big.Int\n\tvar err error\n\tka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tecdhePublic := elliptic.Marshal(ka.curve, x, y)\n\n\t// http://tools.ietf.org/html/rfc4492#section-5.4\n\tserverECDHParams := make([]byte, 1+2+1+len(ecdhePublic))\n\tserverECDHParams[0] = 3 // named curve\n\tserverECDHParams[1] = byte(curveid \u003e\u003e 8)\n\tserverECDHParams[2] = byte(curveid)\n\tserverECDHParams[3] = byte(len(ecdhePublic))\n\tcopy(serverECDHParams[4:], ecdhePublic)\n\n\tsigAndHash := signatureAndHash{signature: ka.sigType}\n\n\tif ka.version \u003e= VersionTLS12 {\n\t\tif sigAndHash.hash, err = pickTLS12HashForSignature(ka.sigType, clientHello.signatureAndHashes); err != nil {\n\t\t\treturn nil, err\n\t\t}\n\t}\n\n\tdigest, hashFunc, err := hashForServerKeyExchange(sigAndHash, ka.version, clientHello.random, hello.random, serverECDHParams)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpriv, ok := cert.PrivateKey.(crypto.Signer)\n\tif !ok {\n\t\treturn nil, errors.New(\"tls: certificate private key does not implement crypto.Signer\")\n\t}\n\tvar sig []byte\n\tswitch ka.sigType {\n\tcase signatureECDSA:\n\t\t_, ok := priv.Public().(*ecdsa.PublicKey)\n\t\tif !ok {\n\t\t\treturn nil, errors.New(\"ECDHE ECDSA requires an ECDSA server key\")\n\t\t}\n\tcase signatureRSA:\n\t\t_, ok := priv.Public().(*rsa.PublicKey)\n\t\tif !ok {\n\t\t\treturn nil, errors.New(\"ECDHE RSA requires a RSA server key\")\n\t\t}\n\tdefault:\n\t\treturn nil, errors.New(\"unknown ECDHE signature algorithm\")\n\t}\n\tsig, err = priv.Sign(config.rand(), digest, hashFunc)\n\tif err != nil {\n\t\treturn nil, errors.New(\"failed to sign ECDHE parameters: \" + err.Error())\n\t}\n\n\tskx := new(serverKeyExchangeMsg)\n\tsigAndHashLen := 0\n\tif ka.version \u003e= VersionTLS12 {\n\t\tsigAndHashLen = 2\n\t}\n\tskx.key = make([]byte, len(serverECDHParams)+sigAndHashLen+2+len(sig))\n\tcopy(skx.key, serverECDHParams)\n\tk := skx.key[len(serverECDHParams):]\n\tif ka.version \u003e= VersionTLS12 {\n\t\tk[0] = sigAndHash.hash\n\t\tk[1] = sigAndHash.signature\n\t\tk = k[2:]\n\t}\n\tk[0] = byte(len(sig) \u003e\u003e 8)\n\tk[1] = byte(len(sig))\n\tcopy(k[2:], sig)\n\n\treturn skx, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "ecdhePublic := elliptic.Marshal(ka.curve, x, y)",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 213,
+        "ParentFunction": "generateServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, hello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg) (*github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "generateClientKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 397,
+    "full_implementation": "func (ka *ecdheKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {\n\tif ka.curve == nil {\n\t\treturn nil, nil, errors.New(\"missing ServerKeyExchange message\")\n\t}\n\tpriv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())\n\tif err != nil {\n\t\treturn nil, nil, err\n\t}\n\tx, _ := ka.curve.ScalarMult(ka.x, ka.y, priv)\n\tpreMasterSecret := make([]byte, (ka.curve.Params().BitSize+7)\u003e\u003e3)\n\txBytes := x.Bytes()\n\tcopy(preMasterSecret[len(preMasterSecret)-len(xBytes):], xBytes)\n\n\tserialized := elliptic.Marshal(ka.curve, mx, my)\n\n\tckx := new(clientKeyExchangeMsg)\n\tckx.ciphertext = make([]byte, 1+len(serialized))\n\tckx.ciphertext[0] = byte(len(serialized))\n\tcopy(ckx.ciphertext[1:], serialized)\n\n\treturn preMasterSecret, ckx, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Marshal",
+      "Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+      "Slicing_Criteria": {
+        "SourceCode": "serialized := elliptic.Marshal(ka.curve, mx, my)",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 397,
+        "ParentFunction": "generateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "processServerKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 317,
+    "full_implementation": "func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHello *clientHelloMsg, serverHello *serverHelloMsg, cert *x509.Certificate, skx *serverKeyExchangeMsg) error {\n\tif len(skx.key) \u003c 4 {\n\t\treturn errServerKeyExchange\n\t}\n\tif skx.key[0] != 3 { // named curve\n\t\treturn errors.New(\"tls: server selected unsupported curve\")\n\t}\n\tcurveid := CurveID(skx.key[1])\u003c\u003c8 | CurveID(skx.key[2])\n\n\tvar ok bool\n\tif ka.curve, ok = curveForCurveID(curveid); !ok {\n\t\treturn errors.New(\"tls: server selected unsupported curve\")\n\t}\n\n\tpublicLen := int(skx.key[3])\n\tif publicLen+4 \u003e len(skx.key) {\n\t\treturn errServerKeyExchange\n\t}\n\tka.x, ka.y = elliptic.Unmarshal(ka.curve, skx.key[4:4+publicLen])\n\tif ka.x == nil {\n\t\treturn errServerKeyExchange\n\t}\n\tif !ka.curve.IsOnCurve(ka.x, ka.y) {\n\t\treturn errServerKeyExchange\n\t}\n\tserverECDHParams := skx.key[:4+publicLen]\n\n\tsig := skx.key[4+publicLen:]\n\tif len(sig) \u003c 2 {\n\t\treturn errServerKeyExchange\n\t}\n\n\tsigAndHash := signatureAndHash{signature: ka.sigType}\n\tif ka.version \u003e= VersionTLS12 {\n\t\t// handle SignatureAndHashAlgorithm\n\t\tsigAndHash = signatureAndHash{hash: sig[0], signature: sig[1]}\n\t\tif sigAndHash.signature != ka.sigType {\n\t\t\treturn errServerKeyExchange\n\t\t}\n\t\tsig = sig[2:]\n\t\tif len(sig) \u003c 2 {\n\t\t\treturn errServerKeyExchange\n\t\t}\n\t}\n\tsigLen := int(sig[0])\u003c\u003c8 | int(sig[1])\n\tif sigLen+2 != len(sig) {\n\t\treturn errServerKeyExchange\n\t}\n\tsig = sig[2:]\n\n\tdigest, hashFunc, err := hashForServerKeyExchange(sigAndHash, ka.version, clientHello.random, serverHello.random, serverECDHParams)\n\tif err != nil {\n\t\treturn err\n\t}\n\tswitch ka.sigType {\n\tcase signatureECDSA:\n\t\tpubKey, ok := cert.PublicKey.(*ecdsa.PublicKey)\n\t\tif !ok {\n\t\t\treturn errors.New(\"ECDHE ECDSA requires a ECDSA server public key\")\n\t\t}\n\t\tecdsaSig := new(ecdsaSignature)\n\t\tif _, err := asn1.Unmarshal(sig, ecdsaSig); err != nil {\n\t\t\treturn err\n\t\t}\n\t\tif ecdsaSig.R.Sign() \u003c= 0 || ecdsaSig.S.Sign() \u003c= 0 {\n\t\t\treturn errors.New(\"ECDSA signature contained zero or negative values\")\n\t\t}\n\t\tif !ecdsa.Verify(pubKey, digest, ecdsaSig.R, ecdsaSig.S) {\n\t\t\treturn errors.New(\"ECDSA verification failure\")\n\t\t}\n\tcase signatureRSA:\n\t\tpubKey, ok := cert.PublicKey.(*rsa.PublicKey)\n\t\tif !ok {\n\t\t\treturn errors.New(\"ECDHE RSA requires a RSA server public key\")\n\t\t}\n\t\tif err := rsa.VerifyPKCS1v15(pubKey, hashFunc, digest, sig); err != nil {\n\t\t\treturn err\n\t\t}\n\tdefault:\n\t\treturn errors.New(\"unknown ECDHE signature algorithm\")\n\t}\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Unmarshal",
+      "Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+      "Slicing_Criteria": {
+        "SourceCode": "ka.x, ka.y = elliptic.Unmarshal(ka.curve, skx.key[4:4+publicLen])",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 317,
+        "ParentFunction": "processServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, serverHello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg, cert *crypto/x509.Certificate, skx *github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg) error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "processClientKeyExchange",
+    "file_path": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+    "line_number": 284,
+    "full_implementation": "func (ka *ecdheKeyAgreement) processClientKeyExchange(config *Config, cert *Certificate, ckx *clientKeyExchangeMsg, version uint16) ([]byte, error) {\n\tif len(ckx.ciphertext) == 0 || int(ckx.ciphertext[0]) != len(ckx.ciphertext)-1 {\n\t\treturn nil, errClientKeyExchange\n\t}\n\tx, y := elliptic.Unmarshal(ka.curve, ckx.ciphertext[1:])\n\tif x == nil {\n\t\treturn nil, errClientKeyExchange\n\t}\n\tif !ka.curve.IsOnCurve(x, y) {\n\t\treturn nil, errClientKeyExchange\n\t}\n\tx, _ = ka.curve.ScalarMult(x, y, ka.privateKey)\n\tpreMasterSecret := make([]byte, (ka.curve.Params().BitSize+7)\u003e\u003e3)\n\txBytes := x.Bytes()\n\tcopy(preMasterSecret[len(preMasterSecret)-len(xBytes):], xBytes)\n\n\treturn preMasterSecret, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/elliptic.Unmarshal",
+      "Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+      "Slicing_Criteria": {
+        "SourceCode": "x, y := elliptic.Unmarshal(ka.curve, ckx.ciphertext[1:])",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+        "SourceLineNum": 284,
+        "ParentFunction": "processClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, ckx *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, version uint16) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "doFullHandshake",
+    "file_path": "/analysis/repo/scan/crypto/tls/handshake_server.go",
+    "line_number": 401,
+    "full_implementation": "func (hs *serverHandshakeState) doFullHandshake() error {\n\tconfig := hs.c.config\n\tc := hs.c\n\n\tif hs.clientHello.ocspStapling \u0026\u0026 len(hs.cert.OCSPStaple) \u003e 0 {\n\t\ths.hello.ocspStapling = true\n\t}\n\n\ths.hello.ticketSupported = hs.clientHello.ticketSupported \u0026\u0026 !config.SessionTicketsDisabled\n\ths.hello.cipherSuite = hs.suite.id\n\n\ths.finishedHash = newFinishedHash(hs.c.vers, hs.suite)\n\tif config.ClientAuth == NoClientCert {\n\t\t// No need to keep a full record of the handshake if client\n\t\t// certificates won't be used.\n\t\ths.finishedHash.discardHandshakeBuffer()\n\t}\n\ths.finishedHash.Write(hs.clientHello.marshal())\n\ths.finishedHash.Write(hs.hello.marshal())\n\tc.writeRecord(recordTypeHandshake, hs.hello.marshal())\n\n\tcertMsg := new(certificateMsg)\n\tcertMsg.certificates = hs.cert.Certificate\n\ths.finishedHash.Write(certMsg.marshal())\n\tc.writeRecord(recordTypeHandshake, certMsg.marshal())\n\n\tif hs.hello.ocspStapling {\n\t\tcertStatus := new(certificateStatusMsg)\n\t\tcertStatus.statusType = statusTypeOCSP\n\t\tcertStatus.response = hs.cert.OCSPStaple\n\t\ths.finishedHash.Write(certStatus.marshal())\n\t\tc.writeRecord(recordTypeHandshake, certStatus.marshal())\n\t}\n\n\tkeyAgreement := hs.suite.ka(c.vers)\n\tskx, err := keyAgreement.generateServerKeyExchange(config, hs.cert, hs.clientHello, hs.hello)\n\tif err != nil {\n\t\tc.sendAlert(alertHandshakeFailure)\n\t\treturn err\n\t}\n\tif skx != nil {\n\t\ths.finishedHash.Write(skx.marshal())\n\t\tc.writeRecord(recordTypeHandshake, skx.marshal())\n\t}\n\n\tif config.ClientAuth \u003e= RequestClientCert {\n\t\t// Request a client certificate\n\t\tcertReq := new(certificateRequestMsg)\n\t\tcertReq.certificateTypes = []byte{\n\t\t\tbyte(certTypeRSASign),\n\t\t\tbyte(certTypeECDSASign),\n\t\t}\n\t\tif c.vers \u003e= VersionTLS12 {\n\t\t\tcertReq.hasSignatureAndHash = true\n\t\t\tcertReq.signatureAndHashes = supportedSignatureAlgorithms\n\t\t}\n\n\t\t// An empty list of certificateAuthorities signals to\n\t\t// the client that it may send any certificate in response\n\t\t// to our request. When we know the CAs we trust, then\n\t\t// we can send them down, so that the client can choose\n\t\t// an appropriate certificate to give to us.\n\t\tif config.ClientCAs != nil {\n\t\t\tcertReq.certificateAuthorities = config.ClientCAs.Subjects()\n\t\t}\n\t\ths.finishedHash.Write(certReq.marshal())\n\t\tc.writeRecord(recordTypeHandshake, certReq.marshal())\n\t}\n\n\thelloDone := new(serverHelloDoneMsg)\n\ths.finishedHash.Write(helloDone.marshal())\n\tc.writeRecord(recordTypeHandshake, helloDone.marshal())\n\n\tvar pub crypto.PublicKey // public key for client auth, if any\n\n\tmsg, err := c.readHandshake()\n\tif err != nil {\n\t\treturn err\n\t}\n\n\tvar ok bool\n\t// If we requested a client certificate, then the client must send a\n\t// certificate message, even if it's empty.\n\tif config.ClientAuth \u003e= RequestClientCert {\n\t\tif certMsg, ok = msg.(*certificateMsg); !ok {\n\t\t\tc.sendAlert(alertUnexpectedMessage)\n\t\t\treturn unexpectedMessageError(certMsg, msg)\n\t\t}\n\t\ths.finishedHash.Write(certMsg.marshal())\n\n\t\tif len(certMsg.certificates) == 0 {\n\t\t\t// The client didn't actually send a certificate\n\t\t\tswitch config.ClientAuth {\n\t\t\tcase RequireAnyClientCert, RequireAndVerifyClientCert:\n\t\t\t\tc.sendAlert(alertBadCertificate)\n\t\t\t\treturn errors.New(\"tls: client didn't provide a certificate\")\n\t\t\t}\n\t\t}\n\n\t\tpub, err = hs.processCertsFromClient(certMsg.certificates)\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\n\t\tmsg, err = c.readHandshake()\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t}\n\n\t// Get client key exchange\n\tckx, ok := msg.(*clientKeyExchangeMsg)\n\tif !ok {\n\t\tc.sendAlert(alertUnexpectedMessage)\n\t\treturn unexpectedMessageError(ckx, msg)\n\t}\n\ths.finishedHash.Write(ckx.marshal())\n\n\tpreMasterSecret, err := keyAgreement.processClientKeyExchange(config, hs.cert, ckx, c.vers)\n\tif err != nil {\n\t\tc.sendAlert(alertHandshakeFailure)\n\t\treturn err\n\t}\n\ths.masterSecret = masterFromPreMasterSecret(c.vers, hs.suite, preMasterSecret, hs.clientHello.random, hs.hello.random)\n\n\t// If we received a client cert in response to our certificate request message,\n\t// the client will send us a certificateVerifyMsg immediately after the\n\t// clientKeyExchangeMsg.  This message is a digest of all preceding\n\t// handshake-layer messages that is signed using the private key corresponding\n\t// to the client's certificate. This allows us to verify that the client is in\n\t// possession of the private key of the certificate.\n\tif len(c.peerCertificates) \u003e 0 {\n\t\tmsg, err = c.readHandshake()\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tcertVerify, ok := msg.(*certificateVerifyMsg)\n\t\tif !ok {\n\t\t\tc.sendAlert(alertUnexpectedMessage)\n\t\t\treturn unexpectedMessageError(certVerify, msg)\n\t\t}\n\n\t\t// Determine the signature type.\n\t\tvar signatureAndHash signatureAndHash\n\t\tif certVerify.hasSignatureAndHash {\n\t\t\tsignatureAndHash = certVerify.signatureAndHash\n\t\t\tif !isSupportedSignatureAndHash(signatureAndHash, supportedSignatureAlgorithms) {\n\t\t\t\treturn errors.New(\"tls: unsupported hash function for client certificate\")\n\t\t\t}\n\t\t} else {\n\t\t\t// Before TLS 1.2 the signature algorithm was implicit\n\t\t\t// from the key type, and only one hash per signature\n\t\t\t// algorithm was possible. Leave the hash as zero.\n\t\t\tswitch pub.(type) {\n\t\t\tcase *ecdsa.PublicKey:\n\t\t\t\tsignatureAndHash.signature = signatureECDSA\n\t\t\tcase *rsa.PublicKey:\n\t\t\t\tsignatureAndHash.signature = signatureRSA\n\t\t\t}\n\t\t}\n\n\t\tswitch key := pub.(type) {\n\t\tcase *ecdsa.PublicKey:\n\t\t\tif signatureAndHash.signature != signatureECDSA {\n\t\t\t\terr = errors.New(\"bad signature type for client's ECDSA certificate\")\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tecdsaSig := new(ecdsaSignature)\n\t\t\tif _, err = asn1.Unmarshal(certVerify.signature, ecdsaSig); err != nil {\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tif ecdsaSig.R.Sign() \u003c= 0 || ecdsaSig.S.Sign() \u003c= 0 {\n\t\t\t\terr = errors.New(\"ECDSA signature contained zero or negative values\")\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tvar digest []byte\n\t\t\tif digest, _, err = hs.finishedHash.hashForClientCertificate(signatureAndHash, hs.masterSecret); err != nil {\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tif !ecdsa.Verify(key, digest, ecdsaSig.R, ecdsaSig.S) {\n\t\t\t\terr = errors.New(\"ECDSA verification failure\")\n\t\t\t}\n\t\tcase *rsa.PublicKey:\n\t\t\tif signatureAndHash.signature != signatureRSA {\n\t\t\t\terr = errors.New(\"bad signature type for client's RSA certificate\")\n\t\t\t\tbreak\n\t\t\t}\n\t\t\tvar digest []byte\n\t\t\tvar hashFunc crypto.Hash\n\t\t\tif digest, hashFunc, err = hs.finishedHash.hashForClientCertificate(signatureAndHash, hs.masterSecret); err != nil {\n\t\t\t\tbreak\n\t\t\t}\n\t\t\terr = rsa.VerifyPKCS1v15(key, hashFunc, digest, certVerify.signature)\n\t\t}\n\t\tif err != nil {\n\t\t\tc.sendAlert(alertBadCertificate)\n\t\t\treturn errors.New(\"tls: could not validate signature of connection nonces: \" + err.Error())\n\t\t}\n\n\t\ths.finishedHash.Write(certVerify.marshal())\n\t}\n\n\ths.finishedHash.discardHandshakeBuffer()\n\n\treturn nil\n}",
+    "vulnerability_info": {
+      "FuncName": "(*crypto/x509.CertPool).Subjects",
+      "Message": "Deprecated: if s was returned by SystemCertPool, Subjects will not include the system roots.",
+      "Slicing_Criteria": {
+        "SourceCode": "certReq.certificateAuthorities = config.ClientCAs.Subjects()",
+        "SourceFilename": "/analysis/repo/scan/crypto/tls/handshake_server.go",
+        "SourceLineNum": 401,
+        "ParentFunction": "doFullHandshake () error"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Warning_Function"
+    }
+  },
+  {
+    "function_name": "intermediateCAScan",
+    "file_path": "/analysis/repo/scan/broad.go",
+    "line_number": 53,
+    "full_implementation": "func intermediateCAScan(addr, hostname string) (grade Grade, output Output, err error) {\n\tcidr, port, _ := net.SplitHostPort(addr)\n\t_, ipnet, err := net.ParseCIDR(cidr)\n\tif err != nil {\n\t\treturn Skipped, nil, nil\n\t}\n\tb, err := bundler.NewBundler(caBundleFile, intBundleFile)\n\tif err != nil {\n\t\treturn\n\t}\n\tvar wg sync.WaitGroup\n\twg.Add(numWorkers)\n\tdialer := \u0026net.Dialer{Timeout: timeout}\n\tconfig := \u0026tls.Config{InsecureSkipVerify: true}\n\taddrs := make(chan string)\n\tchains := make(chan []*x509.Certificate, numWorkers)\n\tgo func() {\n\t\tfor chain := range chains {\n\t\t\tb.Bundle(chain, nil, bundler.Force)\n\t\t}\n\t}()\n\tfor i := 0; i \u003c numWorkers; i++ {\n\t\tgo func() {\n\t\t\tfor addr := range addrs {\n\t\t\t\tconn, err := tls.DialWithDialer(dialer, Network, addr, config)\n\t\t\t\tif err != nil {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tconn.Close()\n\t\t\t\tif conn.ConnectionState().HandshakeComplete {\n\t\t\t\t\tchains \u003c- conn.ConnectionState().PeerCertificates\n\t\t\t\t}\n\t\t\t}\n\t\t\twg.Done()\n\t\t}()\n\t}\n\tfor ip := ipnet.IP.To16(); ipnet.Contains(ip); incrementBytes(ip) {\n\t\taddrs \u003c- net.JoinHostPort(ip.String(), port)\n\t}\n\tclose(addrs)\n\twg.Wait()\n\tclose(chains)\n\tgrade = Good\n\treturn\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/tls.Config::InsecureSkipVerify",
+      "Message": "Insecure Verification",
+      "Slicing_Criteria": {
+        "SourceCode": "config := \u0026tls.Config{InsecureSkipVerify: true}",
+        "SourceFilename": "/analysis/repo/scan/broad.go",
+        "SourceLineNum": 53,
+        "ParentFunction": "intermediateCAScan (addr string, hostname string) (grade github.com/cloudflare/cfssl/scan.Grade, output github.com/cloudflare/cfssl/scan.Output, err error)"
+      },
+      "Def_Use_Link": [
+        {
+          "SourceCode": "config := \u0026tls.Config{InsecureSkipVerify: true}",
+          "SourceFilename": "/analysis/repo/scan/broad.go",
+          "SourceLineNum": 53,
+          "ParentFunction": "intermediateCAScan (addr string, hostname string) (grade github.com/cloudflare/cfssl/scan.Grade, output github.com/cloudflare/cfssl/scan.Output, err error)"
+        }
+      ],
+      "Predicate_Type": "EQ_FALSE"
+    }
+  },
+  {
+    "function_name": "Sign",
+    "file_path": "/analysis/repo/selfsign/selfsign.go",
+    "line_number": 87,
+    "full_implementation": "func Sign(priv crypto.Signer, csrPEM []byte, profile *config.SigningProfile) ([]byte, error) {\n\tif profile == nil {\n\t\treturn nil, cferr.Wrap(cferr.PolicyError, cferr.InvalidPolicy, errors.New(\"no profile for self-signing\"))\n\t}\n\n\tp, _ := pem.Decode(csrPEM)\n\tif p == nil || p.Type != \"CERTIFICATE REQUEST\" {\n\t\treturn nil, cferr.New(cferr.CSRError, cferr.BadRequest)\n\t}\n\n\ttemplate, err := parseCertificateRequest(priv, p.Bytes)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpub := template.PublicKey\n\tencodedpub, err := x509.MarshalPKIXPublicKey(pub)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tvar subPKI subjectPublicKeyInfo\n\t_, err = asn1.Unmarshal(encodedpub, \u0026subPKI)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tpubhash := sha1.New()\n\tpubhash.Write(subPKI.SubjectPublicKey.Bytes)\n\n\tvar (\n\t\teku             []x509.ExtKeyUsage\n\t\tku              x509.KeyUsage\n\t\texpiry          time.Duration\n\t\tcrlURL, ocspURL string\n\t)\n\n\t// The third value returned from Usages is a list of unknown key usages.\n\t// This should be used when validating the profile at load, and isn't used\n\t// here.\n\tku, eku, _ = profile.Usages()\n\texpiry = profile.Expiry\n\n\tif ku == 0 \u0026\u0026 len(eku) == 0 {\n\t\terr = cferr.New(cferr.PolicyError, cferr.NoKeyUsages)\n\t\treturn nil, err\n\t}\n\n\tif expiry == 0 {\n\t\texpiry = threeMonths\n\t}\n\n\tnow := time.Now()\n\tserialNumber, err := rand.Int(rand.Reader, new(big.Int).SetInt64(math.MaxInt64))\n\tif err != nil {\n\t\terr = cferr.Wrap(cferr.CSRError, cferr.Unknown, err)\n\t\treturn nil, err\n\t}\n\n\ttemplate.SerialNumber = serialNumber\n\ttemplate.NotBefore = now.Add(-5 * time.Minute).UTC()\n\ttemplate.NotAfter = now.Add(expiry).UTC()\n\ttemplate.KeyUsage = ku\n\ttemplate.ExtKeyUsage = eku\n\ttemplate.BasicConstraintsValid = true\n\ttemplate.IsCA = profile.CAConstraint.IsCA\n\ttemplate.SubjectKeyId = pubhash.Sum(nil)\n\n\tif ocspURL != \"\" {\n\t\ttemplate.OCSPServer = []string{ocspURL}\n\t}\n\tif crlURL != \"\" {\n\t\ttemplate.CRLDistributionPoints = []string{crlURL}\n\t}\n\n\tif len(profile.IssuerURL) != 0 {\n\t\ttemplate.IssuingCertificateURL = profile.IssuerURL\n\t}\n\n\tcert, err := x509.CreateCertificate(rand.Reader, template, template, pub, priv)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\tcert = pem.EncodeToMemory(\u0026pem.Block{Type: \"CERTIFICATE\", Bytes: cert})\n\treturn cert, nil\n}",
+    "vulnerability_info": {
+      "FuncName": "crypto/sha1.New",
+      "Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+      "Slicing_Criteria": {
+        "SourceCode": "pubhash := sha1.New()",
+        "SourceFilename": "/analysis/repo/selfsign/selfsign.go",
+        "SourceLineNum": 87,
+        "ParentFunction": "Sign (priv crypto.Signer, csrPEM []byte, profile *github.com/cloudflare/cfssl/config.SigningProfile) ([]byte, error)"
+      },
+      "Def_Use_Link": null,
+      "Predicate_Type": "Dangerous_Function"
+    }
+  }
+]
