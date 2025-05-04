@@ -12,13 +12,13 @@ import (
 // TODO this is messy, use cli option instead like cobra
 
 type Config struct {
-	DatasetConfig  *dataset.DatasetConfig
-	DatasetPath    string
-	AnalysisOutDir string
-	Verbose        bool
-	Parallelism    int
-	Timeout        time.Duration
-	DockerDir      string
+	DatasetConfig *dataset.DatasetConfig
+	DatasetPath   string
+	ResultsDir    string
+	Verbose       bool
+	Parallelism   int
+	Timeout       time.Duration
+	DockerDir     string
 }
 
 func ParseFlags() (*Config, error) {
@@ -29,12 +29,12 @@ func ParseFlags() (*Config, error) {
 	verbose := vulnFlagSet.Bool("verbose", false, "Enable verbose output")
 	parallel := vulnFlagSet.Int("parallel", 4, "Number of parallel operations for Docker Compose")
 	dockerDir := vulnFlagSet.String("docker-dir", "internal/docker", "Directory for Docker files")
-	analysisOutDir := vulnFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
+	analysisOutDir := vulnFlagSet.String("out-dir", "results", "Directory for storing analysis results")
 
 	moduleFlagSet.BoolVar(verbose, "verbose", false, "Enable verbose output")
 	moduleFlagSet.IntVar(parallel, "parallel", 4, "Number of parallel operations for Docker Compose")
 	moduleFlagSet.StringVar(dockerDir, "docker-dir", "internal/docker", "Directory for Docker files")
-	moduleFlagSet.String("out-dir", "data/analysis", "Directory for storing analysis results")
+	moduleFlagSet.String("out-dir", "results", "Directory for storing analysis results")
 
 	// Vulnerability-specific flags
 	severity := vulnFlagSet.String("severity", "", "Filter vulnerabilities by severity level")
@@ -82,6 +82,7 @@ func ParseFlags() (*Config, error) {
 			},
 			Type: dataset.ModuleDatasetType,
 		}
+
 	default:
 		return nil, fmt.Errorf("unknown subcommand: %s", os.Args[1])
 	}
@@ -98,13 +99,19 @@ func ParseFlags() (*Config, error) {
 		return nil, fmt.Errorf("input file path is required")
 	}
 
+	datasetPath := inputArgs[0]
+	_, err = os.Stat(datasetPath)
+	if err != nil {
+		return nil, fmt.Errorf("dataset path '%s' does not exist", datasetPath)
+	}
+
 	config := &Config{
-		DatasetConfig:  dsConfig,
-		DatasetPath:    inputArgs[0],
-		AnalysisOutDir: *analysisOutDir,
-		Verbose:        *verbose,
-		Parallelism:    *parallel,
-		DockerDir:      *dockerDir,
+		DatasetConfig: dsConfig,
+		DatasetPath:   datasetPath,
+		ResultsDir:    *analysisOutDir,
+		Verbose:       *verbose,
+		Parallelism:   *parallel,
+		DockerDir:     *dockerDir,
 	}
 
 	return config, nil

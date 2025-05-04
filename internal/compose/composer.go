@@ -24,14 +24,13 @@ func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
 	if ds == nil {
 		panic("dataset cannot be nil")
 	}
-	// Apply default output directory if not set
 	if outDir == "" {
-		outDir = "data/analysis"
+		panic("output directory cannot be empty")
 	}
-	// Apply default parallelism if non-positive
-	if parallelism <= 0 {
-		parallelism = 4
-	}
+
+	parallelism = max(parallelism, 4)
+	parallelism = min(parallelism, 10)
+
 	switch v := ds.(type) {
 	case *dataset.VulnerabilityDataset:
 		return NewVulComposer(v, outDir, parallelism)

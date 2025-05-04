@@ -10,17 +10,12 @@ import (
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/flags"
 )
 
-// run executes the cryptoanalysis workflow and returns an error on failure.
 func run() error {
-	// Parse CLI flags and get input dataset path
 	cfg, err := flags.ParseFlags()
 	if err != nil {
 		return err
 	}
 
-	// TODO a verify function to check if the dataset path is valid
-
-	// Create the dataset
 	ds, err := dataset.CreateDataset(cfg.DatasetPath, cfg.DatasetConfig)
 	if err != nil {
 		return fmt.Errorf("failed to parse dataset: %w", err)
@@ -30,16 +25,13 @@ func run() error {
 	}
 
 	// Initialize composer
-	outDir := filepath.Join("data", "analysis", ds.ID())
-
-	composer := compose.NewComposer(ds, outDir, cfg.Parallelism)
-
-	// Generate Docker Compose configuration
-	composeStr := composer.ComposeStr()
-	if cfg.Verbose {
-		fmt.Println("Generated Docker Compose configuration:")
-		fmt.Println(composeStr)
+	if cfg.ResultsDir == "" {
+		cfg.ResultsDir = filepath.Join("results", ds.ID())
 	}
+
+	// Generate Docker Compose configuration file
+	composer := compose.NewComposer(ds, cfg.ResultsDir, cfg.Parallelism)
+	composeStr := composer.ComposeStr()
 
 	// Write compose file
 	composeFilePath, err := compose.WriteComposeFile(cfg.DockerDir, composeStr)
@@ -51,8 +43,9 @@ func run() error {
 		fmt.Printf("Docker Compose file written to %s\n", composeFilePath)
 	}
 
-	// Cleanup function
-	defer func() {	
+	// defer cleanup
+	// TODO something is off
+	defer func() {
 		if err := compose.StopCompose(composeFilePath); err != nil {
 			fmt.Printf("Warning: cleanup failed: %v\n", err)
 		}
