@@ -16,15 +16,15 @@ const (
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
 	Dataset     *dataset.VulnerabilityDataset
-	OutDir      string
+	ResultsDir  string
 	Parallelism int
 	//MetadataWriter *MetadataWriter
 }
 
-func NewVulComposer(ds *dataset.VulnerabilityDataset, outdir string, parallelism int) *VulComposer {
+func NewVulComposer(ds *dataset.VulnerabilityDataset, outDir string, parallelism int) *VulComposer {
 	return &VulComposer{
 		Dataset:     ds,
-		OutDir:      outdir,
+		ResultsDir:  filepath.Join(outDir, ds.ID()),
 		Parallelism: parallelism,
 	}
 }
@@ -47,9 +47,9 @@ func (vc *VulComposer) ComposeStr() string {
 // addVulServices adds all services for a single vulnerability (potentially multiple packages) to the compose file
 func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability) string {
 	var services strings.Builder
+	sb := NewServiceBuilder(vc.ResultsDir)
 
 	for pkgIndex, pkg := range vuln.VulPackages {
-		// Skip packages with no identified vulnerable git tags
 		if pkg.GitTag == "" {
 			fmt.Printf("Warning: skipping package %s with no git tag\n", pkg.Name)
 			continue
@@ -60,28 +60,27 @@ func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability) string {
 			pkg.GoVersion = DefaultGoVersion
 		}
 
-		// Generate service name and paths
-		vulnID := strconv.Itoa(vuln.ID)
-		pkgID := strconv.Itoa(pkgIndex + 1) // 1-based index for better readability
-		uniqueID := fmt.Sprintf("%s-%s", vulnID, pkgID)
-		serviceName := generateServiceName(vuln.Repo.RepoSlug, uniqueID)
-		analysisDir := filepath.Join(vc.OutDir, serviceName)
+		serviceName := vc.generateUniqueServiceName(vuln.Repo.RepoSlug, strconv.Itoa(vuln.ID), strconv.Itoa(pkgIndex+1))
+		service, err := sb.FromVulnerability(vuln, pkg, serviceName)
 
-		// Write metadata for this package
-		metadataWriter := NewMetadataWriter(vc.OutDir)
-		if err := metadataWriter.WriteVulMetadata(vuln, pkg, serviceName); err != nil {
-			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
+		if err != nil {
+			fmt.Printf("Warning: failed to create service for %s: %v\n", serviceName, err)
+			continue
 		}
-
-		// Add service configuration
-		serviceStr := generateServiceStr(vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, serviceName, analysisDir)
-		services.WriteString(serviceStr)
+		services.WriteString(service.GenerateStr())
 	}
-
 	return services.String()
+}
+
+func (vc *VulComposer) generateUniqueServiceName(repo, vulID, pkgID string) string {
+	return strings.ToLower(fmt.Sprintf("%s-%s-%s", strings.ReplaceAll(repo, "/", "-"), vulID, pkgID))
 }
 
 // RunCompose executes the Docker Compose configuration with parallelism
 func (vc *VulComposer) RunCompose(composeFilePath string) error {
 	return RunCompose(composeFilePath, vc.Parallelism)
+}
+
+func (vc *VulComposer) StopCompose(composeFilePath string) error {
+	return StopCompose(composeFilePath)
 }

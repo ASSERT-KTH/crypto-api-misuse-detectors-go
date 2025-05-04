@@ -11,6 +11,11 @@ import (
 )
 
 func run() error {
+
+	// tools := []string{"gopher", "gosec", "codeql"}
+	// gopher := sast.Tool{}
+	// tools := []sast.Tool{sast.Tool{}}
+
 	cfg, err := flags.ParseFlags()
 	if err != nil {
 		return err
@@ -44,9 +49,8 @@ func run() error {
 	}
 
 	// defer cleanup
-	// TODO something is off
 	defer func() {
-		if err := compose.StopCompose(composeFilePath); err != nil {
+		if err := composer.StopCompose(composeFilePath); err != nil {
 			fmt.Printf("Warning: cleanup failed: %v\n", err)
 		}
 	}()

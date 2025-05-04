@@ -6,19 +6,21 @@ import (
 	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
 )
 
 // ModComposer implements the Composer interface for module datasets
 type ModComposer struct {
 	Dataset     *dataset.ModuleDataset
-	OutDir      string
+	ResultsDir  string
 	Parallelism int
+	Tools       []sast.Tool
 }
 
 func NewModComposer(ds *dataset.ModuleDataset, outDir string, parallelism int) *ModComposer {
 	return &ModComposer{
 		Dataset:     ds,
-		OutDir:      outDir,
+		ResultsDir:  filepath.Join(outDir, ds.ID()),
 		Parallelism: parallelism,
 	}
 }
@@ -41,25 +43,29 @@ func (mc *ModComposer) ComposeStr() string {
 // addModServices adds all services for a single module to the compose file
 func (mc *ModComposer) addModServices(mod dataset.Module) string {
 	var services strings.Builder
+	sb := NewServiceBuilder(mc.ResultsDir)
+	serviceName := mc.generateUniqueServiceName(mod.URL)
+	service, err := sb.FromModule(mod, serviceName)
 
-	// Generate service name and paths
-	serviceName := generateServiceName(mod.RepoName, "mod0-pkg1")
-	analysisDir := filepath.Join(mc.OutDir, serviceName)
-
-	// Write metadata for this package
-	metadataWriter := NewMetadataWriter(mc.OutDir)
-	if err := metadataWriter.WriteModuleMetadata(mod, serviceName); err != nil {
-		fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
+	if err != nil {
+		fmt.Printf("Warning: failed to create service for %s: %v\n", serviceName, err)
+	} else {
+		services.WriteString(service.GenerateStr())
 	}
-
-	// Add service configuration
-	serviceStr := generateServiceStr(mod.URL, mod.ReleaseTag, mod.GoVersion, serviceName, analysisDir)
-	services.WriteString(serviceStr)
-
 	return services.String()
+}
+
+func (mc *ModComposer) generateUniqueServiceName(repoURL string) string {
+	cleanPrefix := strings.TrimPrefix(strings.TrimPrefix(repoURL, "https://"), "http://")
+	cleanURL := strings.ReplaceAll(cleanPrefix, "/", "-")
+	return strings.ToLower(cleanURL)
 }
 
 // RunCompose executes the Docker Compose configuration with parallelism
 func (mc *ModComposer) RunCompose(composeFilePath string) error {
 	return RunCompose(composeFilePath, mc.Parallelism)
+}
+
+func (mc *ModComposer) StopCompose(composeFilePath string) error {
+	return StopCompose(composeFilePath)
 }

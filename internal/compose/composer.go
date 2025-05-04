@@ -16,7 +16,8 @@ type Composer interface {
 	ComposeStr() string
 	// RunCompose executes the Docker Compose configuration
 	RunCompose(composeFilePath string) error
-	// TODO add "up"
+	// StopCompose stops all services in the compose file
+	StopCompose(composeFilePath string) error
 }
 
 // NewComposer creates a new Composer based on the dataset type
@@ -31,14 +32,32 @@ func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
 	parallelism = max(parallelism, 4)
 	parallelism = min(parallelism, 10)
 
-	switch v := ds.(type) {
+	switch d := ds.(type) {
 	case *dataset.VulnerabilityDataset:
-		return NewVulComposer(v, outDir, parallelism)
+		return NewVulComposer(d, outDir, parallelism)
 	case *dataset.ModuleDataset:
-		return NewModComposer(v, outDir, parallelism)
+		return NewModComposer(d, outDir, parallelism)
 	default:
 		panic("unsupported dataset type")
 	}
+}
+
+// generateComposeHeader creates the common header for all compose files
+func generateComposeHeader() string {
+	return "version: '3.8'\n\nservices:\n"
+}
+
+// generateVolumeConfig creates the volume configuration
+func generateVolumeConfig() string {
+	return `
+volumes:
+  gopher:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${BASE_DIR}/gopher
+      o: bind
+`
 }
 
 // RunCompose executes docker compose with the given file path and parallelism level
@@ -68,7 +87,7 @@ func StopCompose(composeFilePath string) error {
 	return nil
 }
 
-// writeComposeFile ensures the target directory exists and writes the Docker Compose YAML.
+// WriteComposeFile ensures the target directory exists and writes the Docker Compose YAML.
 // It returns the full path to the compose file.
 func WriteComposeFile(dir, content string) (string, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -80,20 +99,3 @@ func WriteComposeFile(dir, content string) (string, error) {
 	}
 	return path, nil
 }
-
-// func createEnvFile(envPath string) error {
-// 	// if no .env file in the directory, create one
-// 	envPath := filepath.Join(dir, ".env")
-// 	if _, err := os.Stat(envPath); os.IsNotExist(err) {
-// 		// Also write a .env file so ${BASE_DIR} is set for variable substitution
-// 		cwd, err := os.Getwd()
-// 		if err != nil {
-// 			return "", fmt.Errorf("failed to get working directory for BASE_DIR: %w", err)
-// 		}
-// 		envContent := fmt.Sprintf("BASE_DIR=%s\n", cwd)
-// 		envPath := filepath.Join(dir, ".env")
-// 		if err := os.WriteFile(envPath, []byte(envContent), 0644); err != nil {
-// 			return "", fmt.Errorf("failed to write .env file: %w", err)
-// 		}
-// 	}
-// }

@@ -1,4 +1,4 @@
-package compose
+package log
 
 import (
 	"encoding/json"
@@ -10,7 +10,6 @@ import (
 )
 
 // TODO needs many refactoring
-
 
 // VulnerabilityMetadata represents the metadata for a vulnerability
 type VulnerabilityMetadata struct {
