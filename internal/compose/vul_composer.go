@@ -2,7 +2,6 @@ package compose
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -15,65 +14,72 @@ const (
 
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
-	Dataset     *dataset.VulnerabilityDataset
-	ResultsDir  string
-	Parallelism int
-	//MetadataWriter *MetadataWriter
+	Dataset *dataset.VulnerabilityDataset
+	BaseComposer
 }
 
-func NewVulComposer(ds *dataset.VulnerabilityDataset, outDir string, parallelism int) *VulComposer {
+func NewVulComposer(ds *dataset.VulnerabilityDataset, base BaseComposer) *VulComposer {
 	return &VulComposer{
-		Dataset:     ds,
-		ResultsDir:  filepath.Join(outDir, ds.ID()),
-		Parallelism: parallelism,
+		Dataset:      ds,
+		BaseComposer: base,
 	}
 }
 
 // ComposeStr constructs the complete Docker Compose YAML content as a string
 func (vc *VulComposer) ComposeStr() string {
-	// Generate the Docker Compose YAML content
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
 
 	for _, vul := range vc.Dataset.GetVulnerabilities() {
-		services := vc.addVulServices(vul)
-		composeBuilder.WriteString(services)
+		composeBuilder.WriteString(vc.generateVulServices(vul))
 	}
 
 	composeBuilder.WriteString(generateVolumeConfig())
 	return composeBuilder.String()
 }
 
-// addVulServices adds all services for a single vulnerability (potentially multiple packages) to the compose file
-func (vc *VulComposer) addVulServices(vuln dataset.Vulnerability) string {
-	var services strings.Builder
-	sb := NewServiceBuilder(vc.ResultsDir)
+// generateVulServices generates services for a single vulnerability
+func (vc *VulComposer) generateVulServices(vul dataset.Vulnerability) string {
+	var builder strings.Builder
+	sb := NewServiceBuilder(vc.ResultsDir, vc.Tools)
 
-	for pkgIndex, pkg := range vuln.VulPackages {
+	for i, pkg := range vul.VulPackages {
 		if pkg.GitTag == "" {
 			fmt.Printf("Warning: skipping package %s with no git tag\n", pkg.Name)
 			continue
 		}
 
-		// Set default Go version if not specified
-		if pkg.GoVersion == "" {
-			pkg.GoVersion = DefaultGoVersion
-		}
-
-		serviceName := vc.generateUniqueServiceName(vuln.Repo.RepoSlug, strconv.Itoa(vuln.ID), strconv.Itoa(pkgIndex+1))
-		service, err := sb.FromVulnerability(vuln, pkg, serviceName)
-
-		if err != nil {
-			fmt.Printf("Warning: failed to create service for %s: %v\n", serviceName, err)
-			continue
-		}
-		services.WriteString(service.GenerateStr())
+		builder.WriteString(vc.generatePkgServices(sb, vul, pkg, i))
 	}
-	return services.String()
+
+	return builder.String()
 }
 
-func (vc *VulComposer) generateUniqueServiceName(repo, vulID, pkgID string) string {
-	return strings.ToLower(fmt.Sprintf("%s-%s-%s", strings.ReplaceAll(repo, "/", "-"), vulID, pkgID))
+// generatePkgServices generates services for a single package
+func (vc *VulComposer) generatePkgServices(sb *ServiceBuilder, vul dataset.Vulnerability, pkg dataset.VulPackage, pkgIndex int) string {
+	var builder strings.Builder
+
+	pkgID := fmt.Sprintf("%s-%d", strconv.Itoa(vul.ID), pkgIndex+1)
+	baseServiceName, err := generateServiceName(vul.Repo.URL, pkgID)
+	if err != nil {
+		fmt.Printf("Warning: failed to generate service name for %s: %v\n", pkgID, err)
+		return builder.String()
+	}
+
+	if pkg.GoVersion == "" {
+		pkg.GoVersion = DefaultGoVersion
+	}
+	toolServices, err := sb.FromVulnerability(vul, pkg, baseServiceName)
+	if err != nil {
+		fmt.Printf("Warning: failed to create services for %s: %v\n", baseServiceName, err)
+		return builder.String()
+	}
+
+	for _, service := range toolServices {
+		builder.WriteString(service.GenerateStr())
+	}
+
+	return builder.String()
 }
 
 // RunCompose executes the Docker Compose configuration with parallelism

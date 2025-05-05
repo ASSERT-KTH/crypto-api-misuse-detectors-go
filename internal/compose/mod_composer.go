@@ -2,63 +2,58 @@ package compose
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
 )
 
 // ModComposer implements the Composer interface for module datasets
 type ModComposer struct {
-	Dataset     *dataset.ModuleDataset
-	ResultsDir  string
-	Parallelism int
-	Tools       []sast.Tool
+	Dataset *dataset.ModuleDataset
+	BaseComposer
 }
 
-func NewModComposer(ds *dataset.ModuleDataset, outDir string, parallelism int) *ModComposer {
+func NewModComposer(ds *dataset.ModuleDataset, base BaseComposer) *ModComposer {
 	return &ModComposer{
-		Dataset:     ds,
-		ResultsDir:  filepath.Join(outDir, ds.ID()),
-		Parallelism: parallelism,
+		Dataset:      ds,
+		BaseComposer: base,
 	}
 }
 
 // ComposeStr constructs the complete Docker Compose YAML content as a string
 func (mc *ModComposer) ComposeStr() string {
-	// Generate the Docker Compose YAML content
 	var composeBuilder strings.Builder
 	composeBuilder.WriteString(generateComposeHeader())
 
 	for _, mod := range mc.Dataset.GetModules() {
-		services := mc.addModServices(mod)
-		composeBuilder.WriteString(services)
+		composeBuilder.WriteString(mc.generateModServices(mod))
 	}
 
 	composeBuilder.WriteString(generateVolumeConfig())
 	return composeBuilder.String()
 }
 
-// addModServices adds all services for a single module to the compose file
-func (mc *ModComposer) addModServices(mod dataset.Module) string {
-	var services strings.Builder
-	sb := NewServiceBuilder(mc.ResultsDir)
-	serviceName := mc.generateUniqueServiceName(mod.URL)
-	service, err := sb.FromModule(mod, serviceName)
+// generateModServices generates services for a single module
+func (mc *ModComposer) generateModServices(mod dataset.Module) string {
+	var builder strings.Builder
+	sb := NewServiceBuilder(mc.ResultsDir, mc.Tools)
 
+	baseServiceName, err := generateServiceName(mod.URL, "")
 	if err != nil {
-		fmt.Printf("Warning: failed to create service for %s: %v\n", serviceName, err)
-	} else {
-		services.WriteString(service.GenerateStr())
+		fmt.Printf("Warning: failed to generate service name for %s: %v\n", mod.URL, err)
+		return builder.String()
 	}
-	return services.String()
-}
 
-func (mc *ModComposer) generateUniqueServiceName(repoURL string) string {
-	cleanPrefix := strings.TrimPrefix(strings.TrimPrefix(repoURL, "https://"), "http://")
-	cleanURL := strings.ReplaceAll(cleanPrefix, "/", "-")
-	return strings.ToLower(cleanURL)
+	toolServices, err := sb.FromModule(mod, baseServiceName)
+	if err != nil {
+		fmt.Printf("Warning: failed to create services for %s: %v\n", baseServiceName, err)
+	} else {
+		for _, service := range toolServices {
+			builder.WriteString(service.GenerateStr())
+		}
+	}
+
+	return builder.String()
 }
 
 // RunCompose executes the Docker Compose configuration with parallelism

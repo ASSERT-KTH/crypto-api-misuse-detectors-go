@@ -8,14 +8,10 @@ import (
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/flags"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/tools"
 )
 
 func run() error {
-
-	// tools := []string{"gopher", "gosec", "codeql"}
-	// gopher := sast.Tool{}
-	// tools := []sast.Tool{sast.Tool{}}
-
 	cfg, err := flags.ParseFlags()
 	if err != nil {
 		return err
@@ -34,8 +30,13 @@ func run() error {
 		cfg.ResultsDir = filepath.Join("results", ds.ID())
 	}
 
+	tools := []tools.Tool{
+		tools.GopherTool,
+		tools.CodeQLTool,
+	}
+
 	// Generate Docker Compose configuration file
-	composer := compose.NewComposer(ds, cfg.ResultsDir, cfg.Parallelism)
+	composer := compose.NewComposer(ds, cfg.ResultsDir, cfg.Parallelism, tools)
 	composeStr := composer.ComposeStr()
 
 	// Write compose file

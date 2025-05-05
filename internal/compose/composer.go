@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/tools"
 )
 
 // Composer interface defines methods for generating Docker Compose configurations
@@ -20,23 +21,48 @@ type Composer interface {
 	StopCompose(composeFilePath string) error
 }
 
+// BaseComposer contains common fields and methods for all composers
+type BaseComposer struct {
+	ResultsDir  string
+	Parallelism int
+	Tools       []tools.Tool
+}
+
+func NewBaseComposer(outDir string, parallelism int, tools []tools.Tool) BaseComposer {
+	return BaseComposer{
+		ResultsDir:  outDir,
+		Parallelism: parallelism,
+		Tools:       tools,
+	}
+}
+
 // NewComposer creates a new Composer based on the dataset type
-func NewComposer(ds dataset.Dataset, outDir string, parallelism int) Composer {
+func NewComposer(ds dataset.Dataset, outDir string, parallelism int, tools []tools.Tool) Composer {
 	if ds == nil {
 		panic("dataset cannot be nil")
 	}
 	if outDir == "" {
 		panic("output directory cannot be empty")
 	}
+	if len(tools) == 0 {
+		panic("at least one tool must be specified")
+	}
 
-	parallelism = max(parallelism, 4)
-	parallelism = min(parallelism, 10)
+	// Ensure parallelism is within bounds
+	if parallelism < 4 {
+		parallelism = 4
+	} else if parallelism > 10 {
+		parallelism = 10
+	}
+
+	// Create base composer with common configuration
+	base := NewBaseComposer(filepath.Join(outDir, ds.ID()), parallelism, tools)
 
 	switch d := ds.(type) {
 	case *dataset.VulnerabilityDataset:
-		return NewVulComposer(d, outDir, parallelism)
+		return NewVulComposer(d, base)
 	case *dataset.ModuleDataset:
-		return NewModComposer(d, outDir, parallelism)
+		return NewModComposer(d, base)
 	default:
 		panic("unsupported dataset type")
 	}
@@ -62,8 +88,6 @@ volumes:
 
 // RunCompose executes docker compose with the given file path and parallelism level
 func RunCompose(composeFilePath string, parallelism int) error {
-	// TODO Check if the compose file and env file and dockerfile exists
-
 	// Build the docker compose command with parallelism
 	cmd := exec.Command("docker", "compose", "--parallel", fmt.Sprintf("%d", parallelism), "-f", composeFilePath, "up", "--build")
 	cmd.Env = append(cmd.Env, "DOCKER_CLIENT_TIMEOUT=60")
