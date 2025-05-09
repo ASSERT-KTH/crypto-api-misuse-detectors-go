@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/tools"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
 )
 
 // Composer interface defines methods for generating Docker Compose configurations
@@ -25,10 +25,10 @@ type Composer interface {
 type BaseComposer struct {
 	ResultsDir  string
 	Parallelism int
-	Tools       []tools.Tool
+	Tools       []sast.Tool
 }
 
-func NewBaseComposer(outDir string, parallelism int, tools []tools.Tool) BaseComposer {
+func NewBaseComposer(outDir string, parallelism int, tools []sast.Tool) BaseComposer {
 	return BaseComposer{
 		ResultsDir:  outDir,
 		Parallelism: parallelism,
@@ -37,7 +37,7 @@ func NewBaseComposer(outDir string, parallelism int, tools []tools.Tool) BaseCom
 }
 
 // NewComposer creates a new Composer based on the dataset type
-func NewComposer(ds dataset.Dataset, outDir string, parallelism int, tools []tools.Tool) Composer {
+func NewComposer(ds dataset.Dataset, outDir string, parallelism int, tools []sast.Tool) Composer {
 	if ds == nil {
 		panic("dataset cannot be nil")
 	}

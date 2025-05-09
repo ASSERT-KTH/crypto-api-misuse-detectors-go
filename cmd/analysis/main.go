@@ -8,7 +8,7 @@ import (
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/compose"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/flags"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/tools"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
 )
 
 func run() error {
@@ -30,9 +30,9 @@ func run() error {
 		cfg.ResultsDir = filepath.Join("results", ds.ID())
 	}
 
-	tools := []tools.Tool{
-		tools.GopherTool,
-		tools.CodeQLTool,
+	tools := []sast.Tool{
+		sast.GopherTool,
+		sast.CodeQLTool,
 	}
 
 	// Generate Docker Compose configuration file

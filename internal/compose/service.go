@@ -6,19 +6,19 @@ import (
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 	logger "github.com/ASSERT-KTH/go-cryptoapi/internal/log"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/tools"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
 	"github.com/go-playground/validator/v10"
 )
 
 type Service struct {
-	ServiceName string     `validate:"required"`
-	RepoURL     string     `validate:"required"`
-	GitTag      string     `validate:"required"`
-	GoVersion   string     `validate:"required"`
-	Tool        tools.Tool `validate:"required"`
+	ServiceName string    `validate:"required"`
+	RepoURL     string    `validate:"required"`
+	GitTag      string    `validate:"required"`
+	GoVersion   string    `validate:"required"`
+	Tool        sast.Tool `validate:"required"`
 }
 
-func NewService(serviceName, dsResultsDir, repoURL, gitTag, goVersion string, tool tools.Tool) (Service, error) {
+func NewService(serviceName, dsResultsDir, repoURL, gitTag, goVersion string, tool sast.Tool) (Service, error) {
 	s := Service{
 		ServiceName: serviceName,
 		RepoURL:     repoURL,
@@ -72,10 +72,10 @@ func (s *Service) GenerateStr() string {
 // Creates service instances from vulnerabilities or modules
 type ServiceBuilder struct {
 	ResultsDir string
-	Tools      []tools.Tool
+	Tools      []sast.Tool
 }
 
-func NewServiceBuilder(resultsDir string, tools []tools.Tool) *ServiceBuilder {
+func NewServiceBuilder(resultsDir string, tools []sast.Tool) *ServiceBuilder {
 	return &ServiceBuilder{
 		ResultsDir: resultsDir,
 		Tools:      tools,
