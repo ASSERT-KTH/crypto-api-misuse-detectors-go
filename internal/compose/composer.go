@@ -19,17 +19,19 @@ type Composer interface {
 	RunCompose(composeFilePath string) error
 	// StopCompose stops all services in the compose file
 	StopCompose(composeFilePath string) error
+	// GetConfig returns the composer's configuration
+	GetConfig() Config
 }
 
-// BaseComposer contains common fields and methods for all composers
-type BaseComposer struct {
+// Config contains common configuration for all composers
+type Config struct {
 	ResultsDir  string
 	Parallelism int
 	Tools       []sast.Tool
 }
 
-func NewBaseComposer(outDir string, parallelism int, tools []sast.Tool) BaseComposer {
-	return BaseComposer{
+func NewConfig(outDir string, parallelism int, tools []sast.Tool) Config {
+	return Config{
 		ResultsDir:  outDir,
 		Parallelism: parallelism,
 		Tools:       tools,
@@ -55,35 +57,17 @@ func NewComposer(ds dataset.Dataset, outDir string, parallelism int, tools []sas
 		parallelism = 10
 	}
 
-	// Create base composer with common configuration
-	base := NewBaseComposer(filepath.Join(outDir, ds.ID()), parallelism, tools)
+	// Create config with common configuration
+	config := NewConfig(filepath.Join(outDir, ds.ID()), parallelism, tools)
 
 	switch d := ds.(type) {
 	case *dataset.VulnerabilityDataset:
-		return NewVulComposer(d, base)
+		return NewVulComposer(d, config)
 	case *dataset.ModuleDataset:
-		return NewModComposer(d, base)
+		return NewModComposer(d, config)
 	default:
 		panic("unsupported dataset type")
 	}
-}
-
-// generateComposeHeader creates the common header for all compose files
-func generateComposeHeader() string {
-	return "version: '3.8'\n\nservices:\n"
-}
-
-// generateVolumeConfig creates the volume configuration
-func generateVolumeConfig() string {
-	return `
-volumes:
-  gopher:
-    driver: local
-    driver_opts:
-      type: none
-      device: ${BASE_DIR}/gopher
-      o: bind
-`
 }
 
 // RunCompose executes docker compose with the given file path and parallelism level

@@ -1,8 +1,5 @@
 package sast
 
-// GopherTool is a constant that implements the Tool interface
-var GopherTool Tool = gopherTool{}
-
 type gopherTool struct{}
 
 func (gopherTool) Name() string {
@@ -11,8 +8,13 @@ func (gopherTool) Name() string {
 
 func (gopherTool) GetDockerConfig() DockerConfig {
 	return DockerConfig{
-		Volumes:   "gopher:/analysis/gopher",
-		Command:   "./gopher ../repo && ../rename_json.sh ../repo",
-		OutputDir: "/analysis/repo/scan_results",
+		VolumeName:      "gopher",
+		VolumeTopLevel:  "${BASE_DIR}/gopher",
+		VolumeAttribute: "gopher:/analysis/gopher",
+		Command:         "./gopher ../repo && ../rename_json.sh ../repo",
+		OutputDir:       "/analysis/repo/scan_results",
 	}
 }
+
+// GopherTool is a constant that implements the Tool interface
+var GopherTool Tool = gopherTool{}

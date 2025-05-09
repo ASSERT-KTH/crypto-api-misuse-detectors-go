@@ -15,14 +15,19 @@ const (
 // VulComposer implements the Composer interface for vulnerability datasets
 type VulComposer struct {
 	Dataset *dataset.VulnerabilityDataset
-	BaseComposer
+	config  Config
 }
 
-func NewVulComposer(ds *dataset.VulnerabilityDataset, base BaseComposer) *VulComposer {
+func NewVulComposer(ds *dataset.VulnerabilityDataset, config Config) *VulComposer {
 	return &VulComposer{
-		Dataset:      ds,
-		BaseComposer: base,
+		Dataset: ds,
+		config:  config,
 	}
+}
+
+// GetConfig returns the composer's configuration
+func (vc *VulComposer) GetConfig() Config {
+	return vc.config
 }
 
 // ComposeStr constructs the complete Docker Compose YAML content as a string
@@ -34,14 +39,14 @@ func (vc *VulComposer) ComposeStr() string {
 		composeBuilder.WriteString(vc.generateVulServices(vul))
 	}
 
-	composeBuilder.WriteString(generateVolumeConfig())
+	composeBuilder.WriteString(generateVolumeTopLevel(vc))
 	return composeBuilder.String()
 }
 
 // generateVulServices generates services for a single vulnerability
 func (vc *VulComposer) generateVulServices(vul dataset.Vulnerability) string {
 	var builder strings.Builder
-	sb := NewServiceBuilder(vc.ResultsDir, vc.Tools)
+	sb := NewServiceBuilder(vc.config.ResultsDir, vc.config.Tools)
 
 	for i, pkg := range vul.VulPackages {
 		if pkg.GitTag == "" {
@@ -84,7 +89,7 @@ func (vc *VulComposer) generatePkgServices(sb *ServiceBuilder, vul dataset.Vulne
 
 // RunCompose executes the Docker Compose configuration with parallelism
 func (vc *VulComposer) RunCompose(composeFilePath string) error {
-	return RunCompose(composeFilePath, vc.Parallelism)
+	return RunCompose(composeFilePath, vc.config.Parallelism)
 }
 
 func (vc *VulComposer) StopCompose(composeFilePath string) error {

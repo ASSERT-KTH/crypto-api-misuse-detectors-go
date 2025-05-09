@@ -2,6 +2,7 @@ package compose
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
@@ -10,37 +11,39 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// Service represents a single Docker Compose service.
 type Service struct {
-	ServiceName string    `validate:"required"`
-	RepoURL     string    `validate:"required"`
-	GitTag      string    `validate:"required"`
-	GoVersion   string    `validate:"required"`
-	Tool        sast.Tool `validate:"required"`
+	ContainerName string    `validate:"required"`
+	OutputDir     string    `validate:"required"`
+	RepoURL       string    `validate:"required"`
+	GitTag        string    `validate:"required"`
+	GoVersion     string    `validate:"required"`
+	Tool          sast.Tool `validate:"required"`
 }
 
-func NewService(serviceName, dsResultsDir, repoURL, gitTag, goVersion string, tool sast.Tool) (Service, error) {
+// NewService creates a new Service instance.
+func NewService(containerName, outputDir, repoURL, gitTag, goVersion string, tool sast.Tool) (Service, error) {
 	s := Service{
-		ServiceName: serviceName,
-		RepoURL:     repoURL,
-		GitTag:      gitTag,
-		GoVersion:   goVersion,
-		Tool:        tool,
+		ContainerName: containerName,
+		OutputDir:     outputDir,
+		RepoURL:       repoURL,
+		GitTag:        gitTag,
+		GoVersion:     goVersion,
+		Tool:          tool,
 	}
 
 	validate := validator.New()
-	err := validate.Struct(s)
-	if err != nil {
-		for _, err := range err.(validator.ValidationErrors) {
-			return Service{}, fmt.Errorf("field '%s' failed validation: %s\n", err.Field(), err.Tag())
-		}
+	if err := validate.Struct(s); err != nil {
+		return Service{}, err
 	}
 	return s, nil
 }
 
+// GenerateStr generates the Docker Compose YAML for the service.
 func (s *Service) GenerateStr() string {
 	var serviceBuilder strings.Builder
 
-	serviceBuilder.WriteString(fmt.Sprintf("  %s:\n", s.ServiceName))
+	serviceBuilder.WriteString(fmt.Sprintf("  %s:\n", s.ContainerName))
 
 	// Build configuration
 	serviceBuilder.WriteString("    build:\n")
@@ -50,17 +53,20 @@ func (s *Service) GenerateStr() string {
 	serviceBuilder.WriteString(fmt.Sprintf("        GO_VERSION: \"%s\"\n", s.GoVersion))
 
 	// Container name
-	serviceBuilder.WriteString(fmt.Sprintf("    container_name: %s\n", s.ServiceName))
+	serviceBuilder.WriteString(fmt.Sprintf("    container_name: %s\n", s.ContainerName))
 
 	// Volumes from tool config
 	serviceBuilder.WriteString("    volumes:\n")
 
 	// Add tool volumes and output directory
 	config := s.Tool.GetDockerConfig()
-	serviceBuilder.WriteString(fmt.Sprintf("      - %s\n", config.Volumes))
+	if err := sast.ValidateDockerConfig(config); err != nil {
+		return fmt.Sprintf("  %s:\n    # Error: %v\n", s.ContainerName, err)
+	}
+	serviceBuilder.WriteString(fmt.Sprintf("      - %s\n", config.VolumeAttribute))
 	if config.OutputDir != "" {
 		serviceBuilder.WriteString(fmt.Sprintf("      - ${BASE_DIR}/%s:%s\n",
-			s.ServiceName, config.OutputDir))
+			s.OutputDir, config.OutputDir))
 	}
 
 	// Command from tool config
@@ -69,12 +75,13 @@ func (s *Service) GenerateStr() string {
 	return serviceBuilder.String()
 }
 
-// Creates service instances from vulnerabilities or modules
+// ServiceBuilder helps create Service instances for vulnerabilities or modules.
 type ServiceBuilder struct {
 	ResultsDir string
 	Tools      []sast.Tool
 }
 
+// NewServiceBuilder creates a new ServiceBuilder.
 func NewServiceBuilder(resultsDir string, tools []sast.Tool) *ServiceBuilder {
 	return &ServiceBuilder{
 		ResultsDir: resultsDir,
@@ -82,18 +89,21 @@ func NewServiceBuilder(resultsDir string, tools []sast.Tool) *ServiceBuilder {
 	}
 }
 
+// FromVulnerability creates services for a vulnerability.
 func (sb *ServiceBuilder) FromVulnerability(vuln dataset.Vulnerability, pkg dataset.VulPackage, baseServiceName string) ([]Service, error) {
 	var services []Service
 	for _, tool := range sb.Tools {
-		serviceName := fmt.Sprintf("%s-%s", baseServiceName, tool.Name())
-		if err := logger.NewMetadataWriter(sb.ResultsDir).WriteVulMetadata(vuln, pkg, serviceName); err != nil {
-			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
+		containerName := fmt.Sprintf("%s-%s", baseServiceName, tool.Name())
+		outputDir := filepath.Join("vulnerability", baseServiceName, tool.Name())
+
+		if err := logger.NewMetadataWriter(sb.ResultsDir).WriteVulMetadata(vuln, pkg, outputDir); err != nil {
+			fmt.Printf("Warning: failed to write metadata for %s: %v\n", outputDir, err)
 			continue
 		}
 
-		service, err := NewService(serviceName, sb.ResultsDir, vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, tool)
+		service, err := NewService(containerName, outputDir, vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, tool)
 		if err != nil {
-			fmt.Printf("Warning: failed to create service for %s: %v\n", serviceName, err)
+			fmt.Printf("Warning: failed to create service for %s: %v\n", containerName, err)
 			continue
 		}
 		services = append(services, service)
@@ -101,18 +111,21 @@ func (sb *ServiceBuilder) FromVulnerability(vuln dataset.Vulnerability, pkg data
 	return services, nil
 }
 
+// FromModule creates services for a module.
 func (sb *ServiceBuilder) FromModule(mod dataset.Module, baseServiceName string) ([]Service, error) {
 	var services []Service
 	for _, tool := range sb.Tools {
-		serviceName := fmt.Sprintf("%s-%s", baseServiceName, tool.Name())
-		if err := logger.NewMetadataWriter(sb.ResultsDir).WriteModuleMetadata(mod, serviceName); err != nil {
-			fmt.Printf("Warning: failed to write metadata for %s: %v\n", serviceName, err)
+		containerName := fmt.Sprintf("%s-%s", baseServiceName, tool.Name())
+		outputDir := filepath.Join("top_starred", baseServiceName, tool.Name())
+
+		if err := logger.NewMetadataWriter(sb.ResultsDir).WriteModuleMetadata(mod, outputDir); err != nil {
+			fmt.Printf("Warning: failed to write metadata for %s: %v\n", outputDir, err)
 			continue
 		}
 
-		service, err := NewService(serviceName, sb.ResultsDir, mod.URL, mod.ReleaseTag, mod.GoVersion, tool)
+		service, err := NewService(containerName, outputDir, mod.URL, mod.ReleaseTag, mod.GoVersion, tool)
 		if err != nil {
-			fmt.Printf("Warning: failed to create service for %s: %v\n", serviceName, err)
+			fmt.Printf("Warning: failed to create service for %s: %v\n", containerName, err)
 			continue
 		}
 		services = append(services, service)
@@ -120,10 +133,11 @@ func (sb *ServiceBuilder) FromModule(mod dataset.Module, baseServiceName string)
 	return services, nil
 }
 
+// generateServiceName generates a valid service name from a repo URL and ID.
 func generateServiceName(repoURL string, ID string) (string, error) {
 	validator := validator.New()
 	if err := validator.Var(repoURL, "required,url"); err != nil {
-		return "", fmt.Errorf("Invalid repo URL: %s\n", err)
+		return "", fmt.Errorf("invalid repo URL: %s", err)
 	}
 
 	cleanPrefix := strings.TrimPrefix(strings.TrimPrefix(repoURL, "https://"), "http://")

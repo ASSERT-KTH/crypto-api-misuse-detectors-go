@@ -10,14 +10,19 @@ import (
 // ModComposer implements the Composer interface for module datasets
 type ModComposer struct {
 	Dataset *dataset.ModuleDataset
-	BaseComposer
+	config  Config
 }
 
-func NewModComposer(ds *dataset.ModuleDataset, base BaseComposer) *ModComposer {
+func NewModComposer(ds *dataset.ModuleDataset, config Config) *ModComposer {
 	return &ModComposer{
-		Dataset:      ds,
-		BaseComposer: base,
+		Dataset: ds,
+		config:  config,
 	}
+}
+
+// GetConfig returns the composer's configuration
+func (mc *ModComposer) GetConfig() Config {
+	return mc.config
 }
 
 // ComposeStr constructs the complete Docker Compose YAML content as a string
@@ -29,14 +34,14 @@ func (mc *ModComposer) ComposeStr() string {
 		composeBuilder.WriteString(mc.generateModServices(mod))
 	}
 
-	composeBuilder.WriteString(generateVolumeConfig())
+	composeBuilder.WriteString(generateVolumeTopLevel(mc))
 	return composeBuilder.String()
 }
 
 // generateModServices generates services for a single module
 func (mc *ModComposer) generateModServices(mod dataset.Module) string {
 	var builder strings.Builder
-	sb := NewServiceBuilder(mc.ResultsDir, mc.Tools)
+	sb := NewServiceBuilder(mc.config.ResultsDir, mc.config.Tools)
 
 	baseServiceName, err := generateServiceName(mod.URL, "")
 	if err != nil {
@@ -58,7 +63,7 @@ func (mc *ModComposer) generateModServices(mod dataset.Module) string {
 
 // RunCompose executes the Docker Compose configuration with parallelism
 func (mc *ModComposer) RunCompose(composeFilePath string) error {
-	return RunCompose(composeFilePath, mc.Parallelism)
+	return RunCompose(composeFilePath, mc.config.Parallelism)
 }
 
 func (mc *ModComposer) StopCompose(composeFilePath string) error {
