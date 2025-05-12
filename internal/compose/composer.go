@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/tool"
 )
 
 // Composer interface defines methods for generating Docker Compose configurations
@@ -31,10 +31,10 @@ type Config struct {
 	// Number of parallel operations
 	Parallelism int
 	// Analysis tools to use
-	Tools []sast.Tool
+	Tools []tool.Tool
 }
 
-func NewConfig(ds dataset.Dataset, parallelism int, tools []sast.Tool) Config {
+func NewConfig(ds dataset.Dataset, parallelism int, tools []tool.Tool) Config {
 	return Config{
 		DatasetDir:  time.Now().Format("2006-01-02-15-04"),
 		Parallelism: parallelism,
@@ -43,7 +43,7 @@ func NewConfig(ds dataset.Dataset, parallelism int, tools []sast.Tool) Config {
 }
 
 // NewComposer creates a new Composer based on the dataset type
-func NewComposer(ds dataset.Dataset, parallelism int, tools []sast.Tool) Composer {
+func NewComposer(ds dataset.Dataset, parallelism int, tools []tool.Tool) Composer {
 	if ds == nil {
 		panic("dataset cannot be nil")
 	}

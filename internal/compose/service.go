@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
+	"github.com/ASSERT-KTH/go-cryptoapi/internal/tool"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -16,7 +16,7 @@ import (
 type Service struct {
 	// Container configuration
 	Name string    `validate:"required"` // Name of the container and service
-	Tool sast.Tool `validate:"required"` // Analysis tool to use
+	Tool tool.Tool `validate:"required"` // Analysis tool to use
 
 	// Repository configuration
 	RepoURL   string `validate:"required,url"` // URL of the repository to analyze
@@ -29,12 +29,12 @@ type Service struct {
 
 // ServiceBuilder helps create Service instances for different analysis types
 type ServiceBuilder struct {
-	Tools  []sast.Tool // Analysis tools to use for each service
+	Tools  []tool.Tool // Analysis tools to use for each service
 	Config Config      // Configuration including results directory structure
 }
 
 // NewServiceBuilder creates a new ServiceBuilder with the given tools
-func NewServiceBuilder(tools []sast.Tool, config Config) *ServiceBuilder {
+func NewServiceBuilder(tools []tool.Tool, config Config) *ServiceBuilder {
 	return &ServiceBuilder{
 		Tools:  tools,
 		Config: config,
@@ -42,7 +42,7 @@ func NewServiceBuilder(tools []sast.Tool, config Config) *ServiceBuilder {
 }
 
 // NewService creates a new Service instance
-func NewService(repoID, repoURL, gitTag, goVersion string, tool sast.Tool, cfg Config) (Service, error) {
+func NewService(repoID, repoURL, gitTag, goVersion string, tool tool.Tool, cfg Config) (Service, error) {
 	svcName := fmt.Sprintf("%s-%s", repoID, tool.Name())
 
 	// Create path configuration for this service
@@ -131,7 +131,7 @@ func (s *Service) generateServiceConfig() string {
 }
 
 // generateVolumeMounts generates the volume mount configuration
-func (s *Service) generateVolumeMounts(toolCfg sast.DockerConfig) string {
+func (s *Service) generateVolumeMounts(toolCfg tool.DockerConfig) string {
 	var buf strings.Builder
 	buf.WriteString("    volumes:\n")
 	buf.WriteString(fmt.Sprintf("      - %s\n", toolCfg.VolumeAttribute))
@@ -141,7 +141,7 @@ func (s *Service) generateVolumeMounts(toolCfg sast.DockerConfig) string {
 }
 
 // generateCommand generates the command configuration
-func (s *Service) generateCommand(toolCfg sast.DockerConfig) string {
+func (s *Service) generateCommand(toolCfg tool.DockerConfig) string {
 	var buf strings.Builder
 	buf.WriteString("    command:\n")
 	for _, cmd := range toolCfg.Command {

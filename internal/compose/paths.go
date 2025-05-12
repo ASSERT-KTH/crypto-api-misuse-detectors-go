@@ -51,7 +51,7 @@ type ServicePaths struct {
 // NewServicePaths creates a new ServicePaths instance for a specific service
 func NewServicePaths(pc PathConfig, cp ContainerPaths, datasetDir, repoID, toolName string) ServicePaths {
 	// Host path is under the base directory
-	hostPath := filepath.Join(pc.BaseDir, datasetDir, repoID, toolName)
+	hostPath := filepath.Join(pc.BaseDir, "results", datasetDir, repoID, toolName)
 
 	// Container path is under the analysis directory
 	containerPath := filepath.Join(cp.ResultsDir, toolName)
