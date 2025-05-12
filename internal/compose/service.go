@@ -13,6 +13,10 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	HostResultsDir = "${BASE_DIR}/results"
+)
+
 // Service represents a single Docker Compose service configuration
 type Service struct {
 	// Container configuration
@@ -30,8 +34,9 @@ type Service struct {
 }
 
 // NewService creates a new Service instance
-func NewService(containerName, repoURL, gitTag, goVersion string, tool sast.Tool, hostPath string) (Service, error) {
+func NewService(repoID, repoURL, gitTag, goVersion string, tool sast.Tool) (Service, error) {
 	toolConfig := tool.GetDockerConfig()
+	containerName := fmt.Sprintf("%s-%s", repoID, tool.Name())
 
 	s := Service{
 		ContainerName:        containerName,
@@ -39,7 +44,7 @@ func NewService(containerName, repoURL, gitTag, goVersion string, tool sast.Tool
 		RepoURL:              repoURL,
 		GitTag:               gitTag,
 		GoVersion:            goVersion,
-		HostResultsPath:      hostPath,
+		HostResultsPath:      filepath.Join(HostResultsDir, repoID),
 		ContainerResultsPath: toolConfig.ResultsDir,
 	}
 
@@ -68,7 +73,7 @@ func (s *Service) GenerateStr() string {
 	// Volumes
 	builder.WriteString("    volumes:\n")
 	builder.WriteString(fmt.Sprintf("      - %s\n", toolConfig.VolumeAttribute))
-	builder.WriteString(fmt.Sprintf("      - ${BASE_DIR}/%s:%s\n", s.HostResultsPath, s.ContainerResultsPath))
+	builder.WriteString(fmt.Sprintf("      - %s:%s\n", s.HostResultsPath, s.ContainerResultsPath))
 
 	// Command
 	builder.WriteString("    command:\n")
@@ -98,12 +103,9 @@ func (sb *ServiceBuilder) FromVulnerability(vuln dataset.Vulnerability, pkg data
 	var errs []error
 
 	for _, tool := range sb.Tools {
-		containerName := fmt.Sprintf("%s-%s", baseName, tool.Name())
-		hostPath := filepath.Join(baseName, tool.Name())
-
-		service, err := NewService(containerName, vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, tool, hostPath)
+		service, err := NewService(baseName, vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, tool)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to create service %s: %w", containerName, err))
+			errs = append(errs, fmt.Errorf("failed to create service %s (%s): %w", baseName, tool.Name(), err))
 			continue
 		}
 		services = append(services, service)
@@ -122,12 +124,9 @@ func (sb *ServiceBuilder) FromModule(mod dataset.Module, baseName string) ([]Ser
 	var errs []error
 
 	for _, tool := range sb.Tools {
-		containerName := fmt.Sprintf("%s-%s", baseName, tool.Name())
-		hostPath := filepath.Join(baseName, tool.Name())
-
-		service, err := NewService(containerName, mod.URL, mod.ReleaseTag, mod.GoVersion, tool, hostPath)
+		service, err := NewService(baseName, mod.URL, mod.ReleaseTag, mod.GoVersion, tool)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to create service %s: %w", containerName, err))
+			errs = append(errs, fmt.Errorf("failed to create service %s (%s): %w", baseName, tool.Name(), err))
 			continue
 		}
 		services = append(services, service)
