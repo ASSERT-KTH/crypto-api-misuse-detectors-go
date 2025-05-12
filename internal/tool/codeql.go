@@ -1,4 +1,4 @@
-package sast
+package tool
 
 import (
 	"fmt"

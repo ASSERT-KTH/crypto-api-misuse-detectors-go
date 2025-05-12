@@ -1,4 +1,4 @@
-package sast
+package tool
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 
 const (
 	RepoPathDocker = "/analysis/repo"
-	Toolspath      = "${BASE_DIR}/internal/sast"
+	Toolspath      = "${BASE_DIR}/internal/tool"
 	CmdShell       = "/bin/sh -c"
 )
 
