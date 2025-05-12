@@ -41,12 +41,18 @@ func (mc *ModComposer) ComposeStr() string {
 // generateModServices generates services for a single module
 func (mc *ModComposer) generateModServices(mod dataset.Module) string {
 	var builder strings.Builder
-	sb := NewServiceBuilder(mc.config.Tools)
+	sb := NewServiceBuilder(mc.config.Tools, mc.config)
 
 	baseServiceName, err := generateServiceName(mod.URL, "")
 	if err != nil {
 		fmt.Printf("Warning: failed to generate service name for %s: %v\n", mod.URL, err)
 		return builder.String()
+	}
+
+	// Write metadata using the existing MetadataWriter
+	metadataWriter := getMetadataWriter(mc.config)
+	if err := metadataWriter.WriteModuleMetadata(mod, baseServiceName); err != nil {
+		fmt.Printf("Warning: failed to write metadata for %s: %v\n", baseServiceName, err)
 	}
 
 	toolServices, err := sb.FromModule(mod, baseServiceName)
@@ -67,5 +73,5 @@ func (mc *ModComposer) RunCompose(composeFilePath string) error {
 }
 
 func (mc *ModComposer) StopCompose(composeFilePath string) error {
-	return StopCompose(composeFilePath)
+	return WaitDown(composeFilePath)
 }

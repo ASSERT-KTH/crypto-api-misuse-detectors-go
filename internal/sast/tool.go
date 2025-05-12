@@ -12,8 +12,6 @@ const (
 	CmdShell       = "/bin/sh -c"
 )
 
-// TODO Wrap commands in a script instead!
-
 // Tool represents a SAST analysis tool
 type Tool interface {
 	// Name returns the name of the tool

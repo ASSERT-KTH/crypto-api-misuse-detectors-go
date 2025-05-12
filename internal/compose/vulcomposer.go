@@ -46,7 +46,7 @@ func (vc *VulComposer) ComposeStr() string {
 // generateVulServices generates services for a single vulnerability
 func (vc *VulComposer) generateVulServices(vul dataset.Vulnerability) string {
 	var builder strings.Builder
-	sb := NewServiceBuilder(vc.config.Tools)
+	sb := NewServiceBuilder(vc.config.Tools, vc.config)
 
 	for i, pkg := range vul.VulPackages {
 		if pkg.GitTag == "" {
@@ -74,6 +74,13 @@ func (vc *VulComposer) generatePkgServices(sb *ServiceBuilder, vul dataset.Vulne
 	if pkg.GoVersion == "" {
 		pkg.GoVersion = DefaultGoVersion
 	}
+
+	// Write metadata using the existing MetadataWriter
+	metadataWriter := getMetadataWriter(vc.config)
+	if err := metadataWriter.WriteVulMetadata(vul, pkg, baseServiceName); err != nil {
+		fmt.Printf("Warning: failed to write metadata for %s: %v\n", baseServiceName, err)
+	}
+
 	toolServices, err := sb.FromVulnerability(vul, pkg, baseServiceName)
 	if err != nil {
 		fmt.Printf("Warning: failed to create services for %s: %v\n", baseServiceName, err)
@@ -93,5 +100,5 @@ func (vc *VulComposer) RunCompose(composeFilePath string) error {
 }
 
 func (vc *VulComposer) StopCompose(composeFilePath string) error {
-	return StopCompose(composeFilePath)
+	return WaitDown(composeFilePath)
 }

@@ -5,7 +5,6 @@ package compose
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
@@ -13,135 +12,145 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-const (
-	HostResultsDir = "${BASE_DIR}/results"
-)
-
 // Service represents a single Docker Compose service configuration
 type Service struct {
 	// Container configuration
-	ContainerName string    `validate:"required"` // Name of the container and service
-	Tool          sast.Tool `validate:"required"` // Analysis tool to use
+	Name string    `validate:"required"` // Name of the container and service
+	Tool sast.Tool `validate:"required"` // Analysis tool to use
 
 	// Repository configuration
 	RepoURL   string `validate:"required,url"` // URL of the repository to analyze
 	GitTag    string `validate:"required"`     // Git tag/version to analyze
 	GoVersion string `validate:"required"`     // Go version to use
 
-	// Volume mount configuration for results
-	HostResultsPath      string `validate:"required"` // Path on host where results will be stored (${BASE_DIR}/...)
-	ContainerResultsPath string `validate:"required"` // Path in container where results will be mounted (/analysis/...)
+	// Path configuration
+	Paths ServicePaths `validate:"required"` // Path configuration for this service
+}
+
+// ServiceBuilder helps create Service instances for different analysis types
+type ServiceBuilder struct {
+	Tools  []sast.Tool // Analysis tools to use for each service
+	Config Config      // Configuration including results directory structure
+}
+
+// NewServiceBuilder creates a new ServiceBuilder with the given tools
+func NewServiceBuilder(tools []sast.Tool, config Config) *ServiceBuilder {
+	return &ServiceBuilder{
+		Tools:  tools,
+		Config: config,
+	}
 }
 
 // NewService creates a new Service instance
-func NewService(repoID, repoURL, gitTag, goVersion string, tool sast.Tool) (Service, error) {
-	toolConfig := tool.GetDockerConfig()
-	containerName := fmt.Sprintf("%s-%s", repoID, tool.Name())
+func NewService(repoID, repoURL, gitTag, goVersion string, tool sast.Tool, cfg Config) (Service, error) {
+	svcName := fmt.Sprintf("%s-%s", repoID, tool.Name())
 
-	s := Service{
-		ContainerName:        containerName,
-		Tool:                 tool,
-		RepoURL:              repoURL,
-		GitTag:               gitTag,
-		GoVersion:            goVersion,
-		HostResultsPath:      filepath.Join(HostResultsDir, repoID, tool.Name()),
-		ContainerResultsPath: toolConfig.ResultsDir,
+	// Create path configuration for this service
+	paths := NewServicePaths(DefaultPaths(), DefaultContainerPaths(), cfg.DatasetDir, repoID, tool.Name())
+
+	svc := Service{
+		Name:      svcName,
+		Tool:      tool,
+		RepoURL:   repoURL,
+		GitTag:    gitTag,
+		GoVersion: goVersion,
+		Paths:     paths,
 	}
 
 	validate := validator.New()
-	if err := validate.Struct(s); err != nil {
+	if err := validate.Struct(svc); err != nil {
 		return Service{}, err
 	}
-	return s, nil
+	return svc, nil
+}
+
+// FromVulnerability creates services for analyzing a vulnerability
+func (sb *ServiceBuilder) FromVulnerability(vuln dataset.Vulnerability, pkg dataset.VulPackage, baseName string) ([]Service, error) {
+	var svcs []Service
+	var errs []error
+
+	for _, tool := range sb.Tools {
+		svc, err := NewService(baseName, vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, tool, sb.Config)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to create service %s (%s): %w", baseName, tool.Name(), err))
+			continue
+		}
+		svcs = append(svcs, svc)
+	}
+
+	if len(errs) > 0 {
+		return svcs, fmt.Errorf("encountered %d errors creating services: %v", len(errs), errs)
+	}
+	return svcs, nil
+}
+
+// FromModule creates services for analyzing a module
+func (sb *ServiceBuilder) FromModule(mod dataset.Module, baseName string) ([]Service, error) {
+	var svcs []Service
+	var errs []error
+
+	for _, tool := range sb.Tools {
+		svc, err := NewService(baseName, mod.URL, mod.ReleaseTag, mod.GoVersion, tool, sb.Config)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to create service %s (%s): %w", baseName, tool.Name(), err))
+			continue
+		}
+		svcs = append(svcs, svc)
+	}
+
+	if len(errs) > 0 {
+		return svcs, fmt.Errorf("encountered %d errors creating services: %v", len(errs), errs)
+	}
+	return svcs, nil
 }
 
 // GenerateStr generates the Docker Compose YAML for the service
 func (s *Service) GenerateStr() string {
-	var builder strings.Builder
-	toolConfig := s.Tool.GetDockerConfig()
+	var buf strings.Builder
+	toolCfg := s.Tool.GetDockerConfig()
 
-	// Service name and basic config
-	builder.WriteString(fmt.Sprintf("  %s:\n", s.ContainerName))
-	builder.WriteString("    build:\n")
-	builder.WriteString("      context: .\n")
-	builder.WriteString("      args:\n")
-	builder.WriteString(fmt.Sprintf("        REPO_URL: \"%s\"\n", s.RepoURL))
-	builder.WriteString(fmt.Sprintf("        GIT_TAG: \"%s\"\n", s.GitTag))
-	builder.WriteString(fmt.Sprintf("        GO_VERSION: \"%s\"\n", s.GoVersion))
-	builder.WriteString(fmt.Sprintf("    container_name: %s\n", s.ContainerName))
+	buf.WriteString(fmt.Sprintf("  %s:\n", s.Name))
+	buf.WriteString(s.generateServiceConfig())
+	buf.WriteString(s.generateVolumeMounts(toolCfg))
+	buf.WriteString(s.generateCommand(toolCfg))
 
-	// Volumes
-	builder.WriteString("    volumes:\n")
-	builder.WriteString(fmt.Sprintf("      - %s\n", toolConfig.VolumeAttribute))
-	builder.WriteString(fmt.Sprintf("      - %s:%s\n", s.HostResultsPath, s.ContainerResultsPath))
-
-	// Command
-	// builder.WriteString("    command:\n")
-	// builder.WriteString(fmt.Sprintf("      - %s\n", toolConfig.Command))
-
-	builder.WriteString("    command:\n")
-	for _, part := range toolConfig.Command {
-		builder.WriteString(fmt.Sprintf("      - %s\n", part))
-	}
-
-	return builder.String()
+	return buf.String()
 }
 
-// ServiceBuilder helps create Service instances for different analysis types.
-// It manages the creation of services for both vulnerability and module analysis,
-// handling the common configuration needed for each type of analysis.
-type ServiceBuilder struct {
-	Tools []sast.Tool // Analysis tools to use for each service
+// generateServiceConfig generates the basic service configuration
+func (s *Service) generateServiceConfig() string {
+	var buf strings.Builder
+	buf.WriteString("    build:\n")
+	buf.WriteString("      context: .\n")
+	buf.WriteString("      args:\n")
+	buf.WriteString(fmt.Sprintf("        REPO_URL: \"%s\"\n", s.RepoURL))
+	buf.WriteString(fmt.Sprintf("        GIT_TAG: \"%s\"\n", s.GitTag))
+	buf.WriteString(fmt.Sprintf("        GO_VERSION: \"%s\"\n", s.GoVersion))
+	buf.WriteString(fmt.Sprintf("    container_name: %s\n", s.Name))
+	return buf.String()
 }
 
-// NewServiceBuilder creates a new ServiceBuilder with the given tools
-func NewServiceBuilder(tools []sast.Tool) *ServiceBuilder {
-	return &ServiceBuilder{
-		Tools: tools,
-	}
+// generateVolumeMounts generates the volume mount configuration
+func (s *Service) generateVolumeMounts(toolCfg sast.DockerConfig) string {
+	var buf strings.Builder
+	buf.WriteString("    volumes:\n")
+	buf.WriteString(fmt.Sprintf("      - %s\n", toolCfg.VolumeAttribute))
+	buf.WriteString(fmt.Sprintf("      - %s:%s\n", s.Paths.HostResultsPath, s.Paths.ContainerResultsPath))
+
+	return buf.String()
 }
 
-// FromVulnerability creates services for analyzing a vulnerability.
-// Returns an error if any service creation fails, rather than skipping errors.
-func (sb *ServiceBuilder) FromVulnerability(vuln dataset.Vulnerability, pkg dataset.VulPackage, baseName string) ([]Service, error) {
-	var services []Service
-	var errs []error
-
-	for _, tool := range sb.Tools {
-		service, err := NewService(baseName, vuln.Repo.URL, pkg.GitTag, pkg.GoVersion, tool)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to create service %s (%s): %w", baseName, tool.Name(), err))
-			continue
-		}
-		services = append(services, service)
+// generateCommand generates the command configuration
+func (s *Service) generateCommand(toolCfg sast.DockerConfig) string {
+	var buf strings.Builder
+	buf.WriteString("    command:\n")
+	for _, cmd := range toolCfg.Command {
+		buf.WriteString(fmt.Sprintf("      - %s\n", cmd))
 	}
-
-	if len(errs) > 0 {
-		return services, fmt.Errorf("encountered %d errors creating services: %v", len(errs), errs)
-	}
-	return services, nil
+	return buf.String()
 }
 
-// FromModule creates services for analyzing a module.
-// Returns an error if any service creation fails, rather than skipping errors.
-func (sb *ServiceBuilder) FromModule(mod dataset.Module, baseName string) ([]Service, error) {
-	var services []Service
-	var errs []error
-
-	for _, tool := range sb.Tools {
-		service, err := NewService(baseName, mod.URL, mod.ReleaseTag, mod.GoVersion, tool)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to create service %s (%s): %w", baseName, tool.Name(), err))
-			continue
-		}
-		services = append(services, service)
-	}
-
-	if len(errs) > 0 {
-		return services, fmt.Errorf("encountered %d errors creating services: %v", len(errs), errs)
-	}
-	return services, nil
-}
+// Helper functions
 
 // generateServiceName creates a valid service name from a repo URL and identifier
 func generateServiceName(repoURL, id string) (string, error) {

@@ -1,12 +1,13 @@
-package log
+package dataset
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html"
 	"os"
 	"path/filepath"
 
-	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 )
 
 // TODO needs many refactoring
@@ -26,7 +27,7 @@ type VulnerabilityMetadata struct {
 	Score       string   `json:"score"`
 	Remediation string   `json:"remediation_description"`
 	VulRange    string   `json:"vul_range"`
-	VulGitTags  []string `json:"vul_git_tags"`
+	//VulGitTags  []string `json:"vul_git_tags"`
 }
 
 // writeJSON is a helper that marshals data to JSON and writes it to a file under baseDir/serviceName
@@ -36,10 +37,20 @@ func (mw *MetadataWriter) writeJSON(serviceName, fileName string, data interface
 		return fmt.Errorf("failed to create metadata directory %s: %w", metadataDir, err)
 	}
 	filePath := filepath.Join(metadataDir, fileName)
-	jsonData, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
+
+	// Create a custom encoder with HTML escaping disabled
+	buf := new(bytes.Buffer)
+	encoder := json.NewEncoder(buf)
+	encoder.SetEscapeHTML(false) // Disable HTML escaping
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(data); err != nil {
 		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
 	}
+
+	// Remove the trailing newline that encoder.Encode adds
+	jsonData := bytes.TrimSpace(buf.Bytes())
+
+	// Write the encoded data to file
 	if err := os.WriteFile(filePath, jsonData, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata file %s: %w", filePath, err)
 	}
@@ -59,7 +70,7 @@ func NewMetadataWriter(baseDir string) *MetadataWriter {
 }
 
 // WriteVulMetadata writes metadata for a vulnerability package to a file
-func (mw *MetadataWriter) WriteVulMetadata(vuln dataset.Vulnerability, pkg dataset.VulPackage, serviceName string) error {
+func (mw *MetadataWriter) WriteVulMetadata(vuln Vulnerability, pkg VulPackage, serviceName string) error {
 	metadata := VulnerabilityMetadata{
 		ID:          vuln.ID,
 		Package:     pkg.Name,
@@ -74,7 +85,6 @@ func (mw *MetadataWriter) WriteVulMetadata(vuln dataset.Vulnerability, pkg datas
 		Score:       pkg.Score,
 		Remediation: pkg.Remediation,
 		VulRange:    pkg.VulRange,
-		VulGitTags:  pkg.VulnerableGitTags,
 	}
 	return mw.writeJSON(serviceName, "vulnerability_info.json", metadata)
 }
@@ -100,7 +110,7 @@ type ModuleMetadata struct {
 }
 
 // WriteModuleMetadata writes metadata for a module to a file
-func (mw *MetadataWriter) WriteModuleMetadata(mod dataset.Module, serviceName string) error {
+func (mw *MetadataWriter) WriteModuleMetadata(mod Module, serviceName string) error {
 	metadata := ModuleMetadata{
 		ID:          mod.ID,
 		RepoName:    mod.RepoName,
@@ -121,4 +131,13 @@ func (mw *MetadataWriter) WriteModuleMetadata(mod dataset.Module, serviceName st
 	}
 
 	return mw.writeJSON(serviceName, "module_info.json", metadata)
+}
+
+// escapeStrings escapes HTML special characters in a slice of strings
+func escapeStrings(strs []string) []string {
+	escaped := make([]string, len(strs))
+	for i, s := range strs {
+		escaped[i] = html.EscapeString(s)
+	}
+	return escaped
 }

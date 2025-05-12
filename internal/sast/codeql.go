@@ -7,7 +7,7 @@ import (
 const (
 	codeqlMountTo     = "/analysis/codeql-home"
 	codeqlSuiteFile   = "/analysis/codeql-home/codeql/qlpacks/codeql/go-queries/1.1.13/codeql-suites/crypto-cwes.qls"
-	codeqlResultsPath = "/analysis/results/crypto-cwes-result.csv"
+	codeqlResultsPath = "/analysis/results/"
 )
 
 type codeqlTool struct{}

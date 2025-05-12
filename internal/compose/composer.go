@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/dataset"
 	"github.com/ASSERT-KTH/go-cryptoapi/internal/sast"
@@ -25,27 +26,28 @@ type Composer interface {
 
 // Config contains common configuration for all composers
 type Config struct {
-	ResultsDir  string
+	// Dataset-specific directory (e.g., vulnerabilities/, starred-repos/)
+	DatasetDir string
+	// Number of parallel operations
 	Parallelism int
-	Tools       []sast.Tool
+	// Analysis tools to use
+	Tools []sast.Tool
 }
 
-func NewConfig(outDir string, parallelism int, tools []sast.Tool) Config {
+func NewConfig(ds dataset.Dataset, parallelism int, tools []sast.Tool) Config {
 	return Config{
-		ResultsDir:  outDir,
+		DatasetDir:  time.Now().Format("2006-01-02-15-04"),
 		Parallelism: parallelism,
 		Tools:       tools,
 	}
 }
 
 // NewComposer creates a new Composer based on the dataset type
-func NewComposer(ds dataset.Dataset, outDir string, parallelism int, tools []sast.Tool) Composer {
+func NewComposer(ds dataset.Dataset, parallelism int, tools []sast.Tool) Composer {
 	if ds == nil {
 		panic("dataset cannot be nil")
 	}
-	if outDir == "" {
-		panic("output directory cannot be empty")
-	}
+
 	if len(tools) == 0 {
 		panic("at least one tool must be specified")
 	}
@@ -58,7 +60,7 @@ func NewComposer(ds dataset.Dataset, outDir string, parallelism int, tools []sas
 	}
 
 	// Create config with common configuration
-	config := NewConfig(filepath.Join(outDir, ds.ID()), parallelism, tools)
+	config := NewConfig(ds, parallelism, tools)
 
 	switch d := ds.(type) {
 	case *dataset.VulnerabilityDataset:
@@ -85,9 +87,10 @@ func RunCompose(composeFilePath string, parallelism int) error {
 	return nil
 }
 
-// StopCompose stops all services in the compose file
-func StopCompose(composeFilePath string) error {
-	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "down", "--remove-orphans")
+// WaitDown stops all services in the compose file
+func WaitDown(composeFilePath string) error {
+	//cmd := exec.Command("docker", "compose", "-f", composeFilePath, "down", "--remove-orphans")
+	cmd := exec.Command("docker", "compose", "-f", composeFilePath, "wait", "--down-project")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to stop docker compose: %v\nOutput: %s", err, string(output))
@@ -106,4 +109,12 @@ func WriteComposeFile(dir, content string) (string, error) {
 		return "", fmt.Errorf("failed to write compose file: %w", err)
 	}
 	return path, nil
+}
+
+// Helper to get a MetadataWriter for a given config and service name
+func getMetadataWriter(cfg Config) *dataset.MetadataWriter {
+	// Use the same path configuration as services
+	pc := DefaultPaths()
+	metadataDir := filepath.Join(pc.ResultsDir, cfg.DatasetDir)
+	return dataset.NewMetadataWriter(metadataDir)
 }
