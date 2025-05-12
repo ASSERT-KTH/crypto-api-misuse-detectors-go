@@ -13,7 +13,7 @@ func (gopherTool) GetDockerConfig() DockerConfig {
 		VolumeName:      "gopher",
 		VolumeTopLevel:  fmt.Sprintf("%s/gopher", Toolspath),
 		VolumeAttribute: "gopher:/analysis/gopher",
-		Command:         "cd /analysis/gopher && ./gopher ../repo && ./rename_json.sh ../repo",
+		Command:         []string{"/bin/sh", "-c", "/analysis/gopher/run_gopher_and_rename.sh"},
 		ResultsDir:      "/analysis/repo/scan_results",
 	}
 }

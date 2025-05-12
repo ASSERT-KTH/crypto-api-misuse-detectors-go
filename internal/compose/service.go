@@ -44,7 +44,7 @@ func NewService(repoID, repoURL, gitTag, goVersion string, tool sast.Tool) (Serv
 		RepoURL:              repoURL,
 		GitTag:               gitTag,
 		GoVersion:            goVersion,
-		HostResultsPath:      filepath.Join(HostResultsDir, repoID),
+		HostResultsPath:      filepath.Join(HostResultsDir, repoID, tool.Name()),
 		ContainerResultsPath: toolConfig.ResultsDir,
 	}
 
@@ -76,8 +76,13 @@ func (s *Service) GenerateStr() string {
 	builder.WriteString(fmt.Sprintf("      - %s:%s\n", s.HostResultsPath, s.ContainerResultsPath))
 
 	// Command
+	// builder.WriteString("    command:\n")
+	// builder.WriteString(fmt.Sprintf("      - %s\n", toolConfig.Command))
+
 	builder.WriteString("    command:\n")
-	builder.WriteString(fmt.Sprintf("      - %s\n", toolConfig.Command))
+	for _, part := range toolConfig.Command {
+		builder.WriteString(fmt.Sprintf("      - %s\n", part))
+	}
 
 	return builder.String()
 }

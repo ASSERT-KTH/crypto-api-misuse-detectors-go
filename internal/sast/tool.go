@@ -6,8 +6,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var RepoPathDocker = "/analysis/repo"
-var Toolspath = "${BASE_DIR}/internal/sast"
+const (
+	RepoPathDocker = "/analysis/repo"
+	Toolspath      = "${BASE_DIR}/internal/sast"
+	CmdShell       = "/bin/sh -c"
+)
+
+// TODO Wrap commands in a script instead!
 
 // Tool represents a SAST analysis tool
 type Tool interface {
@@ -25,7 +30,7 @@ type DockerConfig struct {
 	VolumeName string `validate:"required"`
 
 	// Command to run the tool, assuming /analysis as WORKDIR
-	Command string `validate:"required"`
+	Command []string `validate:"required"`
 
 	// VolumeTopLevel is the top-level definition of a volume
 	VolumeTopLevel string `validate:"required"`
