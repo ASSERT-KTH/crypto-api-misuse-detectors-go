@@ -46,7 +46,7 @@ func (vc *VulComposer) ComposeStr() string {
 // generateVulServices generates services for a single vulnerability
 func (vc *VulComposer) generateVulServices(vul dataset.Vulnerability) string {
 	var builder strings.Builder
-	sb := NewServiceBuilder(vc.config.ResultsDir, vc.config.Tools)
+	sb := NewServiceBuilder(vc.config.Tools)
 
 	for i, pkg := range vul.VulPackages {
 		if pkg.GitTag == "" {

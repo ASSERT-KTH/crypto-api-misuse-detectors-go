@@ -15,9 +15,7 @@ RUN if [ -n "${GIT_TAG}" ]; then \
         exit 1; \
     fi
 
-# Common utilities and scripts
-COPY ./rename_json.sh /analysis/rename_json.sh
-COPY ./extract /analysis/extract
+#COPY ./extract /analysis/extract
 
 WORKDIR /analysis
 

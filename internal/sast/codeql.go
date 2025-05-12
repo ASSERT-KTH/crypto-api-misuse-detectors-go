@@ -6,33 +6,12 @@ import (
 )
 
 const (
-	// Paths for CodeQL tool configuration
-	mountTo    = "/analysis/codeql-home"
-	resultsDir = "/analysis/codeql-results"
-	//queryPath = "/analysis/codeql-home/codeql-repo/go/ql/src/Security"
-
-	// Default output file for CodeQL results
-	resultsFilename = "results.csv"
-
-	// Output formats
-	formatCSV = "csv"
-	//formatSARIF = "sarif-latest"
-
-	// Query suite file
-	querySuiteFile = "/analysis/codeql-home/cwe-suite.qls"
+	codeqlMountTo     = "/analysis/codeql-home"
+	codeqlResultsDir  = "/analysis/db/results/codeql/go-queries/Security"
+	codeqlSuiteFile   = "/analysis/codeql-home/codeql/qlpacks/codeql/go-queries/1.1.13/codeql-suites/crypto-cwes.qls"
+	codeqlResultsFile = "crypto-cwes-result.csv"
 )
 
-// DefaultCWEs represents the default list of Common Weakness Enumerations to check for
-// var DefaultCWEs = []string{
-// 	"CWE-338", // Weak Cryptography
-// 	"CWE-798", // Use of Hard-coded Credentials
-// 	"CWE-326", // Inadequate Encryption Strength
-// 	"CWE-327", // Use of a Broken or Risky Cryptographic Algorithm
-// 	"CWE-332", // Insufficient Entropy in PRNG
-// 	"CWE-347", // Improper Verification of Cryptographic Signature
-// }
-
-// codeqlTool implements the Tool interface for CodeQL analysis
 type codeqlTool struct{}
 
 // Name returns the name of the CodeQL tool
@@ -44,36 +23,35 @@ func (t *codeqlTool) Name() string {
 func (t *codeqlTool) GetDockerConfig() DockerConfig {
 	return DockerConfig{
 		VolumeName:      "codeql",
-		VolumeTopLevel:  "${BASE_DIR}/codeql-home",
-		VolumeAttribute: fmt.Sprintf("codeql:%s", mountTo),
+		VolumeTopLevel:  fmt.Sprintf("%s/codeql-home", Toolspath),
+		VolumeAttribute: fmt.Sprintf("codeql:%s", codeqlMountTo),
 		Command:         buildCodeQLCommand(),
-		OutputDir:       resultsDir,
+		ResultsDir:      codeqlResultsDir,
 	}
 }
 
 // buildCodeQLCommand constructs the command string for running CodeQL analysis
 func buildCodeQLCommand() string {
 	var builder strings.Builder
-
-	// Build database creation command
 	builder.WriteString(buildDatabaseCreateCmd())
 	builder.WriteString(" && ")
 	builder.WriteString(buildDatabaseAnalyzeCmd())
-
 	return builder.String()
 }
 
 // buildDatabaseCreateCmd builds the command for creating a CodeQL database
 func buildDatabaseCreateCmd() string {
-	return fmt.Sprintf("%s/codeql/codeql database create --language=go --source-root=%s %s/db",
-		mountTo, repoPathDocker, resultsDir)
+	return fmt.Sprintf(
+		"%s/codeql/codeql database create --language=go --source-root=%s %s/db",
+		codeqlMountTo, RepoPathDocker, codeqlResultsDir)
 }
 
 // buildDatabaseAnalyzeCmd builds the command for analyzing a CodeQL database
 func buildDatabaseAnalyzeCmd() string {
-	return fmt.Sprintf("%s/codeql/codeql database analyze %s/db %s --format=%s, --output=%s/%s",
-		mountTo, resultsDir, querySuiteFile, formatCSV, resultsDir, resultsFilename)
+	return fmt.Sprintf(
+		"%s/codeql/codeql database analyze /analysis/db %s --format=csv --output=%s/%s",
+		codeqlMountTo, codeqlSuiteFile, codeqlResultsDir, codeqlResultsFile)
 }
 
-// DefaultCodeQLTool is a constant that implements the Tool interface for CodeQL analysis
+// CodeQLTool is the default instance of the CodeQL tool
 var CodeQLTool Tool = &codeqlTool{}

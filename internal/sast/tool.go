@@ -6,7 +6,8 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var repoPathDocker = "/analysis/repo"
+var RepoPathDocker = "/analysis/repo"
+var Toolspath = "${BASE_DIR}/internal/sast"
 
 // Tool represents a SAST analysis tool
 type Tool interface {
@@ -32,9 +33,9 @@ type DockerConfig struct {
 	// VolumeAttribute is the service definition to use a uses a toplevel shared volume
 	VolumeAttribute string `validate:"required"`
 
-	// OutputDir specifies where the tool writes its results in the container
+	// ResultsDir specifies where the tool writes its results in the container
 	// This will be mounted to the local results directory
-	OutputDir string `validate:"required"`
+	ResultsDir string `validate:"required"`
 }
 
 // ValidateDockerConfig validates the DockerConfig struct and returns an error if validation fails

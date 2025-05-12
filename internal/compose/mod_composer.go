@@ -41,7 +41,7 @@ func (mc *ModComposer) ComposeStr() string {
 // generateModServices generates services for a single module
 func (mc *ModComposer) generateModServices(mod dataset.Module) string {
 	var builder strings.Builder
-	sb := NewServiceBuilder(mc.config.ResultsDir, mc.config.Tools)
+	sb := NewServiceBuilder(mc.config.Tools)
 
 	baseServiceName, err := generateServiceName(mod.URL, "")
 	if err != nil {

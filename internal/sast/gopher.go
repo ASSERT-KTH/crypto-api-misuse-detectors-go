@@ -1,5 +1,7 @@
 package sast
 
+import "fmt"
+
 type gopherTool struct{}
 
 func (gopherTool) Name() string {
@@ -9,10 +11,10 @@ func (gopherTool) Name() string {
 func (gopherTool) GetDockerConfig() DockerConfig {
 	return DockerConfig{
 		VolumeName:      "gopher",
-		VolumeTopLevel:  "${BASE_DIR}/gopher",
+		VolumeTopLevel:  fmt.Sprintf("%s/gopher", Toolspath),
 		VolumeAttribute: "gopher:/analysis/gopher",
-		Command:         "./gopher ../repo && ../rename_json.sh ../repo",
-		OutputDir:       "/analysis/repo/scan_results",
+		Command:         "cd /analysis/gopher && ./gopher ../repo && ./rename_json.sh ../repo",
+		ResultsDir:      "/analysis/repo/scan_results",
 	}
 }
 
