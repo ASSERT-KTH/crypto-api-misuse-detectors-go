@@ -1,0 +1,18 @@
+{
+	"Package_Name": "github.com/dgraph-io/badger/v4/table",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*Table).decrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"1"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/y/encrypt.go\nXORBlock (dst []byte, src []byte, key []byte, iv []byte) error\n\t24:\tstream := cipher.NewCTR(block, iv)\n\t19:\tfunc XORBlock(dst, src, key, iv []byte) error {\n\u003e\u003e/analysis/repo/table/table.go\ndecrypt (data []byte, viaCalloc bool) ([]byte, error)\n\t751:\tif err := y.XORBlock(dst, data, t.opt.DataKey.Data, iv); err != nil {\n\t741:\tiv := data[len(data)-aes.BlockSize:]\n\t739:\tfunc (t *Table) decrypt(data []byte, viaCalloc bool) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

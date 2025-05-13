@@ -1,0 +1,188 @@
+{
+	"Package_Name": "code.gitea.io/gitea/services/webhook",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"addDefaultHeaders": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {",
+				"InferDepth": 1
+			}
+		],
+		"newDefaultRequest": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1::7",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\nnewDefaultRequest (ctx context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (req *net/http.Request, body []byte, err error)\n\t95:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t95:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t35:\tfunc newDefaultRequest(ctx context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (req *http.Request, body []byte, err error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\nnewDefaultRequest (ctx context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (req *net/http.Request, body []byte, err error)\n\t54:\treq, err = http.NewRequest(\"POST\", w.URL, strings.NewReader(forms.Encode()))\n\t54:\treq, err = http.NewRequest(\"POST\", w.URL, strings.NewReader(forms.Encode()))\n\t43:\treq, err = http.NewRequest(\"POST\", w.URL, strings.NewReader(t.PayloadContent))\n\t35:\tfunc newDefaultRequest(ctx context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (req *http.Request, body []byte, err error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::7"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\nnewDefaultRequest (ctx context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (req *net/http.Request, body []byte, err error)\n\t95:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t95:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t35:\tfunc newDefaultRequest(ctx context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (req *http.Request, body []byte, err error) {",
+				"InferDepth": 2
+			}
+		],
+		"newDingtalkRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/dingtalk.go\nnewDingtalkRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t195:\tfunc newDingtalkRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newDiscordRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/discord.go\nnewDiscordRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t282:\tfunc newDiscordRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newFeishuRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/feishu.go\nnewFeishuRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t175:\tfunc newFeishuRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newJSONRequest": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1::7",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t110:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t110:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::7"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t110:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t110:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body)\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"newMSTeamsRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/msteams.go\nnewMSTeamsRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t362:\tfunc newMSTeamsRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newMatrixRequest": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1::7",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {\n\u003e\u003e/analysis/repo/services/webhook/matrix.go\nnewMatrixRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t60:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body) // likely useless, but has always been sent historially\n\t60:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body) // likely useless, but has always been sent historially\n\t32:\tfunc newMatrixRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/matrix.go\nnewMatrixRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t54:\treq, err := http.NewRequest(http.MethodPut, w.URL+\"/\"+txnID, bytes.NewReader(body))\n\t54:\treq, err := http.NewRequest(http.MethodPut, w.URL+\"/\"+txnID, bytes.NewReader(body))\n\t54:\treq, err := http.NewRequest(http.MethodPut, w.URL+\"/\"+txnID, bytes.NewReader(body))\n\t54:\treq, err := http.NewRequest(http.MethodPut, w.URL+\"/\"+txnID, bytes.NewReader(body))\n\t32:\tfunc newMatrixRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::7"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/services/webhook/deliver.go\naddDefaultHeaders (req *net/http.Request, secret []byte, t *code.gitea.io/gitea/models/webhook.HookTask, payloadContent []byte) error\n\t102:\tsig1 := hmac.New(sha1.New, secret)\n\t98:\tfunc addDefaultHeaders(req *http.Request, secret []byte, t *webhook_model.HookTask, payloadContent []byte) error {\n\u003e\u003e/analysis/repo/services/webhook/matrix.go\nnewMatrixRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t60:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body) // likely useless, but has always been sent historially\n\t60:\treturn req, body, addDefaultHeaders(req, []byte(w.Secret), t, body) // likely useless, but has always been sent historially\n\t32:\tfunc newMatrixRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"newPackagistRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/packagist.go\nnewPackagistRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t117:\tfunc newPackagistRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newSlackRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/slack.go\nnewSlackRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t290:\tfunc newSlackRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newTelegramRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/telegram.go\nnewTelegramRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t192:\tfunc newTelegramRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newWechatworkRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/services/webhook/payloader.go\nnewJSONRequest [T any](pc code.gitea.io/gitea/services/webhook.payloadConvertor[T], w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask, withDefaultHeaders bool) (*net/http.Request, []byte, error)\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t103:\treq, err := http.NewRequest(method, w.URL, bytes.NewReader(body))\n\t87:\tfunc newJSONRequest[T any](pc payloadConvertor[T], w *webhook_model.Webhook, t *webhook_model.HookTask, withDefaultHeaders bool) (*http.Request, []byte, error) {\n\u003e\u003e/analysis/repo/services/webhook/wechatwork.go\nnewWechatworkRequest (_ context.Context, w *code.gitea.io/gitea/models/webhook.Webhook, t *code.gitea.io/gitea/models/webhook.HookTask) (*net/http.Request, []byte, error)\n\t184:\tfunc newWechatworkRequest(_ context.Context, w *webhook_model.Webhook, t *webhook_model.HookTask) (*http.Request, []byte, error) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

@@ -1,0 +1,38 @@
+{
+	"Package_Name": "google.golang.org/grpc/credentials/alts/internal/conn",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*rekeyAEAD).Seal": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::3"
+				],
+				"Reason": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/credentials/alts/internal/conn/aeadrekey.go\nSeal (dst []byte, nonce []byte, plaintext []byte, additionalData []byte) []byte\n\t75:\treturn s.gcmAEAD.Seal(dst, s.nonceBuf, plaintext, additionalData)\n\t75:\treturn s.gcmAEAD.Seal(dst, s.nonceBuf, plaintext, additionalData)\n\t70:\tfunc (s *rekeyAEAD) Seal(dst, nonce, plaintext, additionalData []byte) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"NewAES128GCM": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/credentials/alts/internal/conn/aes128gcm.go\nNewAES128GCM (side google.golang.org/grpc/credentials/alts/internal.Side, key []byte) (google.golang.org/grpc/credentials/alts/internal/conn.ALTSRecordCrypto, error)\n\t48:\tc, err := aes.NewCipher(key)\n\t47:\tfunc NewAES128GCM(side core.Side, key []byte) (ALTSRecordCrypto, error) {",
+				"InferDepth": 1
+			}
+		],
+		"NewConn": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"3"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/credentials/alts/internal/conn/aes128gcm.go\nNewAES128GCM (side google.golang.org/grpc/credentials/alts/internal.Side, key []byte) (google.golang.org/grpc/credentials/alts/internal/conn.ALTSRecordCrypto, error)\n\t48:\tc, err := aes.NewCipher(key)\n\t47:\tfunc NewAES128GCM(side core.Side, key []byte) (ALTSRecordCrypto, error) {\n\u003e\u003e/analysis/repo/credentials/alts/internal/conn/record.go\nNewConn (c net.Conn, side google.golang.org/grpc/credentials/alts/internal.Side, recordProtocol string, key []byte, protected []byte) (net.Conn, error)\n\t103:\tfunc NewConn(c net.Conn, side core.Side, recordProtocol string, key []byte, protected []byte) (net.Conn, error) {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

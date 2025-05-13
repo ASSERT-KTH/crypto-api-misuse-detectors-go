@@ -1,0 +1,28 @@
+{
+	"Package_Name": "github.com/zeromicro/go-zero/rest/handler",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*cryptionResponseWriter).flush": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/core/codec/aesecb.go\nEcbEncrypt (key []byte, src []byte) ([]byte, error)\n\t126:\tblock, err := aes.NewCipher(key)\n\t125:\tfunc EcbEncrypt(key, src []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/rest/handler/cryptionhandler.go\nflush (ctx context.Context, key []byte)\n\t127:\tcontent, err := codec.EcbEncrypt(key, w.buf.Bytes())\n\t122:\tfunc (w *cryptionResponseWriter) flush(ctx context.Context, key []byte) {",
+				"InferDepth": 2
+			}
+		],
+		"decryptBody": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/core/codec/aesecb.go\nEcbDecrypt (key []byte, src []byte) ([]byte, error)\n\t90:\tblock, err := aes.NewCipher(key)\n\t89:\tfunc EcbDecrypt(key, src []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/rest/handler/cryptionhandler.go\ndecryptBody (limitBytes int64, key []byte, r *net/http.Request) error\n\t70:\toutput, err := codec.EcbDecrypt(key, content)\n\t48:\tfunc decryptBody(limitBytes int64, key []byte, r *http.Request) error {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

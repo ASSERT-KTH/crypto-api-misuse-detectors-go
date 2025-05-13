@@ -1,0 +1,26 @@
+{
+	"Package_Name": "github.com/pingcap/tidb/br/pkg/utils",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"Decrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t202:\tmode := cipher.NewCTR(cb, iv)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithCTR (cryptedStr []byte, key []byte, iv []byte) ([]byte, error)\n\t214:\tfunc AESDecryptWithCTR(cryptedStr, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/br/pkg/utils/encryption.go\nDecrypt (content []byte, cipher *github.com/pingcap/kvproto/pkg/brpb.CipherInfo, iv []byte) ([]byte, error)\n\t36:\treturn encrypt.AESDecryptWithCTR(content, cipher.CipherKey, iv)\n\t25:\tfunc Decrypt(content []byte, cipher *backuppb.CipherInfo, iv []byte) ([]byte, error) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t198:\tcb, err := aes.NewCipher(key)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithCTR (cryptedStr []byte, key []byte, iv []byte) ([]byte, error)\n\t214:\tfunc AESDecryptWithCTR(cryptedStr, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/br/pkg/utils/encryption.go\nDecrypt (content []byte, cipher *github.com/pingcap/kvproto/pkg/brpb.CipherInfo, iv []byte) ([]byte, error)\n\t36:\treturn encrypt.AESDecryptWithCTR(content, cipher.CipherKey, iv)\n\t36:\treturn encrypt.AESDecryptWithCTR(content, cipher.CipherKey, iv)\n\t25:\tfunc Decrypt(content []byte, cipher *backuppb.CipherInfo, iv []byte) ([]byte, error) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

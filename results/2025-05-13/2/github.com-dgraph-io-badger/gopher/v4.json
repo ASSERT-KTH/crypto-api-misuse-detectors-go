@@ -1,0 +1,58 @@
+{
+	"Package_Name": "github.com/dgraph-io/badger/v4",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*keyRegistryIterator).next": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/y/encrypt.go\nXORBlockAllocate (src []byte, key []byte, iv []byte) ([]byte, error)\n\t30:\tblock, err := aes.NewCipher(key)\n\t29:\tfunc XORBlockAllocate(src, key, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/key_registry.go\nnext () (*github.com/dgraph-io/badger/v4/pb.DataKey, error)\n\t193:\tif dataKey.Data, err = y.XORBlockAllocate(dataKey.Data, kri.encryptionKey, dataKey.Iv); err != nil {\n\t193:\tif dataKey.Data, err = y.XORBlockAllocate(dataKey.Data, kri.encryptionKey, dataKey.Iv); err != nil {\n\t163:\tfunc (kri *keyRegistryIterator) next() (*pb.DataKey, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*logFile).decryptKV": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::6"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/y/encrypt.go\nXORBlockAllocate (src []byte, key []byte, iv []byte) ([]byte, error)\n\t34:\tstream := cipher.NewCTR(block, iv)\n\t29:\tfunc XORBlockAllocate(src, key, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/memtable.go\ndecryptKV (buf []byte, offset uint32) ([]byte, error)\n\t361:\treturn y.XORBlockAllocate(buf, lf.dataKey.Data, lf.generateIV(offset))\n\t361:\treturn y.XORBlockAllocate(buf, lf.dataKey.Data, lf.generateIV(offset))\n\u003e\u003e/analysis/repo/memtable.go\ngenerateIV (offset uint32) []byte\n\t402:\ty.AssertTrue(12 == copy(iv[:12], lf.baseIV))\n\t402:\ty.AssertTrue(12 == copy(iv[:12], lf.baseIV))\n\t399:\tfunc (lf *logFile) generateIV(offset uint32) []byte {\n\u003e\u003e/analysis/repo/memtable.go\ndecryptKV (buf []byte, offset uint32) ([]byte, error)\n\t360:\tfunc (lf *logFile) decryptKV(buf []byte, offset uint32) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*logFile).encodeEntry": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::6"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/y/encrypt.go\nXORBlockStream (w io.Writer, src []byte, key []byte, iv []byte) error\n\t45:\tstream := cipher.NewCTR(block, iv)\n\t40:\tfunc XORBlockStream(w io.Writer, src, key, iv []byte) error {\n\u003e\u003e/analysis/repo/memtable.go\nencodeEntry (buf *bytes.Buffer, e *github.com/dgraph-io/badger/v4.Entry, offset uint32) (int, error)\n\t307:\tif err := y.XORBlockStream(\n\t308:\twriter, eBuf, lf.dataKey.Data, lf.generateIV(offset)); err != nil {\n\u003e\u003e/analysis/repo/memtable.go\ngenerateIV (offset uint32) []byte\n\t402:\ty.AssertTrue(12 == copy(iv[:12], lf.baseIV))\n\t402:\ty.AssertTrue(12 == copy(iv[:12], lf.baseIV))\n\t399:\tfunc (lf *logFile) generateIV(offset uint32) []byte {\n\u003e\u003e/analysis/repo/memtable.go\nencodeEntry (buf *bytes.Buffer, e *github.com/dgraph-io/badger/v4.Entry, offset uint32) (int, error)\n\t283:\tfunc (lf *logFile) encodeEntry(buf *bytes.Buffer, e *Entry, offset uint32) (int, error) {",
+				"InferDepth": 2
+			}
+		],
+		"newKeyRegistryIterator": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/y/encrypt.go\nXORBlockAllocate (src []byte, key []byte, iv []byte) ([]byte, error)\n\t30:\tblock, err := aes.NewCipher(key)\n\t29:\tfunc XORBlockAllocate(src, key, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/key_registry.go\nvalidRegistry (fp *os.File, encryptionKey []byte) error\n\t152:\tif eSanityText, err = y.XORBlockAllocate(eSanityText, encryptionKey, iv); err != nil {\n\t140:\tfunc validRegistry(fp *os.File, encryptionKey []byte) error {\n\u003e\u003e/analysis/repo/key_registry.go\nnewKeyRegistryIterator (fp *os.File, encryptionKey []byte) (*github.com/dgraph-io/badger/v4.keyRegistryIterator, error)\n\t131:\tfunc newKeyRegistryIterator(fp *os.File, encryptionKey []byte) (*keyRegistryIterator, error) {",
+				"InferDepth": 3
+			}
+		],
+		"validRegistry": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/y/encrypt.go\nXORBlockAllocate (src []byte, key []byte, iv []byte) ([]byte, error)\n\t30:\tblock, err := aes.NewCipher(key)\n\t29:\tfunc XORBlockAllocate(src, key, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/key_registry.go\nvalidRegistry (fp *os.File, encryptionKey []byte) error\n\t152:\tif eSanityText, err = y.XORBlockAllocate(eSanityText, encryptionKey, iv); err != nil {\n\t140:\tfunc validRegistry(fp *os.File, encryptionKey []byte) error {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

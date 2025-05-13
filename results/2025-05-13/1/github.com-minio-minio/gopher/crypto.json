@@ -1,0 +1,143 @@
+{
+	"Package_Name": "github.com/minio/minio/internal/crypto",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*ObjectKey).Seal": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nSeal (extKey []byte, iv [32]byte, domain string, bucket string, object string) github.com/minio/minio/internal/crypto.SealedKey\n\t95:\tmac := hmac.New(sha256.New, extKey)\n\t87:\tfunc (key ObjectKey) Seal(extKey []byte, iv [32]byte, domain, bucket, object string) SealedKey {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nSeal (extKey []byte, iv [32]byte, domain string, bucket string, object string) github.com/minio/minio/internal/crypto.SealedKey\n\t95:\tmac := hmac.New(sha256.New, extKey)\n\t87:\tfunc (key ObjectKey) Seal(extKey []byte, iv [32]byte, domain, bucket, object string) SealedKey {",
+				"InferDepth": 2
+			}
+		],
+		"(*ObjectKey).Unseal": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nUnseal (extKey []byte, sealedKey github.com/minio/minio/internal/crypto.SealedKey, domain string, bucket string, object string) error\n\t121:\tmac := hmac.New(sha256.New, extKey)\n\t115:\tfunc (key *ObjectKey) Unseal(extKey []byte, sealedKey SealedKey, domain, bucket, object string) error {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nUnseal (extKey []byte, sealedKey github.com/minio/minio/internal/crypto.SealedKey, domain string, bucket string, object string) error\n\t121:\tmac := hmac.New(sha256.New, extKey)\n\t115:\tfunc (key *ObjectKey) Unseal(extKey []byte, sealedKey SealedKey, domain, bucket, object string) error {",
+				"InferDepth": 1
+			}
+		],
+		"(ObjectKey).DerivePartKey": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nDerivePartKey (id uint32) (partKey [32]byte)\n\t145:\tmac := hmac.New(sha256.New, key[:])\n\t145:\tmac := hmac.New(sha256.New, key[:])\n\t141:\tfunc (key ObjectKey) DerivePartKey(id uint32) (partKey [32]byte) {",
+				"InferDepth": 1
+			}
+		],
+		"(ObjectKey).Seal": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nSeal (extKey []byte, iv [32]byte, domain string, bucket string, object string) github.com/minio/minio/internal/crypto.SealedKey\n\t95:\tmac := hmac.New(sha256.New, extKey)\n\t87:\tfunc (key ObjectKey) Seal(extKey []byte, iv [32]byte, domain, bucket, object string) SealedKey {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nSeal (extKey []byte, iv [32]byte, domain string, bucket string, object string) github.com/minio/minio/internal/crypto.SealedKey\n\t95:\tmac := hmac.New(sha256.New, extKey)\n\t87:\tfunc (key ObjectKey) Seal(extKey []byte, iv [32]byte, domain, bucket, object string) SealedKey {",
+				"InferDepth": 1
+			}
+		],
+		"(ObjectKey).SealETag": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nSealETag (etag []byte) []byte\n\t160:\tmac := hmac.New(sha256.New, key[:])\n\t160:\tmac := hmac.New(sha256.New, key[:])\n\t155:\tfunc (key ObjectKey) SealETag(etag []byte) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"(ObjectKey).UnsealETag": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nUnsealETag (etag []byte) ([]byte, error)\n\t176:\tmac := hmac.New(sha256.New, key[:])\n\t176:\tmac := hmac.New(sha256.New, key[:])\n\t172:\tfunc (key ObjectKey) UnsealETag(etag []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"EncryptMultiPart": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nDerivePartKey (id uint32) (partKey [32]byte)\n\t145:\tmac := hmac.New(sha256.New, key[:])\n\t145:\tmac := hmac.New(sha256.New, key[:])\n\t141:\tfunc (key ObjectKey) DerivePartKey(id uint32) (partKey [32]byte) {\n\u003e\u003e/analysis/repo/internal/crypto/sse.go\nEncryptMultiPart (r io.Reader, partID int, key github.com/minio/minio/internal/crypto.ObjectKey) io.Reader\n\t114:\tfunc EncryptMultiPart(r io.Reader, partID int, key ObjectKey) io.Reader {",
+				"InferDepth": 2
+			}
+		],
+		"GenerateKey": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nGenerateKey (extKey []byte, random io.Reader) (key github.com/minio/minio/internal/crypto.ObjectKey)\n\t56:\tmac := hmac.New(sha256.New, extKey)\n\t43:\tfunc GenerateKey(extKey []byte, random io.Reader) (key ObjectKey) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nGenerateKey (extKey []byte, random io.Reader) (key github.com/minio/minio/internal/crypto.ObjectKey)\n\t56:\tmac := hmac.New(sha256.New, extKey)\n\t43:\tfunc GenerateKey(extKey []byte, random io.Reader) (key ObjectKey) {",
+				"InferDepth": 1
+			}
+		],
+		"unsealObjectKey": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nUnseal (extKey []byte, sealedKey github.com/minio/minio/internal/crypto.SealedKey, domain string, bucket string, object string) error\n\t121:\tmac := hmac.New(sha256.New, extKey)\n\t115:\tfunc (key *ObjectKey) Unseal(extKey []byte, sealedKey SealedKey, domain, bucket, object string) error {\n\u003e\u003e/analysis/repo/internal/crypto/sse.go\nunsealObjectKey (clientKey []byte, metadata map[string]string, bucket string, object string) (key github.com/minio/minio/internal/crypto.ObjectKey, err error)\n\t92:\tfunc unsealObjectKey(clientKey []byte, metadata map[string]string, bucket, object string) (key ObjectKey, err error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/crypto/key.go\nUnseal (extKey []byte, sealedKey github.com/minio/minio/internal/crypto.SealedKey, domain string, bucket string, object string) error\n\t121:\tmac := hmac.New(sha256.New, extKey)\n\t115:\tfunc (key *ObjectKey) Unseal(extKey []byte, sealedKey SealedKey, domain, bucket, object string) error {\n\u003e\u003e/analysis/repo/internal/crypto/sse.go\nunsealObjectKey (clientKey []byte, metadata map[string]string, bucket string, object string) (key github.com/minio/minio/internal/crypto.ObjectKey, err error)\n\t92:\tfunc unsealObjectKey(clientKey []byte, metadata map[string]string, bucket, object string) (key ObjectKey, err error) {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

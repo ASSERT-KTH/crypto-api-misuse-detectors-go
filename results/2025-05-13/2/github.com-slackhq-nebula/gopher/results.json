@@ -1,0 +1,33 @@
+[
+	{
+		"FuncName": "crypto/elliptic.Unmarshal",
+		"Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+		"Slicing_Criteria": {
+			"SourceCode": "x, y := elliptic.Unmarshal(elliptic.P256(), key)",
+			"SourceFilename": "/analysis/repo/cert/cert.go",
+			"SourceLineNum": 572,
+			"ParentFunction": "CheckSignature (key []byte) bool"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(crypto/cipher.AEAD).Seal",
+		"Message": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.",
+		"Slicing_Criteria": {
+			"SourceCode": "out = s.c.(cipher.AEAD).Seal(out, nb, plaintext, ad)",
+			"SourceFilename": "/analysis/repo/noise.go",
+			"SourceLineNum": 49,
+			"ParentFunction": "EncryptDanger (out []byte, ad []byte, plaintext []byte, n uint64, nb []byte) ([]byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "nb[0] = 0",
+				"SourceFilename": "/analysis/repo/noise.go",
+				"SourceLineNum": 44,
+				"ParentFunction": "EncryptDanger (out []byte, ad []byte, plaintext []byte, n uint64, nb []byte) ([]byte, error)"
+			}
+		],
+		"Predicate_Type": "NOT_CONST"
+	}
+]

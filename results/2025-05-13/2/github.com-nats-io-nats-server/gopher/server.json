@@ -1,0 +1,213 @@
+{
+	"Package_Name": "github.com/nats-io/nats-server/v2/server",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*OCSPMonitor).getRemoteStatus$2": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/server/ocsp.go\ngetRemoteStatus$2 (u string, body []byte, hc *net/http.Client) ([]byte, error)\n\t184:\threq, err := http.NewRequest(\"POST\", u, bytes.NewReader(body))\n\t183:\tpostRequestBytes := func(u string, body []byte, hc *http.Client) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*URLAccResolver).Fetch": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/server/accounts.go\nFetch (name string) (string, error)\n\t4012:\tresp, err := ur.c.Get(url)\n\t4011:\turl := ur.url + name\n\t4011:\turl := ur.url + name\n\t4010:\tfunc (ur *URLAccResolver) Fetch(name string) (string, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*fileStore).loadEncryptionForMsgBlock": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"1::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t992:\tif mb.bek, err = genBlockEncryptionKey(sc, mb.seed, mb.nonce); err != nil {\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::6"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte) (ek crypto/cipher.AEAD, err error)\n\t700:\tblock, e := aes.NewCipher(seed)\n\t696:\tfunc genEncryptionKey(sc StoreCipher, seed []byte) (ek cipher.AEAD, err error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t988:\tmb.aek, err = genEncryptionKey(sc, mb.seed)\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {",
+				"InferDepth": 2
+			}
+		],
+		"(*msgBlock).ensureLastChecksumLoaded": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t992:\tif mb.bek, err = genBlockEncryptionKey(sc, mb.seed, mb.nonce); err != nil {\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nlastChecksum () []byte\n\t1923:\tfunc (mb *msgBlock) lastChecksum() []byte {\n\u003e\u003e/analysis/repo/server/filestore.go\nensureLastChecksumLoaded ()\n\t1009:\tfunc (mb *msgBlock) ensureLastChecksumLoaded() {",
+				"InferDepth": 3
+			}
+		],
+		"(*msgBlock).lastChecksum": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t992:\tif mb.bek, err = genBlockEncryptionKey(sc, mb.seed, mb.nonce); err != nil {\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nlastChecksum () []byte\n\t1923:\tfunc (mb *msgBlock) lastChecksum() []byte {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::6"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte) (ek crypto/cipher.AEAD, err error)\n\t700:\tblock, e := aes.NewCipher(seed)\n\t696:\tfunc genEncryptionKey(sc StoreCipher, seed []byte) (ek cipher.AEAD, err error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t988:\tmb.aek, err = genEncryptionKey(sc, mb.seed)\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nlastChecksum () []byte\n\t1923:\tfunc (mb *msgBlock) lastChecksum() []byte {",
+				"InferDepth": 3
+			}
+		],
+		"(*msgBlock).loadMsgs": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t992:\tif mb.bek, err = genBlockEncryptionKey(sc, mb.seed, mb.nonce); err != nil {\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadMsgsWithLock () error\n\t6732:\tfunc (mb *msgBlock) loadMsgsWithLock() error {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadMsgs () error\n\t6635:\tfunc (mb *msgBlock) loadMsgs() error {",
+				"InferDepth": 3
+			}
+		],
+		"(*msgBlock).loadMsgsWithLock": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t992:\tif mb.bek, err = genBlockEncryptionKey(sc, mb.seed, mb.nonce); err != nil {\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadMsgsWithLock () error\n\t6732:\tfunc (mb *msgBlock) loadMsgsWithLock() error {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::6"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte) (ek crypto/cipher.AEAD, err error)\n\t700:\tblock, e := aes.NewCipher(seed)\n\t696:\tfunc genEncryptionKey(sc StoreCipher, seed []byte) (ek cipher.AEAD, err error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t988:\tmb.aek, err = genEncryptionKey(sc, mb.seed)\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadMsgsWithLock () error\n\t6732:\tfunc (mb *msgBlock) loadMsgsWithLock() error {",
+				"InferDepth": 3
+			}
+		],
+		"(*msgBlock).recompressOnDiskIfNeeded": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nrecompressOnDiskIfNeeded () error\n\t6059:\tbek, err := genBlockEncryptionKey(mb.fs.fcfg.Cipher, mb.seed, mb.nonce)\n\t5990:\tbek, err := genBlockEncryptionKey(mb.fs.fcfg.Cipher, mb.seed, mb.nonce)\n\t5962:\tfunc (mb *msgBlock) recompressOnDiskIfNeeded() error {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::6"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t764:\tblock, err := aes.NewCipher(seed)\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nrecompressOnDiskIfNeeded () error\n\t5990:\tbek, err := genBlockEncryptionKey(mb.fs.fcfg.Cipher, mb.seed, mb.nonce)\n\t5962:\tfunc (mb *msgBlock) recompressOnDiskIfNeeded() error {",
+				"InferDepth": 2
+			}
+		],
+		"(*msgBlock).skipMsg": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nskipMsg (seq uint64, now time.Time)\n\t4124:\tmb.bek, _ = genBlockEncryptionKey(mb.fs.fcfg.Cipher, mb.seed, mb.nonce)\n\t4101:\tfunc (mb *msgBlock) skipMsg(seq uint64, now time.Time) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::6"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t764:\tblock, err := aes.NewCipher(seed)\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nskipMsg (seq uint64, now time.Time)\n\t4124:\tmb.bek, _ = genBlockEncryptionKey(mb.fs.fcfg.Cipher, mb.seed, mb.nonce)\n\t4101:\tfunc (mb *msgBlock) skipMsg(seq uint64, now time.Time) {",
+				"InferDepth": 2
+			}
+		],
+		"(*msgBlock).truncate": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::7"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadEncryptionForMsgBlock (mb *github.com/nats-io/nats-server/v2/server.msgBlock) error\n\t992:\tif mb.bek, err = genBlockEncryptionKey(sc, mb.seed, mb.nonce); err != nil {\n\t948:\tfunc (fs *fileStore) loadEncryptionForMsgBlock(mb *msgBlock) error {\n\u003e\u003e/analysis/repo/server/filestore.go\nloadMsgsWithLock () error\n\t6732:\tfunc (mb *msgBlock) loadMsgsWithLock() error {\n\u003e\u003e/analysis/repo/server/filestore.go\ntruncate (sm *github.com/nats-io/nats-server/v2/server.StoreMsg) (nmsgs uint64, nbytes uint64, err error)\n\t5098:\tfunc (mb *msgBlock) truncate(sm *StoreMsg) (nmsgs, nbytes uint64, err error) {",
+				"InferDepth": 2
+			}
+		],
+		"GenTLSConfig": [
+			{
+				"Predicate": "EqFalse",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "Insecure Verification\n\u003e\u003e/analysis/repo/server/opts.go\nGenTLSConfig (tc *github.com/nats-io/nats-server/v2/server.TLSConfigOpts) (*crypto/tls.Config, error)\n\t5226:\tInsecureSkipVerify:       tc.Insecure,\n\t5226:\tInsecureSkipVerify:       tc.Insecure,\n\t5217:\tfunc GenTLSConfig(tc *TLSConfigOpts) (*tls.Config, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::21",
+					"771"
+				],
+				"Reason": "Insecure TLS Version\n\u003e\u003e/analysis/repo/server/opts.go\nGenTLSConfig (tc *github.com/nats-io/nats-server/v2/server.TLSConfigOpts) (*crypto/tls.Config, error)\n\t5290:\tconfig.MinVersion = tc.MinVersion\n\t5290:\tconfig.MinVersion = tc.MinVersion\n\t5217:\tfunc GenTLSConfig(tc *TLSConfigOpts) (*tls.Config, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "SECURE_TLS_SUITE",
+				"Object": [
+					"0::11"
+				],
+				"Reason": "The TLS suite can be customized based on https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml -Recommended choices for parameters-4\n\u003e\u003e/analysis/repo/server/opts.go\nGenTLSConfig (tc *github.com/nats-io/nats-server/v2/server.TLSConfigOpts) (*crypto/tls.Config, error)\n\t5223:\tCipherSuites:             tc.Ciphers,\n\t5223:\tCipherSuites:             tc.Ciphers,\n\t5217:\tfunc GenTLSConfig(tc *TLSConfigOpts) (*tls.Config, error) {",
+				"InferDepth": 1
+			}
+		],
+		"fetchAccount": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/server/accounts.go\nFetch (name string) (string, error)\n\t4012:\tresp, err := ur.c.Get(url)\n\t4011:\turl := ur.url + name\n\t4011:\turl := ur.url + name\n\t4010:\tfunc (ur *URLAccResolver) Fetch(name string) (string, error) {\n\u003e\u003e/analysis/repo/server/accounts.go\nfetchAccount (res github.com/nats-io/nats-server/v2/server.AccountResolver, name string) (string, error)\n\t3914:\tfunc fetchAccount(res AccountResolver, name string) (string, error) {",
+				"InferDepth": 2
+			}
+		],
+		"genBlockEncryptionKey": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t768:\treturn cipher.NewCTR(block, nonce), nil\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenBlockEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte, nonce []byte) (crypto/cipher.Stream, error)\n\t764:\tblock, err := aes.NewCipher(seed)\n\t760:\tfunc genBlockEncryptionKey(sc StoreCipher, seed, nonce []byte) (cipher.Stream, error) {",
+				"InferDepth": 1
+			}
+		],
+		"genEncryptionKey": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/server/filestore.go\ngenEncryptionKey (sc github.com/nats-io/nats-server/v2/server.StoreCipher, seed []byte) (ek crypto/cipher.AEAD, err error)\n\t700:\tblock, e := aes.NewCipher(seed)\n\t696:\tfunc genEncryptionKey(sc StoreCipher, seed []byte) (ek cipher.AEAD, err error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

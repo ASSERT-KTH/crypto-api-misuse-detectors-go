@@ -1,0 +1,55 @@
+{
+	"Package_Name": "github.com/hashicorp/vault/plugins/database/postgresql/scram",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"getHMACSum": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/plugins/database/postgresql/scram/scram.go\ngetHMACSum (key []byte, msg []byte) []byte\n\t53:\th := hmac.New(sha256.New, key)\n\t52:\tfunc getHMACSum(key, msg []byte) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/plugins/database/postgresql/scram/scram.go\ngetHMACSum (key []byte, msg []byte) []byte\n\t53:\th := hmac.New(sha256.New, key)\n\t52:\tfunc getHMACSum(key, msg []byte) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"hashPassword": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/plugins/database/postgresql/scram/scram.go\nhashPassword (rawPassword []byte, salt []byte, iter int, keyLen int) string\n\t65:\tdigestKey := pbkdf2.Key(rawPassword, salt, iter, keyLen, sha256.New)\n\t64:\tfunc hashPassword(rawPassword, salt []byte, iter, keyLen int) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"2",
+					"210000"
+				],
+				"Reason": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\n\u003e\u003e/analysis/repo/plugins/database/postgresql/scram/scram.go\nhashPassword (rawPassword []byte, salt []byte, iter int, keyLen int) string\n\t65:\tdigestKey := pbkdf2.Key(rawPassword, salt, iter, keyLen, sha256.New)\n\t64:\tfunc hashPassword(rawPassword, salt []byte, iter, keyLen int) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/plugins/database/postgresql/scram/scram.go\nhashPassword (rawPassword []byte, salt []byte, iter int, keyLen int) string\n\t65:\tdigestKey := pbkdf2.Key(rawPassword, salt, iter, keyLen, sha256.New)\n\t64:\tfunc hashPassword(rawPassword, salt []byte, iter, keyLen int) string {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

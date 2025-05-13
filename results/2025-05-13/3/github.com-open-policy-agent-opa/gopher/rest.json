@@ -1,0 +1,94 @@
+{
+	"Package_Name": "github.com/open-policy-agent/opa/v1/plugins/rest",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*awsMetadataCredentialService).credentials": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\nrefreshFromService (ctx context.Context) error\n\t273:\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, metaDataURL, nil)\n\t265:\tmetaDataURL, err := cs.urlForMetadataService()\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\nurlForMetadataService () (string, error)\n\t207:\treturn cs.credServicePath + cs.RoleName, nil\n\t207:\treturn cs.credServicePath + cs.RoleName, nil\n\t204:\tfunc (cs *awsMetadataCredentialService) urlForMetadataService() (string, error) {\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\nrefreshFromService (ctx context.Context) error\n\t245:\tfunc (cs *awsMetadataCredentialService) refreshFromService(ctx context.Context) error {\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\ncredentials (ctx context.Context) (github.com/open-policy-agent/opa/internal/providers/aws.Credentials, error)\n\t344:\tfunc (cs *awsMetadataCredentialService) credentials(ctx context.Context) (aws.Credentials, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*awsMetadataCredentialService).refreshFromService": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\nrefreshFromService (ctx context.Context) error\n\t273:\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, metaDataURL, nil)\n\t265:\tmetaDataURL, err := cs.urlForMetadataService()\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\nurlForMetadataService () (string, error)\n\t207:\treturn cs.credServicePath + cs.RoleName, nil\n\t207:\treturn cs.credServicePath + cs.RoleName, nil\n\t204:\tfunc (cs *awsMetadataCredentialService) urlForMetadataService() (string, error) {\n\u003e\u003e/analysis/repo/v1/plugins/rest/aws.go\nrefreshFromService (ctx context.Context) error\n\t245:\tfunc (cs *awsMetadataCredentialService) refreshFromService(ctx context.Context) error {",
+				"InferDepth": 1
+			}
+		],
+		"(*azureManagedIdentitiesAuthPlugin).Prepare": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nazureManagedIdentitiesTokenRequest (endpoint string, apiVersion string, resource string, objectID string, clientID string, miResID string, useAppServiceMsi bool) (github.com/open-policy-agent/opa/v1/plugins/rest.azureManagedIdentitiesToken, error)\n\t112:\trequest, err := http.NewRequest(\"GET\", e, nil)\n\t110:\te := buildAzureManagedIdentitiesRequestPath(endpoint, apiVersion, resource, objectID, clientID, miResID)\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nbuildAzureManagedIdentitiesRequestPath (endpoint string, apiVersion string, resource string, objectID string, clientID string, miResID string) string\n\t179:\treturn endpoint + \"?\" + params.Encode()\n\t179:\treturn endpoint + \"?\" + params.Encode()\n\t160:\tendpoint, apiVersion, resource, objectID, clientID, miResID string,\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nazureManagedIdentitiesTokenRequest (endpoint string, apiVersion string, resource string, objectID string, clientID string, miResID string, useAppServiceMsi bool) (github.com/open-policy-agent/opa/v1/plugins/rest.azureManagedIdentitiesToken, error)\n\t106:\tendpoint, apiVersion, resource, objectID, clientID, miResID string,\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nPrepare (req *net/http.Request) error\n\t92:\tap.Endpoint, ap.APIVersion, ap.Resource,\n\t90:\tfunc (ap *azureManagedIdentitiesAuthPlugin) Prepare(req *http.Request) error {",
+				"InferDepth": 2
+			}
+		],
+		"(*oauth2ClientCredentialsAuthPlugin).Prepare": [
+			{
+				"Predicate": "EqFalse",
+				"Object": [
+					"0::19"
+				],
+				"Reason": "Insecure Verification\n\u003e\u003e/analysis/repo/v1/plugins/rest/auth.go\nrequestToken (ctx context.Context) (*github.com/open-policy-agent/opa/v1/plugins/rest.oauth2Token, error)\n\t604:\tclient := DefaultRoundTripperClient(\u0026tls.Config{InsecureSkipVerify: ap.tlsSkipVerify}, 10)\n\t604:\tclient := DefaultRoundTripperClient(\u0026tls.Config{InsecureSkipVerify: ap.tlsSkipVerify}, 10)\n\t534:\tfunc (ap *oauth2ClientCredentialsAuthPlugin) requestToken(ctx context.Context) (*oauth2Token, error) {\n\u003e\u003e/analysis/repo/v1/plugins/rest/auth.go\nPrepare (req *net/http.Request) error\n\t636:\tfunc (ap *oauth2ClientCredentialsAuthPlugin) Prepare(req *http.Request) error {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/auth.go\nrequestToken (ctx context.Context) (*github.com/open-policy-agent/opa/v1/plugins/rest.oauth2Token, error)\n\t590:\tr, err := http.NewRequestWithContext(ctx, \"POST\", ap.TokenURL, strings.NewReader(body.Encode()))\n\t590:\tr, err := http.NewRequestWithContext(ctx, \"POST\", ap.TokenURL, strings.NewReader(body.Encode()))\n\t534:\tfunc (ap *oauth2ClientCredentialsAuthPlugin) requestToken(ctx context.Context) (*oauth2Token, error) {\n\u003e\u003e/analysis/repo/v1/plugins/rest/auth.go\nPrepare (req *net/http.Request) error\n\t636:\tfunc (ap *oauth2ClientCredentialsAuthPlugin) Prepare(req *http.Request) error {",
+				"InferDepth": 2
+			}
+		],
+		"(*oauth2ClientCredentialsAuthPlugin).requestToken": [
+			{
+				"Predicate": "EqFalse",
+				"Object": [
+					"0::19"
+				],
+				"Reason": "Insecure Verification\n\u003e\u003e/analysis/repo/v1/plugins/rest/auth.go\nrequestToken (ctx context.Context) (*github.com/open-policy-agent/opa/v1/plugins/rest.oauth2Token, error)\n\t604:\tclient := DefaultRoundTripperClient(\u0026tls.Config{InsecureSkipVerify: ap.tlsSkipVerify}, 10)\n\t604:\tclient := DefaultRoundTripperClient(\u0026tls.Config{InsecureSkipVerify: ap.tlsSkipVerify}, 10)\n\t534:\tfunc (ap *oauth2ClientCredentialsAuthPlugin) requestToken(ctx context.Context) (*oauth2Token, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/auth.go\nrequestToken (ctx context.Context) (*github.com/open-policy-agent/opa/v1/plugins/rest.oauth2Token, error)\n\t590:\tr, err := http.NewRequestWithContext(ctx, \"POST\", ap.TokenURL, strings.NewReader(body.Encode()))\n\t590:\tr, err := http.NewRequestWithContext(ctx, \"POST\", ap.TokenURL, strings.NewReader(body.Encode()))\n\t534:\tfunc (ap *oauth2ClientCredentialsAuthPlugin) requestToken(ctx context.Context) (*oauth2Token, error) {",
+				"InferDepth": 1
+			}
+		],
+		"azureManagedIdentitiesTokenRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nazureManagedIdentitiesTokenRequest (endpoint string, apiVersion string, resource string, objectID string, clientID string, miResID string, useAppServiceMsi bool) (github.com/open-policy-agent/opa/v1/plugins/rest.azureManagedIdentitiesToken, error)\n\t112:\trequest, err := http.NewRequest(\"GET\", e, nil)\n\t110:\te := buildAzureManagedIdentitiesRequestPath(endpoint, apiVersion, resource, objectID, clientID, miResID)\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nbuildAzureManagedIdentitiesRequestPath (endpoint string, apiVersion string, resource string, objectID string, clientID string, miResID string) string\n\t179:\treturn endpoint + \"?\" + params.Encode()\n\t179:\treturn endpoint + \"?\" + params.Encode()\n\t160:\tendpoint, apiVersion, resource, objectID, clientID, miResID string,\n\u003e\u003e/analysis/repo/v1/plugins/rest/azure.go\nazureManagedIdentitiesTokenRequest (endpoint string, apiVersion string, resource string, objectID string, clientID string, miResID string, useAppServiceMsi bool) (github.com/open-policy-agent/opa/v1/plugins/rest.azureManagedIdentitiesToken, error)\n\t106:\tendpoint, apiVersion, resource, objectID, clientID, miResID string,",
+				"InferDepth": 1
+			}
+		],
+		"gcpMetadataServiceRequest": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/v1/plugins/rest/gcp.go\ngcpMetadataServiceRequest (endpoint string) ([]byte, error)\n\t140:\trequest, err := http.NewRequest(\"GET\", endpoint, nil)\n\t139:\tfunc gcpMetadataServiceRequest(endpoint string) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

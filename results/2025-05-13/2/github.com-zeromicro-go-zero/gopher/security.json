@@ -1,0 +1,27 @@
+{
+	"Package_Name": "github.com/zeromicro/go-zero/rest/internal/security",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"VerifySignature": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1::0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/core/codec/hmac.go\nHmac (key []byte, body string) []byte\n\t12:\th := hmac.New(sha256.New, key)\n\t11:\tfunc Hmac(key []byte, body string) []byte {\n\u003e\u003e/analysis/repo/core/codec/hmac.go\nHmacBase64 (key []byte, body string) string\n\t18:\tfunc HmacBase64(key []byte, body string) string {\n\u003e\u003e/analysis/repo/rest/internal/security/contentsecurity.go\nVerifySignature (r *net/http.Request, securityHeader *github.com/zeromicro/go-zero/rest/internal/security.ContentSecurityHeader, tolerance time.Duration) int\n\t120:\tactualSignature := codec.HmacBase64(securityHeader.Key, signContent)\n\t120:\tactualSignature := codec.HmacBase64(securityHeader.Key, signContent)\n\t100:\tfunc VerifySignature(r *http.Request, securityHeader *ContentSecurityHeader, tolerance time.Duration) int {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/core/codec/hmac.go\nHmac (key []byte, body string) []byte\n\t12:\th := hmac.New(sha256.New, key)\n\t11:\tfunc Hmac(key []byte, body string) []byte {\n\u003e\u003e/analysis/repo/core/codec/hmac.go\nHmacBase64 (key []byte, body string) string\n\t18:\tfunc HmacBase64(key []byte, body string) string {\n\u003e\u003e/analysis/repo/rest/internal/security/contentsecurity.go\nVerifySignature (r *net/http.Request, securityHeader *github.com/zeromicro/go-zero/rest/internal/security.ContentSecurityHeader, tolerance time.Duration) int\n\t120:\tactualSignature := codec.HmacBase64(securityHeader.Key, signContent)\n\t120:\tactualSignature := codec.HmacBase64(securityHeader.Key, signContent)\n\t100:\tfunc VerifySignature(r *http.Request, securityHeader *ContentSecurityHeader, tolerance time.Duration) int {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

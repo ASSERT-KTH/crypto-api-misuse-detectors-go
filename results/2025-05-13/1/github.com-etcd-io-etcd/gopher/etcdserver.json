@@ -1,0 +1,48 @@
+{
+	"Package_Name": "go.etcd.io/etcd/etcdserver",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*EtcdServer).getPeerHashKVHTTP": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"3"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/etcdserver/corrupt.go\ngetPeerHashKVHTTP (ctx context.Context, cid go.etcd.io/etcd/pkg/types.ID, url string, rev int64) (*go.etcd.io/etcd/etcdserver/etcdserverpb.HashKVResponse, error)\n\t512:\treq, err := http.NewRequest(http.MethodGet, requestUrl, bytes.NewReader(hashReqBytes))\n\t511:\trequestUrl := url + PeerHashKVPath\n\t499:\tfunc (s *EtcdServer) getPeerHashKVHTTP(ctx context.Context, cid types.ID, url string, rev int64) (*pb.HashKVResponse, error) {",
+				"InferDepth": 1
+			}
+		],
+		"GetClusterFromRemotePeers": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::-1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/etcdserver/cluster_util.go\ngetClusterFromRemotePeers (lg *go.uber.org/zap.Logger, urls []string, timeout time.Duration, logerr bool, rt net/http.RoundTripper, nextClusterVersionCompatible bool) (*go.etcd.io/etcd/etcdserver/api/membership.RaftCluster, error)\n\t75:\tresp, err := cc.Get(addr)\n\t74:\taddr := u + \"/members\"\n\t73:\tfor _, u := range urls {\n\t65:\tfunc getClusterFromRemotePeers(lg *zap.Logger, urls []string, timeout time.Duration, logerr bool, rt http.RoundTripper, nextClusterVersionCompatible bool) (*membership.RaftCluster, error) {\n\u003e\u003e/analysis/repo/etcdserver/cluster_util.go\nGetClusterFromRemotePeers (lg *go.uber.org/zap.Logger, urls []string, rt net/http.RoundTripper, nextClusterVersionCompatible bool) (*go.etcd.io/etcd/etcdserver/api/membership.RaftCluster, error)\n\t60:\tfunc GetClusterFromRemotePeers(lg *zap.Logger, urls []string, rt http.RoundTripper, nextClusterVersionCompatible bool) (*membership.RaftCluster, error) {",
+				"InferDepth": 2
+			}
+		],
+		"getClusterFromRemotePeers": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1::-1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/etcdserver/cluster_util.go\ngetClusterFromRemotePeers (lg *go.uber.org/zap.Logger, urls []string, timeout time.Duration, logerr bool, rt net/http.RoundTripper, nextClusterVersionCompatible bool) (*go.etcd.io/etcd/etcdserver/api/membership.RaftCluster, error)\n\t75:\tresp, err := cc.Get(addr)\n\t74:\taddr := u + \"/members\"\n\t73:\tfor _, u := range urls {\n\t65:\tfunc getClusterFromRemotePeers(lg *zap.Logger, urls []string, timeout time.Duration, logerr bool, rt http.RoundTripper, nextClusterVersionCompatible bool) (*membership.RaftCluster, error) {",
+				"InferDepth": 1
+			}
+		],
+		"promoteMemberHTTP": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/etcdserver/cluster_util.go\npromoteMemberHTTP (ctx context.Context, url string, id uint64, peerRt net/http.RoundTripper) ([]*go.etcd.io/etcd/etcdserver/api/membership.Member, error)\n\t380:\treq, err := http.NewRequest(\"POST\", requestUrl, nil)\n\t379:\trequestUrl := url + \"/members/promote/\" + fmt.Sprintf(\"%d\", id)\n\t379:\trequestUrl := url + \"/members/promote/\" + fmt.Sprintf(\"%d\", id)\n\t370:\tfunc promoteMemberHTTP(ctx context.Context, url string, id uint64, peerRt http.RoundTripper) ([]*membership.Member, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

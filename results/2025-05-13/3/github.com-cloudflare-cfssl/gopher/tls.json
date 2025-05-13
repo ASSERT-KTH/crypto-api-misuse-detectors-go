@@ -1,0 +1,292 @@
+{
+	"Package_Name": "github.com/cloudflare/cfssl/scan/crypto/tls",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*Conn).decryptTicket": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"1"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/scan/crypto/tls/ticket.go\ndecryptTicket (encrypted []byte) (*github.com/cloudflare/cfssl/scan/crypto/tls.sessionState, bool)\n\t199:\tcipher.NewCTR(block, iv).XORKeyStream(plaintext, ciphertext)\n\t168:\tiv := encrypted[ticketKeyNameLen : ticketKeyNameLen+aes.BlockSize]\n\t161:\tfunc (c *Conn) decryptTicket(encrypted []byte) (*sessionState, bool) {",
+				"InferDepth": 1
+			}
+		],
+		"(*ecdheKeyAgreement).generateClientKeyExchange": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"1::0"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating keys. \n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)\n\t388:\tpriv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())\n\t388:\tpriv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())\n\u003e\u003e/analysis/repo/scan/crypto/tls/common.go\nrand () io.Reader\n\t440:\tr := c.Rand\n\t439:\tfunc (c *Config) rand() io.Reader {\n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)\n\t384:\tfunc (ka *ecdheKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*ecdheKeyAgreement).generateServerKeyExchange": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"1::0"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating keys. \n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, hello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg) (*github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg, error)\n\t209:\tka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())\n\t209:\tka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())\n\u003e\u003e/analysis/repo/scan/crypto/tls/common.go\nrand () io.Reader\n\t440:\tr := c.Rand\n\t439:\tfunc (c *Config) rand() io.Reader {\n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, hello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg) (*github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg, error)\n\t184:\tfunc (ka *ecdheKeyAgreement) generateServerKeyExchange(config *Config, cert *Certificate, clientHello *clientHelloMsg, hello *serverHelloMsg) (*serverKeyExchangeMsg, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*fixedNonceAEAD).Seal": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\nSeal (out []byte, nonce []byte, plaintext []byte, additionalData []byte) []byte\n\t151:\treturn f.aead.Seal(out, f.sealNonce, plaintext, additionalData)\n\t151:\treturn f.aead.Seal(out, f.sealNonce, plaintext, additionalData)\n\t149:\tfunc (f *fixedNonceAEAD) Seal(out, nonce, plaintext, additionalData []byte) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\nSeal (out []byte, nonce []byte, plaintext []byte, additionalData []byte) []byte\n\t151:\treturn f.aead.Seal(out, f.sealNonce, plaintext, additionalData)\n\t151:\treturn f.aead.Seal(out, f.sealNonce, plaintext, additionalData)\n\t150:\tcopy(f.sealNonce[len(f.sealNonce)-8:], nonce)\n\t149:\tfunc (f *fixedNonceAEAD) Seal(out, nonce, plaintext, additionalData []byte) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"(*rsaKeyAgreement).generateClientKeyExchange": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"1::0"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating parameters. \n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)\n\t76:\tencrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)\n\t76:\tencrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)\n\u003e\u003e/analysis/repo/scan/crypto/tls/common.go\nrand () io.Reader\n\t440:\tr := c.Rand\n\t439:\tfunc (c *Config) rand() io.Reader {\n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)\n\t67:\tfunc (ka rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(finishedHash).clientSum": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nclientSum (masterSecret []byte) []byte\n\t291:\tfunc (h finishedHash) clientSum(masterSecret []byte) []byte {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nclientSum (masterSecret []byte) []byte\n\t291:\tfunc (h finishedHash) clientSum(masterSecret []byte) []byte {",
+				"InferDepth": 3
+			}
+		],
+		"(finishedHash).serverSum": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nserverSum (masterSecret []byte) []byte\n\t303:\tfunc (h finishedHash) serverSum(masterSecret []byte) []byte {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nserverSum (masterSecret []byte) []byte\n\t303:\tfunc (h finishedHash) serverSum(masterSecret []byte) []byte {",
+				"InferDepth": 3
+			}
+		],
+		"(rsaKeyAgreement).generateClientKeyExchange": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"1::0"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating parameters. \n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)\n\t76:\tencrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)\n\t76:\tencrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)\n\u003e\u003e/analysis/repo/scan/crypto/tls/common.go\nrand () io.Reader\n\t440:\tr := c.Rand\n\t439:\tfunc (c *Config) rand() io.Reader {\n\u003e\u003e/analysis/repo/scan/crypto/tls/key_agreement.go\ngenerateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)\n\t67:\tfunc (ka rsaKeyAgreement) generateClientKeyExchange(config *Config, clientHello *clientHelloMsg, cert *x509.Certificate) ([]byte, *clientKeyExchangeMsg, error) {",
+				"InferDepth": 1
+			}
+		],
+		"aeadAESGCM": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\naeadAESGCM (key []byte, fixedNonce []byte) crypto/cipher.AEAD\n\t160:\taes, err := aes.NewCipher(key)\n\t159:\tfunc aeadAESGCM(key, fixedNonce []byte) cipher.AEAD {",
+				"InferDepth": 1
+			}
+		],
+		"cipher3DES": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0",
+					"24"
+				],
+				"Reason": "2TDES is insecure, use aes instead.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\ncipher3DES (key []byte, iv []byte, isRead bool) interface{}\n\t103:\tblock, _ := des.NewTripleDESCipher(key)\n\t102:\tfunc cipher3DES(key, iv []byte, isRead bool) interface{} {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "DES-key should be random.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\ncipher3DES (key []byte, iv []byte, isRead bool) interface{}\n\t103:\tblock, _ := des.NewTripleDESCipher(key)\n\t102:\tfunc cipher3DES(key, iv []byte, isRead bool) interface{} {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "IVs should be random in CBC mode, it potentially lead to a Padding Oracle attack and CPA attack\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\ncipher3DES (key []byte, iv []byte, isRead bool) interface{}\n\t107:\treturn cipher.NewCBCEncrypter(block, iv)\n\t102:\tfunc cipher3DES(key, iv []byte, isRead bool) interface{} {",
+				"InferDepth": 1
+			}
+		],
+		"cipherAES": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "IVs should be random in CBC mode, it potentially lead to a Padding Oracle attack and CPA attack\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\ncipherAES (key []byte, iv []byte, isRead bool) interface{}\n\t115:\treturn cipher.NewCBCEncrypter(block, iv)\n\t110:\tfunc cipherAES(key, iv []byte, isRead bool) interface{} {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\ncipherAES (key []byte, iv []byte, isRead bool) interface{}\n\t111:\tblock, _ := aes.NewCipher(key)\n\t110:\tfunc cipherAES(key, iv []byte, isRead bool) interface{} {",
+				"InferDepth": 1
+			}
+		],
+		"cipherRC4": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "RC4-key should be random.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\ncipherRC4 (key []byte, iv []byte, isRead bool) interface{}\n\t98:\tcipher, _ := rc4.NewCipher(key)\n\t97:\tfunc cipherRC4(key, iv []byte, isRead bool) interface{} {",
+				"InferDepth": 1
+			}
+		],
+		"keysFromMasterSecret": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nkeysFromMasterSecret (version uint16, suite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite, masterSecret []byte, clientRandom []byte, serverRandom []byte, macLen int, keyLen int, ivLen int) (clientMAC []byte, serverMAC []byte, clientKey []byte, serverKey []byte, clientIV []byte, serverIV []byte)\n\t160:\tfunc keysFromMasterSecret(version uint16, suite *cipherSuite, masterSecret, clientRandom, serverRandom []byte, macLen, keyLen, ivLen int) (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV []byte) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nkeysFromMasterSecret (version uint16, suite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite, masterSecret []byte, clientRandom []byte, serverRandom []byte, macLen int, keyLen int, ivLen int) (clientMAC []byte, serverMAC []byte, clientKey []byte, serverKey []byte, clientIV []byte, serverIV []byte)\n\t160:\tfunc keysFromMasterSecret(version uint16, suite *cipherSuite, masterSecret, clientRandom, serverRandom []byte, macLen, keyLen, ivLen int) (clientMAC, serverMAC, clientKey, serverKey, clientIV, serverIV []byte) {",
+				"InferDepth": 3
+			}
+		],
+		"macSHA1": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\nmacSHA1 (version uint16, key []byte) github.com/cloudflare/cfssl/scan/crypto/tls.macFunction\n\t128:\treturn tls10MAC{hmac.New(sha1.New, key)}\n\t119:\tfunc macSHA1(version uint16, key []byte) macFunction {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/cipher_suites.go\nmacSHA1 (version uint16, key []byte) github.com/cloudflare/cfssl/scan/crypto/tls.macFunction\n\t128:\treturn tls10MAC{hmac.New(sha1.New, key)}\n\t119:\tfunc macSHA1(version uint16, key []byte) macFunction {",
+				"InferDepth": 1
+			}
+		],
+		"masterFromPreMasterSecret": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nmasterFromPreMasterSecret (version uint16, suite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite, preMasterSecret []byte, clientRandom []byte, serverRandom []byte) []byte\n\t147:\tfunc masterFromPreMasterSecret(version uint16, suite *cipherSuite, preMasterSecret, clientRandom, serverRandom []byte) []byte {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nmasterFromPreMasterSecret (version uint16, suite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite, preMasterSecret []byte, clientRandom []byte, serverRandom []byte) []byte\n\t147:\tfunc masterFromPreMasterSecret(version uint16, suite *cipherSuite, preMasterSecret, clientRandom, serverRandom []byte) []byte {",
+				"InferDepth": 3
+			}
+		],
+		"pHash": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "SECURE_HMAC_HASH",
+				"Object": [
+					"3"
+				],
+				"Reason": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {",
+				"InferDepth": 1
+			}
+		],
+		"prf10": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf10 (result []byte, secret []byte, label []byte, seed []byte)\n\t59:\ts1, s2 := splitPreMasterSecret(secret)\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nsplitPreMasterSecret (secret []byte) (s1 []byte, s2 []byte)\n\t20:\ts1 = secret[0 : (len(secret)+1)/2]\n\t19:\tfunc splitPreMasterSecret(secret []byte) (s1, s2 []byte) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf10 (result []byte, secret []byte, label []byte, seed []byte)\n\t51:\tfunc prf10(result, secret, label, seed []byte) {",
+				"InferDepth": 2
+			}
+		],
+		"prf12$1": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\npHash (result []byte, secret []byte, seed []byte, hash \n\t27:\th := hmac.New(hash, secret)\n\t26:\tfunc pHash(result, secret, seed []byte, hash func() hash.Hash) {\n\u003e\u003e/analysis/repo/scan/crypto/tls/prf.go\nprf12$1 (result []byte, secret []byte, label []byte, seed []byte)\n\t71:\treturn func(result, secret, label, seed []byte) {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

@@ -1,0 +1,48 @@
+{
+	"Package_Name": "filippo.io/age",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"aeadDecrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "Key should be random.\n\u003e\u003e/analysis/repo/primitives.go\naeadDecrypt (key []byte, size int, ciphertext []byte) ([]byte, error)\n\t41:\taead, err := chacha20poly1305.New(key)\n\t40:\tfunc aeadDecrypt(key []byte, size int, ciphertext []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"aeadEncrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "Key should be random.\n\u003e\u003e/analysis/repo/primitives.go\naeadEncrypt (key []byte, plaintext []byte) ([]byte, error)\n\t20:\taead, err := chacha20poly1305.New(key)\n\t19:\tfunc aeadEncrypt(key, plaintext []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"headerMAC": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "Secret should be random.\n\u003e\u003e/analysis/repo/primitives.go\nheaderMAC (fileKey []byte, hdr *filippo.io/age/internal/format.Header) ([]byte, error)\n\t53:\th := hkdf.New(sha256.New, fileKey, nil, []byte(\"header\"))\n\t52:\tfunc headerMAC(fileKey []byte, hdr *format.Header) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"streamKey": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "Secret should be random.\n\u003e\u003e/analysis/repo/primitives.go\nstreamKey (fileKey []byte, nonce []byte) []byte\n\t66:\th := hkdf.New(sha256.New, fileKey, nonce, []byte(\"payload\"))\n\t65:\tfunc streamKey(fileKey, nonce []byte) []byte {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

@@ -1,0 +1,70 @@
+{
+	"Package_Name": "go.k6.io/k6/internal/js/modules/k6/webcrypto",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*AESCBCParams).Encrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::2"
+				],
+				"Reason": "IVs should be random in CBC mode, it potentially lead to a Padding Oracle attack and CPA attack\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/aes.go\nEncrypt (plaintext []byte, key go.k6.io/k6/internal/js/modules/k6/webcrypto.CryptoKey) ([]byte, error)\n\t279:\tcbc := cipher.NewCBCEncrypter(block, acp.Iv)\n\t279:\tcbc := cipher.NewCBCEncrypter(block, acp.Iv)\n\t254:\tfunc (acp *AESCBCParams) Encrypt(plaintext []byte, key CryptoKey) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*AESCTRParams).Decrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/aes.go\nDecrypt (ciphertext []byte, key go.k6.io/k6/internal/js/modules/k6/webcrypto.CryptoKey) ([]byte, error)\n\t418:\tstream := cipher.NewCTR(block, acp.Counter)\n\t418:\tstream := cipher.NewCTR(block, acp.Counter)\n\t395:\tfunc (acp *AESCTRParams) Decrypt(ciphertext []byte, key CryptoKey) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*AESCTRParams).Encrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/aes.go\nEncrypt (plaintext []byte, key go.k6.io/k6/internal/js/modules/k6/webcrypto.CryptoKey) ([]byte, error)\n\t385:\tctr := cipher.NewCTR(block, acp.Counter)\n\t385:\tctr := cipher.NewCTR(block, acp.Counter)\n\t361:\tfunc (acp *AESCTRParams) Encrypt(plaintext []byte, key CryptoKey) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*AESGCMParams).Encrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/aes.go\nEncrypt (plaintext []byte, key go.k6.io/k6/internal/js/modules/k6/webcrypto.CryptoKey) ([]byte, error)\n\t546:\treturn gcm.Seal(nil, agp.Iv, plaintext, agp.AdditionalData), nil\n\t546:\treturn gcm.Seal(nil, agp.Iv, plaintext, agp.AdditionalData), nil\n\t479:\tfunc (agp *AESGCMParams) Encrypt(plaintext []byte, key CryptoKey) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*RSAHashedKeyGenParams).GenerateKey": [
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::1",
+					"3072"
+				],
+				"Reason": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/rsa.go\ngenerateRSAKeyPair (modulusLength int, publicExponent int) (any, any, error)\n\t164:\tprivateKey, err := rsa.GenerateKey(rand.Reader, modulusLength)\n\t161:\tmodulusLength int,\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/rsa.go\nGenerateKey (extractable bool, keyUsages []string) (go.k6.io/k6/internal/js/modules/k6/webcrypto.CryptoKeyGenerationResult, error)\n\t132:\tprivateKey.handle, publicKey.handle, err = generateRSAKeyPair(rsakgp.ModulusLength, publicExponent)\n\t62:\tfunc (rsakgp *RSAHashedKeyGenParams) GenerateKey(",
+				"InferDepth": 2
+			}
+		],
+		"generateRSAKeyPair": [
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0",
+					"3072"
+				],
+				"Reason": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/internal/js/modules/k6/webcrypto/rsa.go\ngenerateRSAKeyPair (modulusLength int, publicExponent int) (any, any, error)\n\t164:\tprivateKey, err := rsa.GenerateKey(rand.Reader, modulusLength)\n\t161:\tmodulusLength int,",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

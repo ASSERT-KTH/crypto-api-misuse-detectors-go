@@ -1,0 +1,104 @@
+{
+	"Package_Name": "github.com/gravitational/teleport/lib/utils",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*HMACAnonymizer).Anonymize": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymize (data []byte) string\n\t76:\th := hmac.New(sha256.New, k)\n\t73:\tk := a.key\n\t71:\tfunc (a *HMACAnonymizer) Anonymize(data []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymize (data []byte) string\n\t76:\th := hmac.New(sha256.New, k)\n\t73:\tk := a.key\n\t71:\tfunc (a *HMACAnonymizer) Anonymize(data []byte) string {",
+				"InferDepth": 1
+			}
+		],
+		"(*HMACAnonymizer).AnonymizeNonEmpty": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymizeNonEmpty (s string) []byte\n\t96:\th := hmac.New(sha256.New, k)\n\t93:\tk := a.key\n\t87:\tfunc (a *HMACAnonymizer) AnonymizeNonEmpty(s string) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymizeNonEmpty (s string) []byte\n\t96:\th := hmac.New(sha256.New, k)\n\t93:\tk := a.key\n\t87:\tfunc (a *HMACAnonymizer) AnonymizeNonEmpty(s string) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"(*HMACAnonymizer).AnonymizeString": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymize (data []byte) string\n\t76:\th := hmac.New(sha256.New, k)\n\t73:\tk := a.key\n\t71:\tfunc (a *HMACAnonymizer) Anonymize(data []byte) string {\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymizeString (s string) string\n\t82:\tfunc (a *HMACAnonymizer) AnonymizeString(s string) string {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymize (data []byte) string\n\t76:\th := hmac.New(sha256.New, k)\n\t73:\tk := a.key\n\t71:\tfunc (a *HMACAnonymizer) Anonymize(data []byte) string {\n\u003e\u003e/analysis/repo/lib/utils/anonymizer.go\nAnonymizeString (s string) string\n\t82:\tfunc (a *HMACAnonymizer) AnonymizeString(s string) string {",
+				"InferDepth": 2
+			}
+		],
+		"BcryptFromPassword": [
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"1",
+					"12"
+				],
+				"Reason": "The cost should be greater than 12. 10 might be not safe.\n\u003e\u003e/analysis/repo/lib/utils/bcrypt.go\nBcryptFromPassword (password []byte, cost int) ([]byte, error)\n\t40:\treturn bcrypt.GenerateFromPassword(truncateToMaxSize(password), cost)\n\t39:\tfunc BcryptFromPassword(password []byte, cost int) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "PassWord should be random\n\u003e\u003e/analysis/repo/lib/utils/bcrypt.go\nBcryptFromPassword (password []byte, cost int) ([]byte, error)\n\t40:\treturn bcrypt.GenerateFromPassword(truncateToMaxSize(password), cost)\n\t40:\treturn bcrypt.GenerateFromPassword(truncateToMaxSize(password), cost)\n\u003e\u003e/analysis/repo/lib/utils/bcrypt.go\ntruncateToMaxSize (input []byte) []byte\n\t32:\treturn input[:maxInputSize]\n\t30:\tfunc truncateToMaxSize(input []byte) []byte {\n\u003e\u003e/analysis/repo/lib/utils/bcrypt.go\nBcryptFromPassword (password []byte, cost int) ([]byte, error)\n\t39:\tfunc BcryptFromPassword(password []byte, cost int) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"SetupTLSConfig": [
+			{
+				"Predicate": "SECURE_TLS_SUITE",
+				"Object": [
+					"1"
+				],
+				"Reason": "The TLS suite can be customized based on https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml -Recommended choices for parameters-4\n\u003e\u003e/analysis/repo/lib/utils/tls.go\nSetupTLSConfig (config *crypto/tls.Config, cipherSuites []uint16)\n\t43:\tconfig.CipherSuites = cipherSuites\n\t39:\tfunc SetupTLSConfig(config *tls.Config, cipherSuites []uint16) {",
+				"InferDepth": 1
+			}
+		],
+		"TLSConfig": [
+			{
+				"Predicate": "SECURE_TLS_SUITE",
+				"Object": [
+					"0"
+				],
+				"Reason": "The TLS suite can be customized based on https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml -Recommended choices for parameters-4\n\u003e\u003e/analysis/repo/lib/utils/tls.go\nSetupTLSConfig (config *crypto/tls.Config, cipherSuites []uint16)\n\t43:\tconfig.CipherSuites = cipherSuites\n\t39:\tfunc SetupTLSConfig(config *tls.Config, cipherSuites []uint16) {\n\u003e\u003e/analysis/repo/lib/utils/tls.go\nTLSConfig (cipherSuites []uint16) *crypto/tls.Config\n\t32:\tfunc TLSConfig(cipherSuites []uint16) *tls.Config {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

@@ -1,0 +1,57 @@
+{
+	"Package_Name": "github.com/IBM/sarama",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(scramFormatter).hmac": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scram_formatter.go\nmac (key []byte) (hash.Hash, error)\n\t21:\tm = hmac.New(sha256.New, key)\n\t16:\tfunc (s scramFormatter) mac(key []byte) (hash.Hash, error) {\n\u003e\u003e/analysis/repo/scram_formatter.go\nhmac (key []byte, extra []byte) ([]byte, error)\n\t32:\tfunc (s scramFormatter) hmac(key []byte, extra []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scram_formatter.go\nmac (key []byte) (hash.Hash, error)\n\t21:\tm = hmac.New(sha256.New, key)\n\t16:\tfunc (s scramFormatter) mac(key []byte) (hash.Hash, error) {\n\u003e\u003e/analysis/repo/scram_formatter.go\nhmac (key []byte, extra []byte) ([]byte, error)\n\t32:\tfunc (s scramFormatter) hmac(key []byte, extra []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(scramFormatter).mac": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scram_formatter.go\nmac (key []byte) (hash.Hash, error)\n\t21:\tm = hmac.New(sha256.New, key)\n\t16:\tfunc (s scramFormatter) mac(key []byte) (hash.Hash, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/scram_formatter.go\nmac (key []byte) (hash.Hash, error)\n\t21:\tm = hmac.New(sha256.New, key)\n\t16:\tfunc (s scramFormatter) mac(key []byte) (hash.Hash, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(scramFormatter).saltedPassword": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/scram_formatter.go\nmac (key []byte) (hash.Hash, error)\n\t21:\tm = hmac.New(sha256.New, key)\n\t16:\tfunc (s scramFormatter) mac(key []byte) (hash.Hash, error) {\n\u003e\u003e/analysis/repo/scram_formatter.go\nhmac (key []byte, extra []byte) ([]byte, error)\n\t32:\tfunc (s scramFormatter) hmac(key []byte, extra []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/scram_formatter.go\nsaltedPassword (password []byte, salt []byte, iterations int) ([]byte, error)\n\t50:\tfunc (s scramFormatter) saltedPassword(password []byte, salt []byte, iterations int) ([]byte, error) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

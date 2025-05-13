@@ -1,0 +1,37 @@
+{
+	"Package_Name": "github.com/knadh/listmonk/internal/bounce/webhooks",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*Forwardemail).ProcessBounce": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"0::0",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/bounce/webhooks/forwardemail.go\nProcessBounce (sig []byte, b []byte) ([]github.com/knadh/listmonk/models.Bounce, error)\n\t52:\tmac := hmac.New(sha256.New, key)\n\t50:\tkey := []byte(p.hmacKey)\n\t49:\tfunc (p *Forwardemail) ProcessBounce(sig, b []byte) ([]models.Bounce, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/bounce/webhooks/forwardemail.go\nProcessBounce (sig []byte, b []byte) ([]github.com/knadh/listmonk/models.Bounce, error)\n\t52:\tmac := hmac.New(sha256.New, key)\n\t50:\tkey := []byte(p.hmacKey)\n\t49:\tfunc (p *Forwardemail) ProcessBounce(sig, b []byte) ([]models.Bounce, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*SES).getCert": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/internal/bounce/webhooks/ses.go\ngetCert (certURL string) (*crypto/x509.Certificate, error)\n\t232:\tresp, err := http.Get(certURL)\n\t216:\tfunc (s *SES) getCert(certURL string) (*x509.Certificate, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

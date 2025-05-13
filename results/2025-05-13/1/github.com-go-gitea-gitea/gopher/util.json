@@ -1,0 +1,39 @@
+{
+	"Package_Name": "code.gitea.io/gitea/modules/util",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"AESGCMDecrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/modules/util/legacy.go\nAESGCMDecrypt (key []byte, ciphertext []byte) ([]byte, error)\n\t67:\tblock, err := aes.NewCipher(key)\n\t66:\tfunc AESGCMDecrypt(key, ciphertext []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESGCMEncrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/modules/util/legacy.go\nAESGCMEncrypt (key []byte, plaintext []byte) ([]byte, error)\n\t46:\tblock, err := aes.NewCipher(key)\n\t45:\tfunc AESGCMEncrypt(key, plaintext []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"GenerateKeyPair": [
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0",
+					"3072"
+				],
+				"Reason": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/modules/util/keypair.go\nGenerateKeyPair (bits int) (string, string, error)\n\t17:\tpriv, _ := rsa.GenerateKey(rand.Reader, bits)\n\t16:\tfunc GenerateKeyPair(bits int) (string, string, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

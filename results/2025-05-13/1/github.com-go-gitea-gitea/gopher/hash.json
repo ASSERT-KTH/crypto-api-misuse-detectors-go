@@ -1,0 +1,201 @@
+{
+	"Package_Name": "code.gitea.io/gitea/modules/auth/password/hash",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*Argon2Hasher).HashWithSaltBytes": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The author recommends 128bits salt.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/argon2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t29:\tfunc (hasher *Argon2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::0",
+					"1"
+				],
+				"Reason": "The draft RFC recommends time=1, when memory=64*1024 and thread=4.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/argon2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t29:\tfunc (hasher *Argon2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::1",
+					"65536"
+				],
+				"Reason": "The draft RFC recommends memory=64*1024, and mtime=1 and thread=4.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/argon2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t29:\tfunc (hasher *Argon2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::2",
+					"4"
+				],
+				"Reason": "The draft RFC recommends thread=4, when time=1 and memory=64*1024.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/argon2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t29:\tfunc (hasher *Argon2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/argon2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t33:\treturn hex.EncodeToString(argon2.IDKey([]byte(password), salt, hasher.time, hasher.memory, hasher.threads, hasher.keyLen))\n\t29:\tfunc (hasher *Argon2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			}
+		],
+		"(*BcryptHasher).HashWithSaltBytes": [
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::0",
+					"12"
+				],
+				"Reason": "The cost should be greater than 12. 10 might be not safe.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/bcrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t21:\tfunc (hasher *BcryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "PassWord should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/bcrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t21:\tfunc (hasher *BcryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			}
+		],
+		"(*PBKDF2Hasher).HashWithSaltBytes": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/pbkdf2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t31:\treturn hex.EncodeToString(pbkdf2.Key([]byte(password), salt, hasher.iter, hasher.keyLen, sha256.New))\n\t27:\tfunc (hasher *PBKDF2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::0",
+					"210000"
+				],
+				"Reason": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/pbkdf2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t31:\treturn hex.EncodeToString(pbkdf2.Key([]byte(password), salt, hasher.iter, hasher.keyLen, sha256.New))\n\t31:\treturn hex.EncodeToString(pbkdf2.Key([]byte(password), salt, hasher.iter, hasher.keyLen, sha256.New))\n\t27:\tfunc (hasher *PBKDF2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/pbkdf2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t31:\treturn hex.EncodeToString(pbkdf2.Key([]byte(password), salt, hasher.iter, hasher.keyLen, sha256.New))\n\t27:\tfunc (hasher *PBKDF2Hasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			}
+		],
+		"(*PasswordHashAlgorithm).HashWithSaltBytes": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "Suggest that the salt be random, with a length of at least 16 bytes. For detailed information, please refer to NIST SP 800-132.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {\n\u003e\u003e/analysis/repo/modules/auth/password/hash/hash.go\nHashWithSaltBytes (password string, saltBytes []byte) string\n\t22:\tHashWithSaltBytes(password string, saltBytes []byte) string",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/pbkdf2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t31:\treturn hex.EncodeToString(pbkdf2.Key([]byte(password), salt, hasher.iter, hasher.keyLen, sha256.New))\n\t27:\tfunc (hasher *PBKDF2Hasher) HashWithSaltBytes(password string, salt []byte) string {\n\u003e\u003e/analysis/repo/modules/auth/password/hash/hash.go\nHashWithSaltBytes (password string, saltBytes []byte) string\n\t22:\tHashWithSaltBytes(password string, saltBytes []byte) string",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "PassWord should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/bcrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t21:\tfunc (hasher *BcryptHasher) HashWithSaltBytes(password string, salt []byte) string {\n\u003e\u003e/analysis/repo/modules/auth/password/hash/hash.go\nHashWithSaltBytes (password string, saltBytes []byte) string\n\t22:\tHashWithSaltBytes(password string, saltBytes []byte) string",
+				"InferDepth": 3
+			}
+		],
+		"(*ScryptHasher).HashWithSaltBytes": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "Suggest that the salt be random, with a length of at least 16 bytes. For detailed information, please refer to NIST SP 800-132.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::1",
+					"8"
+				],
+				"Reason": "owasp recommended parameters is r=8 (1024 bytes),when N=2^17 (128 MiB) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::2",
+					"1"
+				],
+				"Reason": "owasp recommended parameters is p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::0",
+					"131072"
+				],
+				"Reason": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {",
+				"InferDepth": 1
+			}
+		],
+		"(PasswordHashAlgorithm).HashWithSaltBytes": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "Suggest that the salt be random, with a length of at least 16 bytes. For detailed information, please refer to NIST SP 800-132.\n\u003e\u003e/analysis/repo/modules/auth/password/hash/scrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t30:\thashedPassword, _ := scrypt.Key([]byte(password), salt, hasher.n, hasher.r, hasher.p, hasher.keyLen)\n\t26:\tfunc (hasher *ScryptHasher) HashWithSaltBytes(password string, salt []byte) string {\n\u003e\u003e/analysis/repo/modules/auth/password/hash/hash.go\nHashWithSaltBytes (password string, saltBytes []byte) string\n\t22:\tHashWithSaltBytes(password string, saltBytes []byte) string",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/pbkdf2.go\nHashWithSaltBytes (password string, salt []byte) string\n\t31:\treturn hex.EncodeToString(pbkdf2.Key([]byte(password), salt, hasher.iter, hasher.keyLen, sha256.New))\n\t27:\tfunc (hasher *PBKDF2Hasher) HashWithSaltBytes(password string, salt []byte) string {\n\u003e\u003e/analysis/repo/modules/auth/password/hash/hash.go\nHashWithSaltBytes (password string, saltBytes []byte) string\n\t22:\tHashWithSaltBytes(password string, saltBytes []byte) string",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "PassWord should be random\n\u003e\u003e/analysis/repo/modules/auth/password/hash/bcrypt.go\nHashWithSaltBytes (password string, salt []byte) string\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t25:\thashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), hasher.cost)\n\t21:\tfunc (hasher *BcryptHasher) HashWithSaltBytes(password string, salt []byte) string {\n\u003e\u003e/analysis/repo/modules/auth/password/hash/hash.go\nHashWithSaltBytes (password string, saltBytes []byte) string\n\t22:\tHashWithSaltBytes(password string, saltBytes []byte) string",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

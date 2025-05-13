@@ -1,0 +1,38 @@
+{
+	"Package_Name": "github.com/weaveworks/weave/net/ipsec",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*IPSec).InitSALocal": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"7"
+				],
+				"Reason": "Secret should be random.\n\u003e\u003e/analysis/repo/net/ipsec/ipsec.go\nderiveKey (sessionKey []byte, nonce []byte, peerName github.com/weaveworks/mesh.PeerName) ([]byte, error)\n\t507:\thkdf := hkdf.New(sha256.New, sessionKey, nonce, info)\n\t501:\tfunc deriveKey(sessionKey []byte, nonce []byte, peerName mesh.PeerName) ([]byte, error) {\n\u003e\u003e/analysis/repo/net/ipsec/ipsec.go\nInitSALocal (localPeer github.com/weaveworks/mesh.PeerName, remotePeer github.com/weaveworks/mesh.PeerName, connUID uint64, localIP net.IP, remoteIP net.IP, udpPort int, sessionKey *[32]byte) ([]byte, error)\n\t100:\tkey, err := deriveKey(sessionKey[:], nonce, localPeer)\n\t88:\tfunc (ipsec *IPSec) InitSALocal(localPeer, remotePeer mesh.PeerName, connUID uint64, localIP, remoteIP net.IP, udpPort int, sessionKey *[32]byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*IPSec).InitSARemote": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"8"
+				],
+				"Reason": "Secret should be random.\n\u003e\u003e/analysis/repo/net/ipsec/ipsec.go\nderiveKey (sessionKey []byte, nonce []byte, peerName github.com/weaveworks/mesh.PeerName) ([]byte, error)\n\t507:\thkdf := hkdf.New(sha256.New, sessionKey, nonce, info)\n\t501:\tfunc deriveKey(sessionKey []byte, nonce []byte, peerName mesh.PeerName) ([]byte, error) {\n\u003e\u003e/analysis/repo/net/ipsec/ipsec.go\nInitSARemote (msgInitSARemote []byte, localPeer github.com/weaveworks/mesh.PeerName, remotePeer github.com/weaveworks/mesh.PeerName, connUID uint64, localIP net.IP, remoteIP net.IP, udpPort int, sessionKey *[32]byte) error\n\t158:\tkey, err := deriveKey(sessionKey[:], msg.nonce, remotePeer)\n\t142:\tfunc (ipsec *IPSec) InitSARemote(msgInitSARemote []byte, localPeer, remotePeer mesh.PeerName, connUID uint64, localIP, remoteIP net.IP, udpPort int, sessionKey *[32]byte) error {",
+				"InferDepth": 2
+			}
+		],
+		"deriveKey": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0"
+				],
+				"Reason": "Secret should be random.\n\u003e\u003e/analysis/repo/net/ipsec/ipsec.go\nderiveKey (sessionKey []byte, nonce []byte, peerName github.com/weaveworks/mesh.PeerName) ([]byte, error)\n\t507:\thkdf := hkdf.New(sha256.New, sessionKey, nonce, info)\n\t501:\tfunc deriveKey(sessionKey []byte, nonce []byte, peerName mesh.PeerName) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

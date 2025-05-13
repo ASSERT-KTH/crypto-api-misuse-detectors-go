@@ -1,0 +1,657 @@
+[
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "k := md5.Sum([]byte(setting.SecretKey))",
+			"SourceFilename": "/analysis/repo/models/auth/twofactor.go",
+			"SourceLineNum": 96,
+			"ParentFunction": "getEncryptionKey () []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+		"Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+		"Slicing_Criteria": {
+			"SourceCode": "hashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)",
+			"SourceFilename": "/analysis/repo/models/auth/oauth2.go",
+			"SourceLineNum": 189,
+			"ParentFunction": "GenerateClientSecret (ctx context.Context) (string, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "hashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)",
+				"SourceFilename": "/analysis/repo/models/auth/oauth2.go",
+				"SourceLineNum": 189,
+				"ParentFunction": "GenerateClientSecret (ctx context.Context) (string, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 10000",
+		"Slicing_Criteria": {
+			"SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+			"SourceFilename": "/analysis/repo/models/auth/twofactor.go",
+			"SourceLineNum": 82,
+			"ParentFunction": "HashToken (token string, salt string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+				"SourceFilename": "/analysis/repo/models/auth/twofactor.go",
+				"SourceLineNum": 82,
+				"ParentFunction": "HashToken (token string, salt string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "m := md5.New()",
+			"SourceFilename": "/analysis/repo/models/avatars/avatar.go",
+			"SourceLineNum": 94,
+			"ParentFunction": "HashEmail (email string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hasher := sha1.New()",
+			"SourceFilename": "/analysis/repo/modules/git/object_format.go",
+			"SourceLineNum": 67,
+			"ParentFunction": "ComputeHash (t code.gitea.io/gitea/modules/git.ObjectType, content []byte) code.gitea.io/gitea/modules/git.ObjectID"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/modules/git/utils.go",
+			"SourceLineNum": 133,
+			"ParentFunction": "HashFilePathForWebUI (s string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "retCode = CreateTimeLimitCode(data, aliveTime, startTimeStr, sha1.New()) // TODO: this is only for the support of legacy codes, remove this in/after 1.23",
+			"SourceFilename": "/analysis/repo/modules/base/tool.go",
+			"SourceLineNum": 70,
+			"ParentFunction": "VerifyTimeLimitCode (now time.Time, data string, minutes int, code string) bool"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "avatarID := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", u.ID, md5.Sum(data)))))",
+			"SourceFilename": "/analysis/repo/models/user/avatar.go",
+			"SourceLineNum": 109,
+			"ParentFunction": "IsUploadAvatarChanged (data []byte) bool"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "avatarID := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", u.ID, md5.Sum(data)))))",
+			"SourceFilename": "/analysis/repo/models/user/avatar.go",
+			"SourceLineNum": 109,
+			"ParentFunction": "IsUploadAvatarChanged (data []byte) bool"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", sha1.Sum([]byte(context)))",
+			"SourceFilename": "/analysis/repo/models/git/commit_status.go",
+			"SourceLineNum": 522,
+			"ParentFunction": "hashCommitStatusContext (context string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", sha1.Sum([]byte(context)))",
+			"SourceFilename": "/analysis/repo/models/migrations/v1_10/v88.go",
+			"SourceLineNum": 14,
+			"ParentFunction": "hashContext (context string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 10000",
+		"Slicing_Criteria": {
+			"SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+			"SourceFilename": "/analysis/repo/models/migrations/base/hash.go",
+			"SourceLineNum": 14,
+			"ParentFunction": "HashToken (token string, salt string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)",
+				"SourceFilename": "/analysis/repo/models/migrations/base/hash.go",
+				"SourceLineNum": 14,
+				"ParentFunction": "HashToken (token string, salt string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "newAvatar := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", userID, md5.Sum(data)))))",
+			"SourceFilename": "/analysis/repo/models/migrations/v1_11/v115.go",
+			"SourceLineNum": 149,
+			"ParentFunction": "copyOldAvatarToNewLocation (userID int64, oldAvatar string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "newAvatar := fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%d-%x\", userID, md5.Sum(data)))))",
+			"SourceFilename": "/analysis/repo/models/migrations/v1_11/v115.go",
+			"SourceLineNum": 149,
+			"ParentFunction": "copyOldAvatarToNewLocation (userID int64, oldAvatar string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/scrypt.Key",
+		"Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\nWe Found: 65536",
+		"Slicing_Criteria": {
+			"SourceCode": "tempPasswd, _ = scrypt.Key([]byte(passwd), []byte(salt), 65536, 16, 2, 50)",
+			"SourceFilename": "/analysis/repo/models/migrations/v1_14/v166.go",
+			"SourceLineNum": 47,
+			"ParentFunction": "RecalculateUserEmptyPWD$1 (passwd string, salt string, algo string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tempPasswd, _ = scrypt.Key([]byte(passwd), []byte(salt), 65536, 16, 2, 50)",
+				"SourceFilename": "/analysis/repo/models/migrations/v1_14/v166.go",
+				"SourceLineNum": 47,
+				"ParentFunction": "RecalculateUserEmptyPWD$1 (passwd string, salt string, algo string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+		"Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+		"Slicing_Criteria": {
+			"SourceCode": "tempPasswd, _ = bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)",
+			"SourceFilename": "/analysis/repo/models/migrations/v1_14/v166.go",
+			"SourceLineNum": 44,
+			"ParentFunction": "RecalculateUserEmptyPWD$1 (passwd string, salt string, algo string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tempPasswd, _ = bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)",
+				"SourceFilename": "/analysis/repo/models/migrations/v1_14/v166.go",
+				"SourceLineNum": 44,
+				"ParentFunction": "RecalculateUserEmptyPWD$1 (passwd string, salt string, algo string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 10000",
+		"Slicing_Criteria": {
+			"SourceCode": "tempPasswd = pbkdf2.Key([]byte(passwd), []byte(salt), 10000, 50, sha256.New)",
+			"SourceFilename": "/analysis/repo/models/migrations/v1_14/v166.go",
+			"SourceLineNum": 53,
+			"ParentFunction": "RecalculateUserEmptyPWD$1 (passwd string, salt string, algo string) string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tempPasswd = pbkdf2.Key([]byte(passwd), []byte(salt), 10000, 50, sha256.New)",
+				"SourceFilename": "/analysis/repo/models/migrations/v1_14/v166.go",
+				"SourceLineNum": 53,
+				"ParentFunction": "RecalculateUserEmptyPWD$1 (passwd string, salt string, algo string) string"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/modules/packages/alpine/metadata.go",
+			"SourceLineNum": 79,
+			"ParentFunction": "ParsePackage (r io.Reader) (*code.gitea.io/gitea/modules/packages/alpine.Package, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h = sha1.New()",
+			"SourceFilename": "/analysis/repo/modules/packages/alpine/metadata.go",
+			"SourceLineNum": 119,
+			"ParentFunction": "ParsePackage (r io.Reader) (*code.gitea.io/gitea/modules/packages/alpine.Package, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "tmp := sha1.Sum(data)",
+			"SourceFilename": "/analysis/repo/modules/packages/npm/creator.go",
+			"SourceLineNum": 267,
+			"ParentFunction": "ParsePackage (r io.Reader) (*code.gitea.io/gitea/modules/packages/npm.Package, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5 := md5.New()",
+			"SourceFilename": "/analysis/repo/modules/packages/multi_hasher.go",
+			"SourceLineNum": 43,
+			"ParentFunction": "NewMultiHasher () *code.gitea.io/gitea/modules/packages.MultiHasher"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sha1 := sha1.New()",
+			"SourceFilename": "/analysis/repo/modules/packages/multi_hasher.go",
+			"SourceLineNum": 44,
+			"ParentFunction": "NewMultiHasher () *code.gitea.io/gitea/modules/packages.MultiHasher"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sha := sha1.New()",
+			"SourceFilename": "/analysis/repo/modules/auth/password/pwn/pwn.go",
+			"SourceLineNum": 80,
+			"ParentFunction": "CheckPassword (pw string, padding bool) (int, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/modules/private/internal.go",
+			"SourceLineNum": 52,
+			"ParentFunction": "NewInternalRequest (ctx context.Context, url string, method string) *code.gitea.io/gitea/modules/httplib.Request"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/modules/private/internal.go",
+				"SourceLineNum": 52,
+				"ParentFunction": "NewInternalRequest (ctx context.Context, url string, method string) *code.gitea.io/gitea/modules/httplib.Request"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hasher = md5.New()",
+			"SourceFilename": "/analysis/repo/routers/api/actions/artifacts_chunks.go",
+			"SourceLineNum": 38,
+			"ParentFunction": "saveUploadChunkBase (st code.gitea.io/gitea/modules/storage.ObjectStorage, ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext, artifact *code.gitea.io/gitea/models/actions.ActionArtifact, contentSize int64, runID int64, start int64, end int64, length int64, checkMd5 bool) (int64, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "artifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(req.Name)))",
+			"SourceFilename": "/analysis/repo/routers/api/actions/artifacts.go",
+			"SourceLineNum": 226,
+			"ParentFunction": "getUploadArtifactURL (ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "artifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(art.ArtifactName)))",
+			"SourceFilename": "/analysis/repo/routers/api/actions/artifacts.go",
+			"SourceLineNum": 362,
+			"ParentFunction": "listArtifacts (ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "artifactHash := fmt.Sprintf(\"%x\", md5.Sum([]byte(artifactName)))",
+			"SourceFilename": "/analysis/repo/routers/api/actions/artifacts_utils.go",
+			"SourceLineNum": 60,
+			"ParentFunction": "validateArtifactHash (ctx *code.gitea.io/gitea/routers/api/actions.ArtifactContext, artifactName string) bool"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/services/packages/alpine/repository.go",
+			"SourceLineNum": 280,
+			"ParentFunction": "buildPackagesIndex (ctx context.Context, ownerID int64, repoVersion *code.gitea.io/gitea/models/packages.PackageVersion, branch string, repository string, architecture string) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.SignPKCS1v15",
+		"Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+		"Slicing_Criteria": {
+			"SourceCode": "sign, err := rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA1, h.Sum(nil))",
+			"SourceFilename": "/analysis/repo/services/packages/alpine/repository.go",
+			"SourceLineNum": 301,
+			"ParentFunction": "buildPackagesIndex (ctx context.Context, ownerID int64, repoVersion *code.gitea.io/gitea/models/packages.PackageVersion, branch string, repository string, architecture string) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h = sha1.New()",
+			"SourceFilename": "/analysis/repo/routers/api/packages/chef/auth.go",
+			"SourceLineNum": 240,
+			"ParentFunction": "verifyDataNew (signature []byte, data []byte, pub *crypto/rsa.PublicKey, algo crypto.Hash) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sum := sha1.Sum([]byte(username))",
+			"SourceFilename": "/analysis/repo/routers/api/packages/chef/auth.go",
+			"SourceLineNum": 204,
+			"ParentFunction": "buildCheckData (req *net/http.Request, version string) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sum := sha1.Sum([]byte(path.Clean(req.URL.Path)))",
+			"SourceFilename": "/analysis/repo/routers/api/packages/chef/auth.go",
+			"SourceLineNum": 221,
+			"ParentFunction": "buildCheckData (req *net/http.Request, version string) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "tmp := md5.Sum(xmlMetadataWithHeader)",
+			"SourceFilename": "/analysis/repo/routers/api/packages/maven/maven.go",
+			"SourceLineNum": 134,
+			"ParentFunction": "serveMavenMetadata (ctx *code.gitea.io/gitea/services/context.Context, params code.gitea.io/gitea/routers/api/packages/maven.parameters)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "tmp := sha1.Sum(xmlMetadataWithHeader)",
+			"SourceFilename": "/analysis/repo/routers/api/packages/maven/maven.go",
+			"SourceLineNum": 137,
+			"ParentFunction": "serveMavenMetadata (ctx *code.gitea.io/gitea/services/context.Context, params code.gitea.io/gitea/routers/api/packages/maven.parameters)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "_, _ = fmt.Fprintf(out, \" %x\\n\", md5.Sum([]byte(info)))",
+			"SourceFilename": "/analysis/repo/routers/api/packages/rubygems/rubygems.go",
+			"SourceLineNum": 353,
+			"ParentFunction": "GetAllPackagesVersions (ctx *code.gitea.io/gitea/services/context.Context)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/services/webhook/matrix.go",
+			"SourceLineNum": 269,
+			"ParentFunction": "getMatrixTxnID (payload []byte) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+		"Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+			"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+			"SourceLineNum": 173,
+			"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "u, twofa := commonResetPassword(ctx)",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 158,
+				"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+			},
+			{
+				"SourceCode": "return nil, nil",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 112,
+				"ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+		"Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+			"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+			"SourceLineNum": 173,
+			"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "u, twofa := commonResetPassword(ctx)",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 158,
+				"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+			},
+			{
+				"SourceCode": "return nil, nil",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 119,
+				"ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+		"Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+			"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+			"SourceLineNum": 173,
+			"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "u, twofa := commonResetPassword(ctx)",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 158,
+				"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+			},
+			{
+				"SourceCode": "return nil, nil",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 126,
+				"ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "(*code.gitea.io/gitea/models/auth.TwoFactor).VerifyScratchToken",
+		"Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nHashToken (token string, salt string) string\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t82:\ttempHash := pbkdf2.Key([]byte(token), []byte(salt), 10000, 50, sha256.New)\n\t81:\tfunc HashToken(token, salt string) string {\n\u003e\u003e/analysis/repo/models/auth/twofactor.go\nVerifyScratchToken (token string) bool\n\t91:\ttempHash := HashToken(token, t.ScratchSalt)\n\t87:\tfunc (t *TwoFactor) VerifyScratchToken(token string) bool {\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "if !twofa.VerifyScratchToken(ctx.FormString(\"token\")) {",
+			"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+			"SourceLineNum": 173,
+			"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "u, twofa := commonResetPassword(ctx)",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 158,
+				"ParentFunction": "ResetPasswdPost (ctx *code.gitea.io/gitea/services/context.Context)"
+			},
+			{
+				"SourceCode": "return nil, nil",
+				"SourceFilename": "/analysis/repo/routers/web/auth/password.go",
+				"SourceLineNum": 138,
+				"ParentFunction": "commonResetPassword (ctx *code.gitea.io/gitea/services/context.Context) (*code.gitea.io/gitea/models/user.User, *code.gitea.io/gitea/models/auth.TwoFactor)"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "crypto/elliptic.P224",
+		"Message": "P224 is Acceptable but not recommended.",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)",
+			"SourceFilename": "/analysis/repo/cmd/cert.go",
+			"SourceLineNum": 103,
+			"ParentFunction": "runCert (c *github.com/urfave/cli/v2.Context) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::MinVersion",
+		"Message": "Insecure TLS Version\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.MinVersion = version",
+			"SourceFilename": "/analysis/repo/cmd/web_acme.go",
+			"SourceLineNum": 105,
+			"ParentFunction": "runACME (listenAddr string, m net/http.Handler) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "if version := toTLSVersion(setting.SSLMinimumVersion); version != 0 {",
+				"SourceFilename": "/analysis/repo/cmd/web_acme.go",
+				"SourceLineNum": 104,
+				"ParentFunction": "runACME (listenAddr string, m net/http.Handler) error"
+			},
+			{
+				"SourceCode": "return 0",
+				"SourceFilename": "/analysis/repo/cmd/web_https.go",
+				"SourceLineNum": 31,
+				"ParentFunction": "toTLSVersion (version string) uint16"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/tls.Config::MinVersion",
+		"Message": "Insecure TLS Version\nWe Found: 0",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.MinVersion = version",
+			"SourceFilename": "/analysis/repo/cmd/web_https.go",
+			"SourceLineNum": 145,
+			"ParentFunction": "runHTTPS (network string, listenAddr string, name string, certFile string, keyFile string, m net/http.Handler, useProxyProtocol bool, proxyProtocolTLSBridging bool) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "if version := toTLSVersion(setting.SSLMinimumVersion); version != 0 {",
+				"SourceFilename": "/analysis/repo/cmd/web_https.go",
+				"SourceLineNum": 144,
+				"ParentFunction": "runHTTPS (network string, listenAddr string, name string, certFile string, keyFile string, m net/http.Handler, useProxyProtocol bool, proxyProtocolTLSBridging bool) error"
+			},
+			{
+				"SourceCode": "return 0",
+				"SourceFilename": "/analysis/repo/cmd/web_https.go",
+				"SourceLineNum": 31,
+				"ParentFunction": "toTLSVersion (version string) uint16"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	}
+]

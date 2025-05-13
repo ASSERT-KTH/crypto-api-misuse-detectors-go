@@ -1,0 +1,48 @@
+{
+	"Package_Name": "github.com/gravitational/teleport/lib/client",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*KeyRing).clientTLSConfig": [
+			{
+				"Predicate": "SECURE_TLS_SUITE",
+				"Object": [
+					"1"
+				],
+				"Reason": "The TLS suite can be customized based on https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml -Recommended choices for parameters-4\n\u003e\u003e/analysis/repo/lib/utils/tls.go\nSetupTLSConfig (config *crypto/tls.Config, cipherSuites []uint16)\n\t43:\tconfig.CipherSuites = cipherSuites\n\t39:\tfunc SetupTLSConfig(config *tls.Config, cipherSuites []uint16) {\n\u003e\u003e/analysis/repo/lib/utils/tls.go\nTLSConfig (cipherSuites []uint16) *crypto/tls.Config\n\t32:\tfunc TLSConfig(cipherSuites []uint16) *tls.Config {\n\u003e\u003e/analysis/repo/lib/client/interfaces.go\nclientTLSConfig (cipherSuites []uint16, cred github.com/gravitational/teleport/lib/client.TLSCredential, clusters []string) (*crypto/tls.Config, error)\n\t282:\ttlsConfig := utils.TLSConfig(cipherSuites)\n\t271:\tfunc (k *KeyRing) clientTLSConfig(cipherSuites []uint16, cred TLSCredential, clusters []string) (*tls.Config, error) {",
+				"InferDepth": 3
+			}
+		],
+		"httpTransport": [
+			{
+				"Predicate": "EqFalse",
+				"Object": [
+					"0"
+				],
+				"Reason": "Insecure Verification\n\u003e\u003e/analysis/repo/lib/client/https_client.go\nhttpTransport (insecure bool, pool *crypto/x509.CertPool) *net/http.Transport\n\t51:\ttlsConfig.InsecureSkipVerify = insecure\n\t47:\tfunc httpTransport(insecure bool, pool *x509.CertPool) *http.Transport {",
+				"InferDepth": 1
+			}
+		],
+		"initClient": [
+			{
+				"Predicate": "EqFalse",
+				"Object": [
+					"1"
+				],
+				"Reason": "Insecure Verification\n\u003e\u003e/analysis/repo/lib/client/https_client.go\nhttpTransport (insecure bool, pool *crypto/x509.CertPool) *net/http.Transport\n\t51:\ttlsConfig.InsecureSkipVerify = insecure\n\t47:\tfunc httpTransport(insecure bool, pool *x509.CertPool) *http.Transport {\n\u003e\u003e/analysis/repo/lib/client/https_client.go\nnewClient (insecure bool, pool *crypto/x509.CertPool, extraHeaders map[string]string) *net/http.Client\n\t41:\tfunc newClient(insecure bool, pool *x509.CertPool, extraHeaders map[string]string) *http.Client {\n\u003e\u003e/analysis/repo/lib/client/weblogin.go\ninitClient (proxyAddr string, insecure bool, pool *crypto/x509.CertPool, extraHeaders map[string]string, opts ...github.com/gravitational/roundtrip.ClientParam) (*github.com/gravitational/teleport/lib/client.WebClient, *net/url.URL, error)\n\t549:\tfunc initClient(proxyAddr string, insecure bool, pool *x509.CertPool, extraHeaders map[string]string, opts ...roundtrip.ClientParam) (*WebClient, *url.URL, error) {",
+				"InferDepth": 3
+			}
+		],
+		"newClient": [
+			{
+				"Predicate": "EqFalse",
+				"Object": [
+					"0"
+				],
+				"Reason": "Insecure Verification\n\u003e\u003e/analysis/repo/lib/client/https_client.go\nhttpTransport (insecure bool, pool *crypto/x509.CertPool) *net/http.Transport\n\t51:\ttlsConfig.InsecureSkipVerify = insecure\n\t47:\tfunc httpTransport(insecure bool, pool *x509.CertPool) *http.Transport {\n\u003e\u003e/analysis/repo/lib/client/https_client.go\nnewClient (insecure bool, pool *crypto/x509.CertPool, extraHeaders map[string]string) *net/http.Client\n\t41:\tfunc newClient(insecure bool, pool *x509.CertPool, extraHeaders map[string]string) *http.Client {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

@@ -1,0 +1,192 @@
+{
+	"Package_Name": "github.com/pingcap/tidb/pkg/util/encrypt",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"AESDecryptWithCBC": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithCBC (cryptStr []byte, key []byte, iv []byte) ([]byte, error)\n\t168:\tcb, err := aes.NewCipher(key)\n\t167:\tfunc AESDecryptWithCBC(cryptStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESDecryptWithCFB": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithCFB (cryptStr []byte, key []byte, iv []byte) ([]byte, error)\n\t232:\tcb, err := aes.NewCipher(key)\n\t231:\tfunc AESDecryptWithCFB(cryptStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESDecryptWithCTR": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t202:\tmode := cipher.NewCTR(cb, iv)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithCTR (cryptedStr []byte, key []byte, iv []byte) ([]byte, error)\n\t214:\tfunc AESDecryptWithCTR(cryptedStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t198:\tcb, err := aes.NewCipher(key)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithCTR (cryptedStr []byte, key []byte, iv []byte) ([]byte, error)\n\t214:\tfunc AESDecryptWithCTR(cryptedStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"AESDecryptWithECB": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithECB (cryptStr []byte, key []byte) ([]byte, error)\n\t133:\tcb, err := aes.NewCipher(key)\n\t132:\tfunc AESDecryptWithECB(cryptStr, key []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESDecryptWithOFB": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithOFB (str []byte, key []byte, iv []byte) ([]byte, error)\n\t181:\tmode := cipher.NewOFB(cb, iv)\n\t176:\tfunc aesCryptWithOFB(str []byte, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithOFB (cipherStr []byte, key []byte, iv []byte) ([]byte, error)\n\t193:\tfunc AESDecryptWithOFB(cipherStr []byte, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithOFB (str []byte, key []byte, iv []byte) ([]byte, error)\n\t177:\tcb, err := aes.NewCipher(key)\n\t176:\tfunc aesCryptWithOFB(str []byte, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESDecryptWithOFB (cipherStr []byte, key []byte, iv []byte) ([]byte, error)\n\t193:\tfunc AESDecryptWithOFB(cipherStr []byte, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"AESEncryptWithCBC": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithCBC (str []byte, key []byte, iv []byte) ([]byte, error)\n\t158:\tcb, err := aes.NewCipher(key)\n\t157:\tfunc AESEncryptWithCBC(str, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "IVs should be random in CBC mode, it potentially lead to a Padding Oracle attack and CPA attack\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithCBC (str []byte, key []byte, iv []byte) ([]byte, error)\n\t162:\tmode := cipher.NewCBCEncrypter(cb, iv)\n\t157:\tfunc AESEncryptWithCBC(str, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESEncryptWithCFB": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "IVs should be random in CFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithCFB (cryptStr []byte, key []byte, iv []byte) ([]byte, error)\n\t224:\tcfb := cipher.NewCFBEncrypter(cb, iv)\n\t219:\tfunc AESEncryptWithCFB(cryptStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithCFB (cryptStr []byte, key []byte, iv []byte) ([]byte, error)\n\t220:\tcb, err := aes.NewCipher(key)\n\t219:\tfunc AESEncryptWithCFB(cryptStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESEncryptWithCTR": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t202:\tmode := cipher.NewCTR(cb, iv)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithCTR (plainStr []byte, key []byte, iv []byte) ([]byte, error)\n\t209:\tfunc AESEncryptWithCTR(plainStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t198:\tcb, err := aes.NewCipher(key)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithCTR (plainStr []byte, key []byte, iv []byte) ([]byte, error)\n\t209:\tfunc AESEncryptWithCTR(plainStr, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"AESEncryptWithECB": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithECB (str []byte, key []byte) ([]byte, error)\n\t123:\tcb, err := aes.NewCipher(key)\n\t122:\tfunc AESEncryptWithECB(str, key []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"AESEncryptWithOFB": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithOFB (str []byte, key []byte, iv []byte) ([]byte, error)\n\t181:\tmode := cipher.NewOFB(cb, iv)\n\t176:\tfunc aesCryptWithOFB(str []byte, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithOFB (plainStr []byte, key []byte, iv []byte) ([]byte, error)\n\t188:\tfunc AESEncryptWithOFB(plainStr []byte, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithOFB (str []byte, key []byte, iv []byte) ([]byte, error)\n\t177:\tcb, err := aes.NewCipher(key)\n\t176:\tfunc aesCryptWithOFB(str []byte, key []byte, iv []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\nAESEncryptWithOFB (plainStr []byte, key []byte, iv []byte) ([]byte, error)\n\t188:\tfunc AESEncryptWithOFB(plainStr []byte, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"aesCryptWithCTR": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t202:\tmode := cipher.NewCTR(cb, iv)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithCTR (str []byte, key []byte, iv []byte) ([]byte, error)\n\t198:\tcb, err := aes.NewCipher(key)\n\t197:\tfunc aesCryptWithCTR(str, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"aesCryptWithOFB": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithOFB (str []byte, key []byte, iv []byte) ([]byte, error)\n\t181:\tmode := cipher.NewOFB(cb, iv)\n\t176:\tfunc aesCryptWithOFB(str []byte, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/pkg/util/encrypt/aes.go\naesCryptWithOFB (str []byte, key []byte, iv []byte) ([]byte, error)\n\t177:\tcb, err := aes.NewCipher(key)\n\t176:\tfunc aesCryptWithOFB(str []byte, key []byte, iv []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

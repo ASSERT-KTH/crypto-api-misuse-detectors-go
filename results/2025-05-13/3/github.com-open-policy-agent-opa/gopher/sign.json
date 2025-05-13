@@ -1,0 +1,57 @@
+{
+	"Package_Name": "github.com/open-policy-agent/opa/internal/jwx/jws/sign",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*ECDSASigner).SignWithRand": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"3"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating parameters. \n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/ecdsa.go\nmakeECDSASignFunc$1 (payload []byte, key *crypto/ecdsa.PrivateKey, rnd io.Reader) ([]byte, error)\n\t38:\tr, s, err := ecdsa.Sign(rnd, key, h.Sum(nil))\n\t29:\treturn ecdsaSignFunc(func(payload []byte, key *ecdsa.PrivateKey, rnd io.Reader) ([]byte, error) {\n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/ecdsa.go\nSignWithRand (payload []byte, key interface{}, r io.Reader) ([]byte, error)\n\t75:\tfunc (s ECDSASigner) SignWithRand(payload []byte, key interface{}, r io.Reader) ([]byte, error) {",
+				"InferDepth": 3
+			}
+		],
+		"(ECDSASigner).SignWithRand": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"3"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating parameters. \n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/ecdsa.go\nmakeECDSASignFunc$1 (payload []byte, key *crypto/ecdsa.PrivateKey, rnd io.Reader) ([]byte, error)\n\t38:\tr, s, err := ecdsa.Sign(rnd, key, h.Sum(nil))\n\t29:\treturn ecdsaSignFunc(func(payload []byte, key *ecdsa.PrivateKey, rnd io.Reader) ([]byte, error) {\n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/ecdsa.go\nSignWithRand (payload []byte, key interface{}, r io.Reader) ([]byte, error)\n\t75:\tfunc (s ECDSASigner) SignWithRand(payload []byte, key interface{}, r io.Reader) ([]byte, error) {",
+				"InferDepth": 2
+			}
+		],
+		"makeECDSASignFunc$1": [
+			{
+				"Predicate": "RANDOM_IO",
+				"Object": [
+					"2"
+				],
+				"Reason": "Cryptologically secure IO should be chosen for generating parameters. \n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/ecdsa.go\nmakeECDSASignFunc$1 (payload []byte, key *crypto/ecdsa.PrivateKey, rnd io.Reader) ([]byte, error)\n\t38:\tr, s, err := ecdsa.Sign(rnd, key, h.Sum(nil))\n\t29:\treturn ecdsaSignFunc(func(payload []byte, key *ecdsa.PrivateKey, rnd io.Reader) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"makeHMACSignFunc$1": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/hmac.go\nmakeHMACSignFunc$1 (payload []byte, key []byte) ([]byte, error)\n\t43:\th := hmac.New(hfunc, key)\n\t42:\treturn hmacSignFunc(func(payload []byte, key []byte) ([]byte, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/internal/jwx/jws/sign/hmac.go\nmakeHMACSignFunc$1 (payload []byte, key []byte) ([]byte, error)\n\t43:\th := hmac.New(hfunc, key)\n\t42:\treturn hmacSignFunc(func(payload []byte, key []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

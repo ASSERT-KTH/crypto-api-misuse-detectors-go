@@ -1,0 +1,67 @@
+{
+	"Package_Name": "github.com/ginuerzh/gost",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*quicCipherConn).ReadFrom": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/quic.go\ndecrypt (data []byte) ([]byte, error)\n\t321:\tc, err := aes.NewCipher(conn.key)\n\t321:\tc, err := aes.NewCipher(conn.key)\n\t320:\tfunc (conn *quicCipherConn) decrypt(data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/quic.go\nReadFrom (data []byte) (n int, addr net.Addr, err error)\n\t272:\tfunc (conn *quicCipherConn) ReadFrom(data []byte) (n int, addr net.Addr, err error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*quicCipherConn).WriteTo": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/quic.go\nencrypt (data []byte) ([]byte, error)\n\t302:\tc, err := aes.NewCipher(conn.key)\n\t302:\tc, err := aes.NewCipher(conn.key)\n\t301:\tfunc (conn *quicCipherConn) encrypt(data []byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/quic.go\nWriteTo (data []byte, addr net.Addr) (n int, err error)\n\t287:\tfunc (conn *quicCipherConn) WriteTo(data []byte, addr net.Addr) (n int, err error) {",
+				"InferDepth": 2
+			}
+		],
+		"(*quicCipherConn).decrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/quic.go\ndecrypt (data []byte) ([]byte, error)\n\t321:\tc, err := aes.NewCipher(conn.key)\n\t321:\tc, err := aes.NewCipher(conn.key)\n\t320:\tfunc (conn *quicCipherConn) decrypt(data []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*quicCipherConn).encrypt": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/quic.go\nencrypt (data []byte) ([]byte, error)\n\t302:\tc, err := aes.NewCipher(conn.key)\n\t302:\tc, err := aes.NewCipher(conn.key)\n\t301:\tfunc (conn *quicCipherConn) encrypt(data []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"blockCrypt": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\n\u003e\u003e/analysis/repo/kcp.go\nblockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)\n\t415:\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\t415:\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\t414:\tfunc blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/kcp.go\nblockCrypt (key string, crypt string, salt string) (block github.com/xtaci/kcp-go/v5.BlockCrypt)\n\t415:\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\t415:\tpass := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha1.New)\n\t414:\tfunc blockCrypt(key, crypt, salt string) (block kcp.BlockCrypt) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

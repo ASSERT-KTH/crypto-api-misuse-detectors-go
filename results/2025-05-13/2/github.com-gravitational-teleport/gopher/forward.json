@@ -1,0 +1,34 @@
+{
+	"Package_Name": "github.com/gravitational/teleport/lib/srv/forward",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*Server).newRemoteClient": [
+			{
+				"Predicate": "SECURE_SSH_SUITE",
+				"Object": [
+					"0::17"
+				],
+				"Reason": "The SSH suite can be customized based on https://www.iana.org/assignments/ssh-parameters/ssh-parameters.xhtml. CBC-mode has Timing vulnerabilities\n\u003e\u003e/analysis/repo/lib/srv/forward/sshserver.go\nnewRemoteClient (ctx context.Context, systemLogin string, netConfig github.com/gravitational/teleport/api/types.ClusterNetworkingConfig) (*github.com/gravitational/teleport/api/observability/tracing/ssh.Client, error)\n\t786:\tclientConfig.Ciphers = s.ciphers\n\t786:\tclientConfig.Ciphers = s.ciphers\n\t759:\tfunc (s *Server) newRemoteClient(ctx context.Context, systemLogin string, netConfig types.ClusterNetworkingConfig) (*tracessh.Client, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "SECURE_SSH_SUITE",
+				"Object": [
+					"0::19"
+				],
+				"Reason": "While HMAC-SHA1-96 might be secure, it’s generally recommended to use the mainstream SHA1, as long as the other side (like your SSH client) supports it\n\u003e\u003e/analysis/repo/lib/srv/forward/sshserver.go\nnewRemoteClient (ctx context.Context, systemLogin string, netConfig github.com/gravitational/teleport/api/types.ClusterNetworkingConfig) (*github.com/gravitational/teleport/api/observability/tracing/ssh.Client, error)\n\t788:\tclientConfig.MACs = s.macAlgorithms\n\t788:\tclientConfig.MACs = s.macAlgorithms\n\t759:\tfunc (s *Server) newRemoteClient(ctx context.Context, systemLogin string, netConfig types.ClusterNetworkingConfig) (*tracessh.Client, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "SECURE_SSH_SUITE",
+				"Object": [
+					"0::18"
+				],
+				"Reason": "The SSH suite can be customized based on https://www.iana.org/assignments/ssh-parameters/ssh-parameters.xhtml\n\u003e\u003e/analysis/repo/lib/srv/forward/sshserver.go\nnewRemoteClient (ctx context.Context, systemLogin string, netConfig github.com/gravitational/teleport/api/types.ClusterNetworkingConfig) (*github.com/gravitational/teleport/api/observability/tracing/ssh.Client, error)\n\t787:\tclientConfig.KeyExchanges = s.kexAlgorithms\n\t787:\tclientConfig.KeyExchanges = s.kexAlgorithms\n\t759:\tfunc (s *Server) newRemoteClient(ctx context.Context, systemLogin string, netConfig types.ClusterNetworkingConfig) (*tracessh.Client, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

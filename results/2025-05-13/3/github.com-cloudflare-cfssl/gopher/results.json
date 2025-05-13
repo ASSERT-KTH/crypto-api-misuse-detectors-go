@@ -1,0 +1,492 @@
+[
+	{
+		"FuncName": "crypto/x509.ParseDERCRL",
+		"Message": "Deprecated: Use ParseRevocationList instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "msg.Content.SignedData.Crl, err = x509.ParseDERCRL(signedData.Crls.Bytes)",
+			"SourceFilename": "/analysis/repo/crypto/pkcs7/pkcs7.go",
+			"SourceLineNum": 162,
+			"ParentFunction": "ParsePKCS7 (raw []byte) (msg *github.com/cloudflare/cfssl/crypto/pkcs7.PKCS7, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.DecryptPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "return x509.DecryptPEMBlock(keyDER, password)",
+			"SourceFilename": "/analysis/repo/helpers/helpers.go",
+			"SourceLineNum": 406,
+			"ParentFunction": "GetKeyDERFromPEM (in []byte, password []byte) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pkcs12.Decode",
+		"Message": "This package is frozen. If it's missing functionality you need, consider an alternative like software.sslmate.com/src/go-pkcs12.",
+		"Slicing_Criteria": {
+			"SourceCode": "pkcs12data, certs[0], err = pkcs12.Decode(certsDER, password)",
+			"SourceFilename": "/analysis/repo/helpers/helpers.go",
+			"SourceLineNum": 262,
+			"ParentFunction": "ParseCertificatesDER (certsDER []byte, password string) (certs []*crypto/x509.Certificate, key crypto.Signer, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", sha1.Sum(cert.RawSubjectPublicKeyInfo))",
+			"SourceFilename": "/analysis/repo/ubiquity/ubiquity_platform.go",
+			"SourceLineNum": 22,
+			"ParentFunction": "SHA1RawPublicKey (cert *crypto/x509.Certificate) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "config.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/bundler/bundler.go",
+			"SourceLineNum": 301,
+			"ParentFunction": "BundleFromRemote (serverName string, ip string, flavor github.com/cloudflare/cfssl/bundler.BundleFlavor) (*github.com/cloudflare/cfssl/bundler.Bundle, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "config.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/bundler/bundler.go",
+				"SourceLineNum": 301,
+				"ParentFunction": "BundleFromRemote (serverName string, ip string, flavor github.com/cloudflare/cfssl/bundler.BundleFlavor) (*github.com/cloudflare/cfssl/bundler.Bundle, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "conn, err = tls.DialWithDialer(\u0026net.Dialer{Timeout: 10 * time.Second}, \"tcp\", net.JoinHostPort(host, port), \u0026tls.Config{InsecureSkipVerify: true})",
+			"SourceFilename": "/analysis/repo/certinfo/certinfo.go",
+			"SourceLineNum": 155,
+			"ParentFunction": "ParseCertificateDomain (domain string) (cert *github.com/cloudflare/cfssl/certinfo.Certificate, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "conn, err = tls.DialWithDialer(\u0026net.Dialer{Timeout: 10 * time.Second}, \"tcp\", net.JoinHostPort(host, port), \u0026tls.Config{InsecureSkipVerify: true})",
+				"SourceFilename": "/analysis/repo/certinfo/certinfo.go",
+				"SourceLineNum": 155,
+				"ParentFunction": "ParseCertificateDomain (domain string) (cert *github.com/cloudflare/cfssl/certinfo.Certificate, err error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.BuildNameToCertificate()",
+			"SourceFilename": "/analysis/repo/api/client/client.go",
+			"SourceLineNum": 124,
+			"ParentFunction": "createTransport () *net/http.Transport"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/x509.Certificate).CreateCRL",
+		"Message": "Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL. To generate a standards compliant CRL, use CreateRevocationList instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "crlBytes, err := issuingCert.CreateCRL(rand.Reader, key, certList, time.Now(), expiryTime)",
+			"SourceFilename": "/analysis/repo/crl/crl.go",
+			"SourceLineNum": 101,
+			"ParentFunction": "CreateGenericCRL (certList []crypto/x509/pkix.RevokedCertificate, key crypto.Signer, issuingCert *crypto/x509.Certificate, expiryTime time.Time) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/x509.Certificate).CreateCRL",
+		"Message": "Deprecated: this method does not generate an RFC 5280 conformant X.509 v2 CRL. To generate a standards compliant CRL, use CreateRevocationList instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "result, err := cert.CreateCRL(rand.Reader, key, revokedCerts, time.Now(), newExpiryTime)",
+			"SourceFilename": "/analysis/repo/api/gencrl/gencrl.go",
+			"SourceLineNum": 88,
+			"ParentFunction": "gencrlHandler (w net/http.ResponseWriter, r *net/http.Request) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "pubHash := sha1.Sum(subPKI.SubjectPublicKey.Bytes)",
+			"SourceFilename": "/analysis/repo/signer/signer.go",
+			"SourceLineNum": 281,
+			"ParentFunction": "ComputeSKI (template *crypto/x509.Certificate) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Sum := md5.Sum(data)",
+			"SourceFilename": "/analysis/repo/api/generator/generator.go",
+			"SourceLineNum": 100,
+			"ParentFunction": "computeSum (in []byte) (sum github.com/cloudflare/cfssl/api/generator.Sum, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sha1Sum := sha1.Sum(data)",
+			"SourceFilename": "/analysis/repo/api/generator/generator.go",
+			"SourceLineNum": 101,
+			"ParentFunction": "computeSum (in []byte) (sum github.com/cloudflare/cfssl/api/generator.Sum, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/x509.ParseCRL",
+		"Message": "Deprecated: Use ParseRevocationList instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "return x509.ParseCRL(body)",
+			"SourceFilename": "/analysis/repo/revoke/revoke.go",
+			"SourceLineNum": 112,
+			"ParentFunction": "fetchCRL (url string) (*crypto/x509/pkix.CertificateList, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/x509.Certificate).CheckCRLSignature",
+		"Message": "Deprecated: Use RevocationList.CheckSignatureFrom instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "err = issuer.CheckCRLSignature(crl)",
+			"SourceFilename": "/analysis/repo/revoke/revoke.go",
+			"SourceLineNum": 160,
+			"ParentFunction": "certIsRevokedCRL (cert *crypto/x509.Certificate, url string) (revoked bool, ok bool, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hashMD5 := md5.New()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 84,
+			"ParentFunction": "prf30 (result []byte, secret []byte, label []byte, seed []byte)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Hash := md5.New()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 341,
+			"ParentFunction": "hashForClientCertificate (signatureAndHash github.com/cloudflare/cfssl/scan/crypto/tls.signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hmd5 := md5.New()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 101,
+			"ParentFunction": "md5SHA1Hash (slices [][]byte) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 208,
+			"ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 208,
+			"ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rc4.NewCipher",
+		"Message": "RC4 - RFC 7465 - Prohibiting RC4 Cipher Suites",
+		"Slicing_Criteria": {
+			"SourceCode": "cipher, _ := rc4.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+			"SourceLineNum": 98,
+			"ParentFunction": "cipherRC4 (key []byte, iv []byte, isRead bool) interface{}"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.EncryptPKCS1v15",
+		"Message": "RSAES-PKCS1-v1_5 is deprecated, RSAES-OAEP is recommended, that is, \"EncryptOAEP\"",
+		"Slicing_Criteria": {
+			"SourceCode": "encrypted, err := rsa.EncryptPKCS1v15(config.rand(), cert.PublicKey.(*rsa.PublicKey), preMasterSecret)",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 76,
+			"ParentFunction": "generateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hashSHA1 := sha1.New()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 83,
+			"ParentFunction": "prf30 (result []byte, secret []byte, label []byte, seed []byte)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h:   sha1.New(),",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+			"SourceLineNum": 122,
+			"ParentFunction": "macSHA1 (version uint16, key []byte) github.com/cloudflare/cfssl/scan/crypto/tls.macFunction"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "hsha1 := sha1.New()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 90,
+			"ParentFunction": "sha1Hash (slices [][]byte) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "sha1Hash := sha1.New()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 343,
+			"ParentFunction": "hashForClientCertificate (signatureAndHash github.com/cloudflare/cfssl/scan/crypto/tls.signatureAndHash, masterSecret []byte) ([]byte, crypto.Hash, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 208,
+			"ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "return finishedHash{sha1.New(), sha1.New(), md5.New(), md5.New(), buffer, version, prf}",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 208,
+			"ParentFunction": "newFinishedHash (version uint16, cipherSuite *github.com/cloudflare/cfssl/scan/crypto/tls.cipherSuite) github.com/cloudflare/cfssl/scan/crypto/tls.finishedHash"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, _ := des.NewTripleDESCipher(key)",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/cipher_suites.go",
+			"SourceLineNum": 103,
+			"ParentFunction": "cipher3DES (key []byte, iv []byte, isRead bool) interface{}"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.GenerateKey",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "ka.privateKey, x, y, err = elliptic.GenerateKey(ka.curve, config.rand())",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 209,
+			"ParentFunction": "generateServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, hello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg) (*github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+		"Slicing_Criteria": {
+			"SourceCode": "h := hmac.New(hash, secret)",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+			"SourceLineNum": 27,
+			"ParentFunction": "pHash (result []byte, secret []byte, seed []byte, hash "
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func pHash(result, secret, seed []byte, hash func() hash.Hash) {",
+				"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+				"SourceLineNum": 26,
+				"ParentFunction": "pHash (result []byte, secret []byte, seed []byte, hash "
+			},
+			{
+				"SourceCode": "pHash(result, s1, labelAndSeed, hashMD5)",
+				"SourceFilename": "/analysis/repo/scan/crypto/tls/prf.go",
+				"SourceLineNum": 60,
+				"ParentFunction": "prf10 (result []byte, secret []byte, label []byte, seed []byte)"
+			}
+		],
+		"Predicate_Type": "SECURE_HMAC_HASH"
+	},
+	{
+		"FuncName": "crypto/elliptic.GenerateKey",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, mx, my, err := elliptic.GenerateKey(ka.curve, config.rand())",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 388,
+			"ParentFunction": "generateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Marshal",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "ecdhePublic := elliptic.Marshal(ka.curve, x, y)",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 213,
+			"ParentFunction": "generateServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, hello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg) (*github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Marshal",
+		"Message": "Deprecated: for ECDH, use the GenerateKey methods of the crypto/ecdh package; for ECDSA, use the GenerateKey function of the crypto/ecdsa package.",
+		"Slicing_Criteria": {
+			"SourceCode": "serialized := elliptic.Marshal(ka.curve, mx, my)",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 397,
+			"ParentFunction": "generateClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, cert *crypto/x509.Certificate) ([]byte, *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Unmarshal",
+		"Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+		"Slicing_Criteria": {
+			"SourceCode": "x, y := elliptic.Unmarshal(ka.curve, ckx.ciphertext[1:])",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 284,
+			"ParentFunction": "processClientKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, cert *github.com/cloudflare/cfssl/scan/crypto/tls.Certificate, ckx *github.com/cloudflare/cfssl/scan/crypto/tls.clientKeyExchangeMsg, version uint16) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/elliptic.Unmarshal",
+		"Message": "Deprecated: for ECDH, use the crypto/ecdh package. This function accepts an encoding equivalent to that of the NewPublicKey methods in crypto/ecdh.",
+		"Slicing_Criteria": {
+			"SourceCode": "ka.x, ka.y = elliptic.Unmarshal(ka.curve, skx.key[4:4+publicLen])",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/key_agreement.go",
+			"SourceLineNum": 317,
+			"ParentFunction": "processServerKeyExchange (config *github.com/cloudflare/cfssl/scan/crypto/tls.Config, clientHello *github.com/cloudflare/cfssl/scan/crypto/tls.clientHelloMsg, serverHello *github.com/cloudflare/cfssl/scan/crypto/tls.serverHelloMsg, cert *crypto/x509.Certificate, skx *github.com/cloudflare/cfssl/scan/crypto/tls.serverKeyExchangeMsg) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/x509.CertPool).Subjects",
+		"Message": "Deprecated: if s was returned by SystemCertPool, Subjects will not include the system roots.",
+		"Slicing_Criteria": {
+			"SourceCode": "certReq.certificateAuthorities = config.ClientCAs.Subjects()",
+			"SourceFilename": "/analysis/repo/scan/crypto/tls/handshake_server.go",
+			"SourceLineNum": 401,
+			"ParentFunction": "doFullHandshake () error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "config := \u0026tls.Config{InsecureSkipVerify: true}",
+			"SourceFilename": "/analysis/repo/scan/broad.go",
+			"SourceLineNum": 53,
+			"ParentFunction": "intermediateCAScan (addr string, hostname string) (grade github.com/cloudflare/cfssl/scan.Grade, output github.com/cloudflare/cfssl/scan.Output, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "config := \u0026tls.Config{InsecureSkipVerify: true}",
+				"SourceFilename": "/analysis/repo/scan/broad.go",
+				"SourceLineNum": 53,
+				"ParentFunction": "intermediateCAScan (addr string, hostname string) (grade github.com/cloudflare/cfssl/scan.Grade, output github.com/cloudflare/cfssl/scan.Output, err error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "pubhash := sha1.New()",
+			"SourceFilename": "/analysis/repo/selfsign/selfsign.go",
+			"SourceLineNum": 87,
+			"ParentFunction": "Sign (priv crypto.Signer, csrPEM []byte, profile *github.com/cloudflare/cfssl/config.SigningProfile) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

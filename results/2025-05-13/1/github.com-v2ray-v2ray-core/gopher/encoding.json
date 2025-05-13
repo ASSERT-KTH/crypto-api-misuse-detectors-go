@@ -1,0 +1,132 @@
+{
+	"Package_Name": "v2ray.com/core/proxy/vmess/encoding",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*ClientSession).DecodeResponseBody": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesGcm (key []byte) crypto/cipher.AEAD\n\t35:\tblock, err := aes.NewCipher(key)\n\t34:\tfunc NewAesGcm(key []byte) cipher.AEAD {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nDecodeResponseBody (request *v2ray.com/core/common/protocol.RequestHeader, reader io.Reader) v2ray.com/core/common/buf.Reader\n\t309:\taead := crypto.NewAesGcm(c.responseBodyKey[:])\n\t309:\taead := crypto.NewAesGcm(c.responseBodyKey[:])\n\t309:\taead := crypto.NewAesGcm(c.responseBodyKey[:])\n\t270:\tfunc (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {",
+				"InferDepth": 2
+			}
+		],
+		"(*ClientSession).DecodeResponseHeader": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::5"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesDecryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t12:\tfunc NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nDecodeResponseHeader (reader io.Reader) (*v2ray.com/core/common/protocol.ResponseHeader, error)\n\t264:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t264:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t191:\tfunc (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t23:\taesBlock, err := aes.NewCipher(key)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesDecryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t12:\tfunc NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nDecodeResponseHeader (reader io.Reader) (*v2ray.com/core/common/protocol.ResponseHeader, error)\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t191:\tfunc (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::5"
+				],
+				"Reason": "IVs should be random in CFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesDecryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t12:\tfunc NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nDecodeResponseHeader (reader io.Reader) (*v2ray.com/core/common/protocol.ResponseHeader, error)\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t193:\taesStream := crypto.NewAesDecryptionStream(c.responseBodyKey[:], c.responseBodyIV[:])\n\t191:\tfunc (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {",
+				"InferDepth": 3
+			}
+		],
+		"(*ClientSession).EncodeRequestBody": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::3"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesEncryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t18:\tfunc NewAesEncryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nEncodeRequestBody (request *v2ray.com/core/common/protocol.RequestHeader, writer io.Writer) v2ray.com/core/common/buf.Writer\n\t156:\taesStream := crypto.NewAesEncryptionStream(c.requestBodyKey[:], c.requestBodyIV[:])\n\t156:\taesStream := crypto.NewAesEncryptionStream(c.requestBodyKey[:], c.requestBodyIV[:])\n\t156:\taesStream := crypto.NewAesEncryptionStream(c.requestBodyKey[:], c.requestBodyIV[:])\n\t130:\tfunc (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::2"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesGcm (key []byte) crypto/cipher.AEAD\n\t35:\tblock, err := aes.NewCipher(key)\n\t34:\tfunc NewAesGcm(key []byte) cipher.AEAD {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nEncodeRequestBody (request *v2ray.com/core/common/protocol.RequestHeader, writer io.Writer) v2ray.com/core/common/buf.Writer\n\t169:\taead := crypto.NewAesGcm(c.requestBodyKey[:])\n\t169:\taead := crypto.NewAesGcm(c.requestBodyKey[:])\n\t169:\taead := crypto.NewAesGcm(c.requestBodyKey[:])\n\t130:\tfunc (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::3"
+				],
+				"Reason": "IVs should be random in CFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesEncryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t18:\tfunc NewAesEncryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/client.go\nEncodeRequestBody (request *v2ray.com/core/common/protocol.RequestHeader, writer io.Writer) v2ray.com/core/common/buf.Writer\n\t156:\taesStream := crypto.NewAesEncryptionStream(c.requestBodyKey[:], c.requestBodyIV[:])\n\t156:\taesStream := crypto.NewAesEncryptionStream(c.requestBodyKey[:], c.requestBodyIV[:])\n\t156:\taesStream := crypto.NewAesEncryptionStream(c.requestBodyKey[:], c.requestBodyIV[:])\n\t130:\tfunc (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {",
+				"InferDepth": 3
+			}
+		],
+		"(*ServerSession).DecodeRequestBody": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::3"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesDecryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t12:\tfunc NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nDecodeRequestBody (request *v2ray.com/core/common/protocol.RequestHeader, reader io.Reader) v2ray.com/core/common/buf.Reader\n\t333:\taesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])\n\t333:\taesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])\n\t333:\taesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])\n\t306:\tfunc (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::3"
+				],
+				"Reason": "IVs should be random in CFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesDecryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t12:\tfunc NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nDecodeRequestBody (request *v2ray.com/core/common/protocol.RequestHeader, reader io.Reader) v2ray.com/core/common/buf.Reader\n\t333:\taesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])\n\t333:\taesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])\n\t333:\taesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])\n\t306:\tfunc (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::2"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesGcm (key []byte) crypto/cipher.AEAD\n\t35:\tblock, err := aes.NewCipher(key)\n\t34:\tfunc NewAesGcm(key []byte) cipher.AEAD {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nDecodeRequestBody (request *v2ray.com/core/common/protocol.RequestHeader, reader io.Reader) v2ray.com/core/common/buf.Reader\n\t346:\taead := crypto.NewAesGcm(s.requestBodyKey[:])\n\t346:\taead := crypto.NewAesGcm(s.requestBodyKey[:])\n\t346:\taead := crypto.NewAesGcm(s.requestBodyKey[:])\n\t306:\tfunc (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {",
+				"InferDepth": 2
+			}
+		],
+		"(*ServerSession).EncodeResponseBody": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesGcm (key []byte) crypto/cipher.AEAD\n\t35:\tblock, err := aes.NewCipher(key)\n\t34:\tfunc NewAesGcm(key []byte) cipher.AEAD {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nEncodeResponseBody (request *v2ray.com/core/common/protocol.RequestHeader, writer io.Writer) v2ray.com/core/common/buf.Writer\n\t464:\taead := crypto.NewAesGcm(s.responseBodyKey[:])\n\t464:\taead := crypto.NewAesGcm(s.responseBodyKey[:])\n\t464:\taead := crypto.NewAesGcm(s.responseBodyKey[:])\n\t426:\tfunc (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {",
+				"InferDepth": 2
+			}
+		],
+		"(*ServerSession).EncodeResponseHeader": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"0::5"
+				],
+				"Reason": "IV should be unique in OFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesEncryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t18:\tfunc NewAesEncryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nEncodeResponseHeader (header *v2ray.com/core/common/protocol.ResponseHeader, writer io.Writer)\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t369:\tfunc (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::4"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t23:\taesBlock, err := aes.NewCipher(key)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesEncryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t18:\tfunc NewAesEncryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nEncodeResponseHeader (header *v2ray.com/core/common/protocol.ResponseHeader, writer io.Writer)\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t369:\tfunc (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::5"
+				],
+				"Reason": "IVs should be random in CFB mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesStreamMethod (key []byte, iv []byte, f \n\t25:\treturn f(aesBlock, iv)\n\t22:\tfunc NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) cipher.Stream) cipher.Stream {\n\u003e\u003e/analysis/repo/common/crypto/aes.go\nNewAesEncryptionStream (key []byte, iv []byte) crypto/cipher.Stream\n\t18:\tfunc NewAesEncryptionStream(key []byte, iv []byte) cipher.Stream {\n\u003e\u003e/analysis/repo/proxy/vmess/encoding/server.go\nEncodeResponseHeader (header *v2ray.com/core/common/protocol.ResponseHeader, writer io.Writer)\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t381:\taesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])\n\t369:\tfunc (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {",
+				"InferDepth": 3
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

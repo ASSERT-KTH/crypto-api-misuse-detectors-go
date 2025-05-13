@@ -1,0 +1,52 @@
+[
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: insecure,",
+			"SourceFilename": "/analysis/repo/pkg/registry/client_factory.go",
+			"SourceLineNum": 115,
+			"ParentFunction": "ClientFor (repo github.com/fluxcd/flux/pkg/image.CanonicalName, creds github.com/fluxcd/flux/pkg/registry.Credentials) (github.com/fluxcd/flux/pkg/registry.Client, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "insecure := false",
+				"SourceFilename": "/analysis/repo/pkg/registry/client_factory.go",
+				"SourceLineNum": 103,
+				"ParentFunction": "ClientFor (repo github.com/fluxcd/flux/pkg/image.CanonicalName, creds github.com/fluxcd/flux/pkg/registry.Credentials) (github.com/fluxcd/flux/pkg/registry.Client, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "request, err := http.NewRequest(\"GET\", gcpDefaultTokenURL, nil)",
+			"SourceFilename": "/analysis/repo/pkg/registry/gcp.go",
+			"SourceLineNum": 20,
+			"ParentFunction": "GetGCPOauthToken (host string) (github.com/fluxcd/flux/pkg/registry.creds, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "request, err := http.NewRequest(\"GET\", gcpDefaultTokenURL, nil)",
+				"SourceFilename": "/analysis/repo/pkg/registry/gcp.go",
+				"SourceLineNum": 20,
+				"ParentFunction": "GetGCPOauthToken (host string) (github.com/fluxcd/flux/pkg/registry.creds, error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "csum := sha1.Sum(res.Bytes())",
+			"SourceFilename": "/analysis/repo/pkg/cluster/kubernetes/sync.go",
+			"SourceLineNum": 76,
+			"ParentFunction": "Sync (syncSet github.com/fluxcd/flux/pkg/cluster.SyncSet) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

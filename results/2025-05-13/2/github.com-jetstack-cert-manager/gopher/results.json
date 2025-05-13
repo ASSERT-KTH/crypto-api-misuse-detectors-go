@@ -1,0 +1,141 @@
+[
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "return rsa.GenerateKey(rand.Reader, keySize)",
+			"SourceFilename": "/analysis/repo/pkg/util/pki/generate.go",
+			"SourceLineNum": 95,
+			"ParentFunction": "GenerateRSAPrivateKey (keySize int) (*crypto/rsa.PrivateKey, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {",
+				"SourceFilename": "/analysis/repo/pkg/util/pki/generate.go",
+				"SourceLineNum": 85,
+				"ParentFunction": "GenerateRSAPrivateKey (keySize int) (*crypto/rsa.PrivateKey, error)"
+			},
+			{
+				"SourceCode": "keySize := MinRSAKeySize",
+				"SourceFilename": "/analysis/repo/pkg/util/pki/generate.go",
+				"SourceLineNum": 61,
+				"ParentFunction": "GeneratePrivateKeyForCertificate (crt *github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1.Certificate) (crypto.Signer, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".",
+		"Slicing_Criteria": {
+			"SourceCode": "h = hmac.New(md5.New, rawsecret)",
+			"SourceFilename": "/analysis/repo/pkg/issuer/acme/dns/rfc2136/tsig.go",
+			"SourceLineNum": 67,
+			"ParentFunction": "Generate (msg []byte, t *github.com/miekg/dns.TSIG) ([]byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "h = hmac.New(md5.New, rawsecret)",
+				"SourceFilename": "/analysis/repo/pkg/issuer/acme/dns/rfc2136/tsig.go",
+				"SourceLineNum": 67,
+				"ParentFunction": "Generate (msg []byte, t *github.com/miekg/dns.TSIG) ([]byte, error)"
+			}
+		],
+		"Predicate_Type": "SECURE_HMAC_HASH"
+	},
+	{
+		"FuncName": "github.com/cert-manager/cert-manager/pkg/util/pki.GenerateRSAPrivateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/pkg/util/pki/generate.go\nGenerateRSAPrivateKey (keySize int) (*crypto/rsa.PrivateKey, error)\n\t95:\treturn rsa.GenerateKey(rand.Reader, keySize)\n\t85:\tfunc GenerateRSAPrivateKey(keySize int) (*rsa.PrivateKey, error) {\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)",
+			"SourceFilename": "/analysis/repo/pkg/issuer/acme/setup.go",
+			"SourceLineNum": 427,
+			"ParentFunction": "createAccountPrivateKey (ctx context.Context, sel github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector, ns string) (*crypto/rsa.PrivateKey, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "accountPrivKey, err := pki.GenerateRSAPrivateKey(pki.MinRSAKeySize)",
+				"SourceFilename": "/analysis/repo/pkg/issuer/acme/setup.go",
+				"SourceLineNum": 427,
+				"ParentFunction": "createAccountPrivateKey (ctx context.Context, sel github.com/cert-manager/cert-manager/pkg/apis/meta/v1.SecretKeySelector, ns string) (*crypto/rsa.PrivateKey, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+			"SourceLineNum": 399,
+			"ParentFunction": "generateVaultServingCert (vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+				"SourceLineNum": 399,
+				"ParentFunction": "generateVaultServingCert (vaultCA []byte, vaultCAPrivateKey []byte, dnsName string) ([]byte, []byte, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+			"SourceLineNum": 419,
+			"ParentFunction": "GenerateCA () ([]byte, []byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/test/framework/addon/vault/vault.go",
+				"SourceLineNum": 419,
+				"ParentFunction": "GenerateCA () ([]byte, []byte, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "caPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+			"SourceLineNum": 147,
+			"ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "caPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+				"SourceLineNum": 147,
+				"ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "servingPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+			"SourceLineNum": 184,
+			"ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "servingPK, err := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/test/webhook/testwebhook.go",
+				"SourceLineNum": 184,
+				"ParentFunction": "generateTLSAssets () (caPEM []byte, certificatePEM []byte, privateKeyPEM []byte, err error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	}
+]

@@ -1,0 +1,85 @@
+{
+	"Package_Name": "github.com/restic/restic/internal/crypto",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*Key).Open": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\nOpen (dst []byte, nonce []byte, ciphertext []byte, _ []byte) ([]byte, error)\n\t315:\tc, err := aes.NewCipher(k.EncryptionKey[:])\n\t315:\tc, err := aes.NewCipher(k.EncryptionKey[:])\n\t315:\tc, err := aes.NewCipher(k.EncryptionKey[:])\n\t286:\tfunc (k *Key) Open(dst, nonce, ciphertext, _ []byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"(*Key).Seal": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"2"
+				],
+				"Reason": "IV should be unique in CTR mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\nSeal (dst []byte, nonce []byte, plaintext []byte, additionalData []byte) []byte\n\t266:\te := cipher.NewCTR(c, nonce)\n\t243:\tfunc (k *Key) Seal(dst, nonce, plaintext, additionalData []byte) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\nSeal (dst []byte, nonce []byte, plaintext []byte, additionalData []byte) []byte\n\t262:\tc, err := aes.NewCipher(k.EncryptionKey[:])\n\t262:\tc, err := aes.NewCipher(k.EncryptionKey[:])\n\t262:\tc, err := aes.NewCipher(k.EncryptionKey[:])\n\t243:\tfunc (k *Key) Seal(dst, nonce, plaintext, additionalData []byte) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"KDF": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "Suggest that the salt be random, with a length of at least 16 bytes. For detailed information, please refer to NIST SP 800-132.\n\u003e\u003e/analysis/repo/internal/crypto/kdf.go\nKDF (p github.com/restic/restic/internal/crypto.Params, salt []byte, password string) (*github.com/restic/restic/internal/crypto.Key, error)\n\t74:\tscryptKeys, err := scrypt.Key([]byte(password), salt, p.N, p.R, p.P, keybytes)\n\t53:\tfunc KDF(p Params, salt []byte, password string) (*Key, error) {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "Salt should be random\n\u003e\u003e/analysis/repo/internal/crypto/kdf.go\nKDF (p github.com/restic/restic/internal/crypto.Params, salt []byte, password string) (*github.com/restic/restic/internal/crypto.Key, error)\n\t74:\tscryptKeys, err := scrypt.Key([]byte(password), salt, p.N, p.R, p.P, keybytes)\n\t53:\tfunc KDF(p Params, salt []byte, password string) (*Key, error) {",
+				"InferDepth": 1
+			}
+		],
+		"poly1305MAC": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2::0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\npoly1305PrepareKey (nonce []byte, key *github.com/restic/restic/internal/crypto.MACKey) [32]byte\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t66:\tfunc poly1305PrepareKey(nonce []byte, key *MACKey) [32]byte {\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\npoly1305MAC (msg []byte, nonce []byte, key *github.com/restic/restic/internal/crypto.MACKey) []byte\n\t50:\tfunc poly1305MAC(msg []byte, nonce []byte, key *MACKey) []byte {",
+				"InferDepth": 2
+			}
+		],
+		"poly1305PrepareKey": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1::0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\npoly1305PrepareKey (nonce []byte, key *github.com/restic/restic/internal/crypto.MACKey) [32]byte\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t66:\tfunc poly1305PrepareKey(nonce []byte, key *MACKey) [32]byte {",
+				"InferDepth": 1
+			}
+		],
+		"poly1305Verify": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2::0"
+				],
+				"Reason": "AES-key should be random.\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\npoly1305PrepareKey (nonce []byte, key *github.com/restic/restic/internal/crypto.MACKey) [32]byte\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t69:\tcipher, err := aes.NewCipher(key.K[:])\n\t66:\tfunc poly1305PrepareKey(nonce []byte, key *MACKey) [32]byte {\n\u003e\u003e/analysis/repo/internal/crypto/crypto.go\npoly1305Verify (msg []byte, nonce []byte, key *github.com/restic/restic/internal/crypto.MACKey, mac []byte) bool\n\t80:\tfunc poly1305Verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

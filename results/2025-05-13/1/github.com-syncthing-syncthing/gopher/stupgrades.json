@@ -1,0 +1,38 @@
+{
+	"Package_Name": "github.com/syncthing/syncthing/cmd/infra/stupgrades",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*cachedReleases).Update": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::0"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/cmd/infra/stupgrades/main.go\nfetchGithubReleases (ctx context.Context, url string) ([]github.com/syncthing/syncthing/lib/upgrade.Release, error)\n\t284:\treq, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, url, nil)\n\t283:\tfunc fetchGithubReleases(ctx context.Context, url string) ([]upgrade.Release, error) {\n\u003e\u003e/analysis/repo/cmd/infra/stupgrades/main.go\nUpdate (ctx context.Context) error\n\t273:\trels, err := fetchGithubReleases(ctx, c.url)\n\t272:\tfunc (c *cachedReleases) Update(ctx context.Context) error {",
+				"InferDepth": 2
+			}
+		],
+		"(*proxy).ServeHTTP": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"0::1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/cmd/infra/stupgrades/main.go\nServeHTTP (w net/http.ResponseWriter, req *net/http.Request)\n\t163:\treq, err := http.NewRequestWithContext(req.Context(), http.MethodGet, p.url, nil)\n\t163:\treq, err := http.NewRequestWithContext(req.Context(), http.MethodGet, p.url, nil)\n\t162:\tfunc (p *proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {",
+				"InferDepth": 1
+			}
+		],
+		"fetchGithubReleases": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"1"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/cmd/infra/stupgrades/main.go\nfetchGithubReleases (ctx context.Context, url string) ([]github.com/syncthing/syncthing/lib/upgrade.Release, error)\n\t284:\treq, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, url, nil)\n\t283:\tfunc fetchGithubReleases(ctx context.Context, url string) ([]upgrade.Release, error) {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

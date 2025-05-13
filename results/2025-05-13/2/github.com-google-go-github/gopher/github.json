@@ -1,0 +1,91 @@
+{
+	"Package_Name": "github.com/google/go-github/v71/github",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*RepositoriesService).downloadReleaseAssetFromURL": [
+			{
+				"Predicate": "Https",
+				"Object": [
+					"3"
+				],
+				"Reason": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/github/repos_releases.go\ndownloadReleaseAssetFromURL (ctx context.Context, followRedirectsClient *net/http.Client, url string) (rc io.ReadCloser, err error)\n\t386:\treq, err := http.NewRequest(\"GET\", url, nil)\n\t385:\tfunc (s *RepositoriesService) downloadReleaseAssetFromURL(ctx context.Context, followRedirectsClient *http.Client, url string) (rc io.ReadCloser, err error) {",
+				"InferDepth": 1
+			}
+		],
+		"ValidateSignature": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {\n\u003e\u003e/analysis/repo/github/messages.go\ncheckMAC (message []byte, messageMAC []byte, key []byte, hashFunc \n\t142:\tfunc checkMAC(message, messageMAC, key []byte, hashFunc func() hash.Hash) bool {\n\u003e\u003e/analysis/repo/github/messages.go\nValidateSignature (signature string, payload []byte, secretToken []byte) error\n\t275:\tfunc ValidateSignature(signature string, payload, secretToken []byte) error {",
+				"InferDepth": 3
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {\n\u003e\u003e/analysis/repo/github/messages.go\ncheckMAC (message []byte, messageMAC []byte, key []byte, hashFunc \n\t142:\tfunc checkMAC(message, messageMAC, key []byte, hashFunc func() hash.Hash) bool {\n\u003e\u003e/analysis/repo/github/messages.go\nValidateSignature (signature string, payload []byte, secretToken []byte) error\n\t275:\tfunc ValidateSignature(signature string, payload, secretToken []byte) error {",
+				"InferDepth": 3
+			}
+		],
+		"checkMAC": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"2",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {\n\u003e\u003e/analysis/repo/github/messages.go\ncheckMAC (message []byte, messageMAC []byte, key []byte, hashFunc \n\t142:\tfunc checkMAC(message, messageMAC, key []byte, hashFunc func() hash.Hash) bool {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {\n\u003e\u003e/analysis/repo/github/messages.go\ncheckMAC (message []byte, messageMAC []byte, key []byte, hashFunc \n\t142:\tfunc checkMAC(message, messageMAC, key []byte, hashFunc func() hash.Hash) bool {",
+				"InferDepth": 2
+			},
+			{
+				"Predicate": "SECURE_HMAC_HASH",
+				"Object": [
+					"3"
+				],
+				"Reason": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {\n\u003e\u003e/analysis/repo/github/messages.go\ncheckMAC (message []byte, messageMAC []byte, key []byte, hashFunc \n\t142:\tfunc checkMAC(message, messageMAC, key []byte, hashFunc func() hash.Hash) bool {",
+				"InferDepth": 2
+			}
+		],
+		"genMAC": [
+			{
+				"Predicate": "BYTELENGTH",
+				"Object": [
+					"1",
+					"16"
+				],
+				"Reason": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "SECURE_HMAC_HASH",
+				"Object": [
+					"2"
+				],
+				"Reason": "Don't use HMAC_MD5, recommand practice is \" HMAC-SHA256 \".\n\u003e\u003e/analysis/repo/github/messages.go\ngenMAC (message []byte, key []byte, hashFunc \n\t136:\tmac := hmac.New(hashFunc, key)\n\t135:\tfunc genMAC(message, key []byte, hashFunc func() hash.Hash) []byte {",
+				"InferDepth": 1
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

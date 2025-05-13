@@ -1,0 +1,19 @@
+{
+	"Package_Name": "github.com/gravitational/teleport/lib/services/local",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"(*IdentityService).UpsertPassword": [
+			{
+				"Predicate": "GEQ",
+				"Object": [
+					"0::2",
+					"12"
+				],
+				"Reason": "The cost should be greater than 12. 10 might be not safe.\n\u003e\u003e/analysis/repo/lib/utils/bcrypt.go\nBcryptFromPassword (password []byte, cost int) ([]byte, error)\n\t40:\treturn bcrypt.GenerateFromPassword(truncateToMaxSize(password), cost)\n\t39:\tfunc BcryptFromPassword(password []byte, cost int) ([]byte, error) {\n\u003e\u003e/analysis/repo/lib/services/local/users.go\nUpsertPassword (user string, password []byte) error\n\t884:\thash, err := utils.BcryptFromPassword(password, s.bcryptCost)\n\t884:\thash, err := utils.BcryptFromPassword(password, s.bcryptCost)\n\t876:\tfunc (s *IdentityService) UpsertPassword(user string, password []byte) error {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}

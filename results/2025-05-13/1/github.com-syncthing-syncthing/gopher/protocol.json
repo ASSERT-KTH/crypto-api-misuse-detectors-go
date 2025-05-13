@@ -1,0 +1,46 @@
+{
+	"Package_Name": "github.com/syncthing/syncthing/lib/protocol",
+	"Dangerous_Functions": null,
+	"Warning_Functions": null,
+	"Parameter_Constrains": {
+		"DecryptBytes": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "Key should be random.\n\u003e\u003e/analysis/repo/lib/protocol/encryption.go\nDecryptBytes (data []byte, key *[32]byte) ([]byte, error)\n\t500:\taead, err := chacha20poly1305.NewX(key[:])\n\t500:\taead, err := chacha20poly1305.NewX(key[:])\n\t495:\tfunc DecryptBytes(data []byte, key *[keySize]byte) ([]byte, error) {",
+				"InferDepth": 1
+			}
+		],
+		"encrypt": [
+			{
+				"Predicate": "NOT_CONST",
+				"Object": [
+					"1"
+				],
+				"Reason": "IV should be unique in GCM mode, otherwise it potentially lead to CPA attack.\n\u003e\u003e/analysis/repo/lib/protocol/encryption.go\nencrypt (data []byte, nonce *[24]byte, key *[32]byte) []byte\n\t490:\treturn aead.Seal(nonce[:], nonce[:], data, nil)\n\t490:\treturn aead.Seal(nonce[:], nonce[:], data, nil)\n\t475:\tfunc encrypt(data []byte, nonce *[nonceSize]byte, key *[keySize]byte) []byte {",
+				"InferDepth": 1
+			},
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"2"
+				],
+				"Reason": "Key should be random.\n\u003e\u003e/analysis/repo/lib/protocol/encryption.go\nencrypt (data []byte, nonce *[24]byte, key *[32]byte) []byte\n\t476:\taead, err := chacha20poly1305.NewX(key[:])\n\t476:\taead, err := chacha20poly1305.NewX(key[:])\n\t475:\tfunc encrypt(data []byte, nonce *[nonceSize]byte, key *[keySize]byte) []byte {",
+				"InferDepth": 1
+			}
+		],
+		"encryptBytes": [
+			{
+				"Predicate": "RANDOM_BYTES",
+				"Object": [
+					"1"
+				],
+				"Reason": "Key should be random.\n\u003e\u003e/analysis/repo/lib/protocol/encryption.go\nencrypt (data []byte, nonce *[24]byte, key *[32]byte) []byte\n\t476:\taead, err := chacha20poly1305.NewX(key[:])\n\t476:\taead, err := chacha20poly1305.NewX(key[:])\n\t475:\tfunc encrypt(data []byte, nonce *[nonceSize]byte, key *[keySize]byte) []byte {\n\u003e\u003e/analysis/repo/lib/protocol/encryption.go\nencryptBytes (data []byte, key *[32]byte) []byte\n\t452:\tfunc encryptBytes(data []byte, key *[keySize]byte) []byte {",
+				"InferDepth": 2
+			}
+		]
+	},
+	"Struct_Constrains": null
+}
