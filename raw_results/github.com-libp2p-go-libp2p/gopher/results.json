@@ -1,0 +1,71 @@
+[
+	{
+		"FuncName": "crypto/rsa.SignPKCS1v15",
+		"Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+		"Slicing_Criteria": {
+			"SourceCode": "return rsa.SignPKCS1v15(rand.Reader, \u0026sk.sk, crypto.SHA256, hashed[:])",
+			"SourceFilename": "/analysis/repo/core/crypto/rsa_go.go",
+			"SourceLineNum": 86,
+			"ParentFunction": "Sign (message []byte) (sig []byte, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true, // This is not insecure here. We will verify the cert chain ourselves.",
+			"SourceFilename": "/analysis/repo/p2p/security/tls/crypto.go",
+			"SourceLineNum": 92,
+			"ParentFunction": "NewIdentity (privKey github.com/libp2p/go-libp2p/core/crypto.PrivKey, opts ...github.com/libp2p/go-libp2p/p2p/security/tls.IdentityOption) (*github.com/libp2p/go-libp2p/p2p/security/tls.Identity, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true, // This is not insecure here. We will verify the cert chain ourselves.",
+				"SourceFilename": "/analysis/repo/p2p/security/tls/crypto.go",
+				"SourceLineNum": 92,
+				"ParentFunction": "NewIdentity (privKey github.com/libp2p/go-libp2p/core/crypto.PrivKey, opts ...github.com/libp2p/go-libp2p/p2p/security/tls.IdentityOption) (*github.com/libp2p/go-libp2p/p2p/security/tls.Identity, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConf.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/p2p/transport/webtransport/transport.go",
+			"SourceLineNum": 207,
+			"ParentFunction": "dial (ctx context.Context, addr github.com/multiformats/go-multiaddr.Multiaddr, url string, sni string, certHashes []github.com/multiformats/go-multihash.DecodedMultihash) (*github.com/quic-go/webtransport-go.Session, github.com/quic-go/quic-go.Connection, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConf.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/p2p/transport/webtransport/transport.go",
+				"SourceLineNum": 207,
+				"ParentFunction": "dial (ctx context.Context, addr github.com/multiformats/go-multiaddr.Multiaddr, url string, sni string, certHashes []github.com/multiformats/go-multihash.DecodedMultihash) (*github.com/quic-go/webtransport-go.Session, github.com/quic-go/quic-go.Connection, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "github.com/libp2p/go-libp2p/core/crypto.GenerateRSAKeyPair",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\n\u003e\u003e/analysis/repo/core/crypto/rsa_go.go\nGenerateRSAKeyPair (bits int, src io.Reader) (github.com/libp2p/go-libp2p/core/crypto.PrivKey, github.com/libp2p/go-libp2p/core/crypto.PubKey, error)\n\t36:\tpriv, err := rsa.GenerateKey(src, bits)\n\t29:\tfunc GenerateRSAKeyPair(bits int, src io.Reader) (PrivKey, PubKey, error) {\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, _, err = ic.GenerateRSAKeyPair(2048, rand.Reader)",
+			"SourceFilename": "/analysis/repo/p2p/security/tls/cmd/tlsdiag/key.go",
+			"SourceLineNum": 14,
+			"ParentFunction": "generateKey (keyType string) (priv github.com/libp2p/go-libp2p/core/crypto.PrivKey, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "priv, _, err = ic.GenerateRSAKeyPair(2048, rand.Reader)",
+				"SourceFilename": "/analysis/repo/p2p/security/tls/cmd/tlsdiag/key.go",
+				"SourceLineNum": 14,
+				"ParentFunction": "generateKey (keyType string) (priv github.com/libp2p/go-libp2p/core/crypto.PrivKey, err error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	}
+]

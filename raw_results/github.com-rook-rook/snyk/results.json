@@ -1,0 +1,3351 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SnykCode",
+          "semanticVersion": "1.0.0",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "go/CommandInjection/test",
+              "name": "CommandInjection/test",
+              "shortDescription": {
+                "text": "Command Injection"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "## Details\n\nWith an OS command injection attack a web application user can pass commands directly to the system shell, attached to a legitimate request. These commands can then be executed on the application server, potentially leading to harmful consequences, including data exposure or deletion. Like code injection attacks, command injection attacks are essentially a failure of data validation. Unlike code injection attacks, which introduce new code, command injection attacks use existing system functions, often taking advantage of the application's unnecessarily high privilege level, increasing the risk of serious harm and reputational damage.\n\n## Best practices for prevention\n- Never trust user input. Assume any input may transmit harmful values.\n- Adopt the principle of least privilege: No application should have a greater access level than needed to run its required tasks.\n- Control user access policies on a task-by-task basis.\n- Don't pass user input directly to the system; use libraries or APIs that lack system access.\n- Where shell commands must be passed, escape values using functions like shlex for Python, or escapeshellarg() for PHP.\n- Sanitize user input with regular expressions to define permitted characters along with maximum string length.\n- Convert special characters such as `& |  ; $ > < \\ !` before passing to the server.\n- Whitelist permitted commands and validate user responses against these expectations.\n- Remember that code injection can take place on multiple fronts: GET and POST requests, but also cookies and HTTP headers.\n- Ensure up-to-date patching across all systems to remediate known vulnerabilities.\n- Educate all team members on safer data handling procedures to prevent attacks.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "CommandInjection",
+                  "Security",
+                  "InTest",
+                  "SourceNonServer",
+                  "SourceLocalEnv",
+                  "SourceCLI",
+                  "Taint"
+                ],
+                "categories": [
+                  "Security",
+                  "InTest"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/hashicorp/go-plugin/commit/a540dfea2468c3e1c68bb140df00330471ae8fee?diff=split#diff-f59973f3b840d85bda2eb041b7266a45f3343d738a845250125bba654918c3dbL-1",
+                    "lines": [
+                      {
+                        "line": "Cmd:             exec.Command(os.Args[0], \"plugin\"),\n",
+                        "lineNumber": 28,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "Cmd:             exec.Command(\"./plugin/plugin\", \"plugin\"),\n",
+                        "lineNumber": 20,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/Asutorufa/yuhaiin/commit/98b32999c0da193d43c9e229dc75cd4d7d386b4a?diff=split#diff-89cebc2af514f83dbabec8d3b2c739b315779f10dab726e8343a551c6b5601ccL-1",
+                    "lines": [
+                      {
+                        "line": "\tdir2, _ := filepath.Abs(os.Args[0])\n",
+                        "lineNumber": 73,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tlog.Println(dir2)\n",
+                        "lineNumber": 74,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tfirst, err := os.StartProcess(dir2, []string{dir2, \"-d\"}, &os.ProcAttr{\n",
+                        "lineNumber": 75,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t// dir2, _ := filepath.Abs(os.Args[0])\n",
+                        "lineNumber": 72,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 73,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\texecutablePath, err := os.Executable()\n",
+                        "lineNumber": 74,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tif err != nil {\n",
+                        "lineNumber": 75,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tlog.Println(err)\n",
+                        "lineNumber": 76,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\treturn\n",
+                        "lineNumber": 77,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 78,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t// log.Println(executablePath)\n",
+                        "lineNumber": 79,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tfirst, err := os.StartProcess(executablePath, []string{executablePath, \"-d\"}, &os.ProcAttr{\n",
+                        "lineNumber": 80,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/hashicorp/terraform-provider-helm/commit/5ad70bb7c2024a5092fbac5232eb22725e037029?diff=split#diff-2d981fbd626d820470304a34915f6ef7e42ed8d9d39db1b5a65942984a5c227bL-1",
+                    "lines": [
+                      {
+                        "line": "Cmd:             exec.Command(os.Args[0], \"plugin\"),\n",
+                        "lineNumber": 28,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "Cmd:             exec.Command(\"./plugin/greeter\"),\n",
+                        "lineNumber": 25,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "Logger:          logger,\n",
+                        "lineNumber": 26,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 6,
+                "cwe": [
+                  "CWE-78"
+                ]
+              }
+            },
+            {
+              "id": "go/HardcodedPassword",
+              "name": "HardcodedPassword",
+              "shortDescription": {
+                "text": "Use of Hardcoded Passwords"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nDevelopers may use hardcoded passwords during development to streamline setup or simplify authentication while testing. Although these passwords are intended to be removed before deployment, they are sometimes inadvertently left in the code. This introduces serious security risks, especially if the password grants elevated privileges or is reused across multiple systems.\n\nAn attacker who discovers a hardcoded password can potentially gain unauthorized access, escalate privileges, exfiltrate sensitive data, or disrupt service availability. If the password is reused across different environments or applications, the compromise can spread quickly and broadly.\n\n## Best practices for prevention\n* Plan software architecture such that keys and passwords are always stored outside the code, wherever possible.\n* Plan encryption into software architecture for all credential information and ensure proper handling of keys, credentials, and passwords.\n* Prompt for a secure password on first login rather than hard-code a default password.\n* If a hardcoded password or credential must be used, limit its use, for example, to system console users rather than via the network.\n* Use strong hashes for inbound password authentication, ideally with randomly assigned salts to increase the difficulty level in case of brute-force attack.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "HardcodedPassword",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/biningo/note-gin/commit/42791cf29b4b86e2d1f4c384a940591a47e13219?diff=split#diff-ca713ed723a0edf86b651d90157af74fd9d9e739b791097a4b13e697e5699253L-1",
+                    "lines": [
+                      {
+                        "line": "func GetToken() string {\n",
+                        "lineNumber": 7,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\taccessKey := \"WdlLw-oFN1mbj-0vngrbQ8Si39u0dgackq0v9L4T\"\n",
+                        "lineNumber": 8,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tsecretKey := \"HoKZLcwE1BtYWe9ze__jmwWsfqPeAcbHURN48t9A\"\n",
+                        "lineNumber": 9,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tbucket := \"note-gin\"\n",
+                        "lineNumber": 10,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tputPolicy := storage.PutPolicy{\n",
+                        "lineNumber": 11,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tScope: bucket,\n",
+                        "lineNumber": 12,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 13,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tmac := qbox.NewMac(accessKey, secretKey)\n",
+                        "lineNumber": 14,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tupToken := putPolicy.UploadToken(mac)\n",
+                        "lineNumber": 15,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\treturn upToken\n",
+                        "lineNumber": 16,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "var QiniuAccessKey string\n",
+                        "lineNumber": 4,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "var QiniuSecretKey string\n",
+                        "lineNumber": 5,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 6,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "func SetUp() {\n",
+                        "lineNumber": 7,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tQiniuAccessKey = config.Conf.AppConfig.QiniuAccessKey\n",
+                        "lineNumber": 8,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tQiniuSecretKey = config.Conf.AppConfig.QiniuSecretKey\n",
+                        "lineNumber": 9,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/weibocom/opendcp/commit/ec5209d39b8ce28a67bf10f0fe6379f6c65ec454?diff=split#diff-d842348011b17bb4526453c3a207e6032219a4a6cafdf5f0e2c9b3d0da2fae8cL-1",
+                    "lines": [
+                      {
+                        "line": "IdentityEndpoint: \"http://10.39.59.27:5000/v3\",\n",
+                        "lineNumber": 124,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "Username: \"admin\",\n",
+                        "lineNumber": 125,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "Password: \"ZYGL32NDG7JS8IGC\",\n",
+                        "lineNumber": 126,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "IdentityEndpoint: url,\n",
+                        "lineNumber": 127,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "Username: conf.Config.OpUserName,\n",
+                        "lineNumber": 128,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "Password: conf.Config.OpPassWord,\n",
+                        "lineNumber": 129,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/jointwt/twtxt/commit/14e86ea4b5ef71df46297a8ffccc8f259a677fb5?diff=split#diff-0c6fb9f312dbfbfed47d840e0d73f6ba10291681cf8b70ad10979fa20b6aa350L-1",
+                    "lines": [
+                      {
+                        "line": "\t// InvalidConfigValue is the constant value for invalid config values\n",
+                        "lineNumber": 9,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t// which must be changed for production configurations before successful\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t// startup\n",
+                        "lineNumber": 11,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tInvalidConfigValue = \"INVALID CONFIG VALUE - PLEASE CHANGE THIS VALUE\"\n",
+                        "lineNumber": 12,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 13,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t// DebugMode is the default debug mode\n",
+                        "lineNumber": 14,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultDebug = false\n",
+                        "lineNumber": 15,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 16,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultData is the default data directory for storage\n",
+                        "lineNumber": 17,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultData = \"./data\"\n",
+                        "lineNumber": 18,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 19,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultStore is the default data store used for accounts, sessions, etc\n",
+                        "lineNumber": 20,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultStore = \"bitcask://twtxt.db\"\n",
+                        "lineNumber": 21,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 22,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultBaseURL is the default Base URL for the app used to construct feed URLs\n",
+                        "lineNumber": 23,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultBaseURL = \"http://0.0.0.0:8000\"\n",
+                        "lineNumber": 24,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 25,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultAdminXXX is the default admin user / pod operator\n",
+                        "lineNumber": 26,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultAdminUser  = \"admin\"\n",
+                        "lineNumber": 27,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultAdminName  = \"Administrator\"\n",
+                        "lineNumber": 28,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultAdminEmail = \"support@twt.social\"\n",
+                        "lineNumber": 29,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 30,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultName is the default instance name\n",
+                        "lineNumber": 31,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultName = \"twtxt.net\"\n",
+                        "lineNumber": 32,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 33,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultMetaxxx are the default set of <meta> tags used on non-specific views\n",
+                        "lineNumber": 34,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultMetaTitle       = \"\"\n",
+                        "lineNumber": 35,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultMetaAuthor      = \"twtxt.net / twt.social\"\n",
+                        "lineNumber": 36,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultMetaKeywords    = \"twtxt, twt, blog, micro-blogging, social, media, decentralised, pod\"\n",
+                        "lineNumber": 37,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultMetaDescription = \"📕 twtxt is a Self-Hosted, Twitter™-like Decentralised microBlogging platform. No ads, no tracking, your content, your data!\"\n",
+                        "lineNumber": 38,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 39,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultTheme is the default theme to use ('light' or 'dark')\n",
+                        "lineNumber": 40,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultTheme = \"dark\"\n",
+                        "lineNumber": 41,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 42,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultOpenRegistrations is the default for open user registrations\n",
+                        "lineNumber": 43,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultOpenRegistrations = false\n",
+                        "lineNumber": 44,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 45,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultRegisterMessage is the default message displayed when  registrations are disabled\n",
+                        "lineNumber": 46,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultRegisterMessage = \"\"\n",
+                        "lineNumber": 47,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 48,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t// DefaultCookieSecret is the server's default cookie secret\n",
+                        "lineNumber": 49,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tDefaultCookieSecret = \"PLEASE_CHANGE_ME!!!\"\n",
+                        "lineNumber": 45,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tDefaultCookieSecret = InvalidConfigValue\n",
+                        "lineNumber": 50,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 20,
+                "cwe": [
+                  "CWE-798",
+                  "CWE-259"
+                ]
+              }
+            },
+            {
+              "id": "go/TooPermissiveTrustManager/test",
+              "name": "TooPermissiveTrustManager/test",
+              "shortDescription": {
+                "text": "Improper Certificate Validation"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nCommunication through encrypted TLS/SSL protocols can only take place when the server bears a valid certificate associating that server with a valid public-key identity issued by a third-party authority. If certificate validation is cursory or incomplete, this creates a weakness whereby an attacker can spoof one or more certificate details (e.g., expiration date), gaining unauthorized access to confidential data and privileged actions.\n\n## Best practices for prevention\n* Verify all aspects of any certificate provided, particularly chain of trust (issuing authority), host identity, and expiration.\n* Limit the validity period for certificates.\n* Avoid using self-signed certificates, certificate pinning, and wildcard certificates, as these all add levels of convenience but can also lead to loss of control over site/app security.\n* Disable older and insecure protocols (for example, SSL 2.0/3.0, MD5, and 3DES).\n* Ensure that all team members are familiar with current best practices and approaches, such as current TLS protocols.\n* Implement automated and manual testing using current tools and techniques designed to reveal this and related SSL weaknesses (for example, web application scanners).",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "TooPermissiveTrustManager",
+                  "Security",
+                  "InTest"
+                ],
+                "categories": [
+                  "Security",
+                  "InTest"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/AmadeusITGroup/kubervisor/commit/aaf3d1a6a90c6ba9d56fd44648734938d0970470?diff=split#diff-48a8d555a42b35d5bf1e8ae57f3f0d6c634b9b3d9060fd1935afa55f5dbd58c9L-1",
+                    "lines": [
+                      {
+                        "line": "transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}\n",
+                        "lineNumber": 29,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: false}\n",
+                        "lineNumber": 29,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/AbGuthrie/goquery/commit/0d5d3b2a65a571a0926591fe7674c133d0a06d14?diff=split#diff-8ffdbfea91b4887eb067076025ce572fc41c5f4de26ed4579f37938ee55116ecL-1",
+                    "lines": [
+                      {
+                        "line": "TLSClientConfig: &tls.Config{InsecureSkipVerify: true},\n",
+                        "lineNumber": 35,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "TLSClientConfig: &tls.Config{\n",
+                        "lineNumber": 36,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tInsecureSkipVerify: config.GetConfig().DebugEnabled,\n",
+                        "lineNumber": 37,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "},\n",
+                        "lineNumber": 38,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/fsouza/go-dockerclient/commit/27840d3e50fc3505446b6195c3b1370003829cc0?diff=split#diff-4b667feae66c9d46b21b9ecc19e8958cf4472d162ce0a47ac3e8386af8bbd8cfL-1",
+                    "lines": [
+                      {
+                        "line": "InsecureSkipVerify: true,\n",
+                        "lineNumber": 187,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "InsecureSkipVerify: false,\n",
+                        "lineNumber": 193,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 58,
+                "cwe": [
+                  "CWE-295"
+                ]
+              }
+            },
+            {
+              "id": "python/NoHardcodedCredentials",
+              "name": "NoHardcodedCredentials",
+              "shortDescription": {
+                "text": "Use of Hardcoded Credentials"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nDevelopers may use hardcoded credentials for convenience when coding in order to simplify their workflow. While they are responsible for removing these before production, occasionally this task may fall through the cracks. This also becomes a maintenance challenge when credentials are re-used across multiple applications.\n\nOnce attackers gain access, they may take advantage of privilege level to remove or alter data, take down a site or app, or hold any of the above for ransom. The risk across multiple similar projects is even greater. If code containing the credentials is reused across multiple projects, they will all be compromised.\n\n## Best practices for prevention\n* Plan software architecture such that keys and passwords are always stored outside the code, wherever possible.\n* Plan encryption into software architecture for all credential information and ensure proper handling of keys, credentials, and passwords.\n* Prompt for a secure password on first login rather than hard-code a default password.\n* If a hardcoded password or credential must be used, limit its use, for example, to system console users rather than via the network.\n* Use strong hashes for inbound password authentication, ideally with randomly assigned salts to increase the difficulty level in case of brute-force attack.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "python",
+                  "NoHardcodedCredentials",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/joatuapp/joatu-django/commit/04bf074fb48b264645f5f0b52bb6592113bb73f9?diff=split#diff-9653b8c2ce917a6134298b00c8b3f7d4b7c4dc473a752303f37a870392742127L-1",
+                    "lines": [
+                      {
+                        "line": "from django.conf import settings\n",
+                        "lineNumber": 6,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 7,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 8,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "def coordinates_calculation(number, street, postal_code, city, country=''):\n",
+                        "lineNumber": 9,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    api_key = 'AIzaSyDM17QITeync0gIHsGgyqG_IxLH-7JSHo0'\n",
+                        "lineNumber": 8,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "    api_key = settings.GOOGLE_API_KEY\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/leandro-gomez/youtube-api/commit/3f11cd7a2225163742a64ac1bf0e47d147cf13e4?diff=split#diff-fc29c0b673f3c43fb6fa7980bfbbcf134d866e535e90d8431c4e9ac105dc332aL-1",
+                    "lines": [
+                      {
+                        "line": "import os\n",
+                        "lineNumber": 1,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 2,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "API_KEY = 'AIzaSyDP74ePWyfwuHfGVnZHcM4HW4hil-4VxsU'\n",
+                        "lineNumber": 2,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "API_KEY = os.environ['YOUTUBE_API_KEY']\n",
+                        "lineNumber": 3,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/SkygearIO/chat/commit/70aafe017de3539355e3c79a504446b652dbf31f?diff=split#diff-c117fbf003ff6c8803d300cb7df397945352c8868f8a54f2ddc9e4d4c261371fL-1",
+                    "lines": [
+                      {
+                        "line": "import os\n",
+                        "lineNumber": 0,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "import datetime\n",
+                        "lineNumber": 1,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "import uuid\n",
+                        "lineNumber": 2,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 3,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "import jsonpickle\n",
+                        "lineNumber": 4,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "import skygear\n",
+                        "lineNumber": 5,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "from skygear.container import SkygearContainer\n",
+                        "lineNumber": 6,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "from skygear.utils.context import current_user_id\n",
+                        "lineNumber": 7,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "from skygear.utils import db\n",
+                        "lineNumber": 8,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "from skygear import pubsub\n",
+                        "lineNumber": 9,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "from psycopg2.extensions import AsIs\n",
+                        "lineNumber": 10,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 11,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 12,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "container = SkygearContainer()\n",
+                        "lineNumber": 13,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "container.api_key = \"my_skygear_key\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "container.app_name = \"my_skygear_app\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "container.api_key = os.getenv('API_KEY', \"my_skygear_key\")\n",
+                        "lineNumber": 14,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "container.app_name = os.getenv('APP_NAME', \"my_skygear_app\")\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 63,
+                "cwe": [
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "python/SSLVerificationBypass",
+              "name": "SSLVerificationBypass",
+              "shortDescription": {
+                "text": "Improper Certificate Validation"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nCommunication through encrypted TLS/SSL protocols can only take place when the server bears a valid certificate associating that server with a valid public-key identity issued by a third-party authority. If certificate validation is cursory or incomplete, this creates a weakness whereby an attacker can spoof one or more certificate details (e.g., expiration date), gaining unauthorized access to confidential data and privileged actions.\n\n## Best practices for prevention\n* Verify all aspects of any certificate provided, particularly chain of trust (issuing authority), host identity, and expiration.\n* Limit the validity period for certificates.\n* Avoid using self-signed certificates, certificate pinning, and wildcard certificates, as these all add levels of convenience but can also lead to loss of control over site/app security.\n* Disable older and insecure protocols (for example, SSL 2.0/3.0, MD5, and 3DES).\n* Ensure that all team members are familiar with current best practices and approaches, such as current TLS protocols.\n* Implement automated and manual testing using current tools and techniques designed to reveal this and related SSL weaknesses (for example, web application scanners).",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "python",
+                  "SSLVerificationBypass",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/jonluca/Anubis/commit/2eb838e311a33f032732a00e88c64082892bc56c?diff=split#diff-bbb95583df3e08592caec03b34536b3884af05bf15c379a2d0deda1cac9cfb6dL-1",
+                    "lines": [
+                      {
+                        "line": "res = requests.get(\n",
+                        "lineNumber": 13,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  'https://www.virustotal.com/en/domain/' + target + '/information/',\n",
+                        "lineNumber": 14,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  headers=headers, verify=False)\n",
+                        "lineNumber": 15,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "  headers=headers)\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/mytardis/mytardis/commit/209039d112fb0e25d137509ac5453e0d530e5f20?diff=split#diff-5e68ab655e8a14d56623e5552e6fb906dc4e7ba7883e793e7c88ade7de1c2c75L-1",
+                    "lines": [
+                      {
+                        "line": "r = requests.post(\n",
+                        "lineNumber": 20,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    url,\n",
+                        "lineNumber": 21,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    headers=headers,\n",
+                        "lineNumber": 22,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    data=json.dumps(payload),\n",
+                        "lineNumber": 23,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "    verify=False)\n",
+                        "lineNumber": 24,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "    data=json.dumps(payload))\n",
+                        "lineNumber": 22,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/ethz-asl/linter/commit/63c527c47d08cdec037f5522069ca47100ac61be?diff=split#diff-5d93e8f999bf0bb7c7166531babb2e124bd2fab99e69ac9ca7a60d74eda5ecadL-1",
+                    "lines": [
+                      {
+                        "line": "request = requests.get(url, verify=False, stream=True)\n",
+                        "lineNumber": 22,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "request = requests.get(url, verify=True, stream=True)\n",
+                        "lineNumber": 22,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 92,
+                "cwe": [
+                  "CWE-295"
+                ]
+              }
+            },
+            {
+              "id": "go/NoHardcodedCredentials",
+              "name": "NoHardcodedCredentials",
+              "shortDescription": {
+                "text": "Use of Hardcoded Credentials"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nDevelopers may use hardcoded credentials for convenience when coding in order to simplify their workflow. While they are responsible for removing these before production, occasionally this task may fall through the cracks. This also becomes a maintenance challenge when credentials are re-used across multiple applications.\n\nOnce attackers gain access, they may take advantage of privilege level to remove or alter data, take down a site or app, or hold any of the above for ransom. The risk across multiple similar projects is even greater. If code containing the credentials is reused across multiple projects, they will all be compromised.\n\n## Best practices for prevention\n* Plan software architecture such that keys and passwords are always stored outside the code, wherever possible.\n* Plan encryption into software architecture for all credential information and ensure proper handling of keys, credentials, and passwords.\n* Prompt for a secure password on first login rather than hard-code a default password.\n* If a hardcoded password or credential must be used, limit its use, for example, to system console users rather than via the network.\n* Use strong hashes for inbound password authentication, ideally with randomly assigned salts to increase the difficulty level in case of brute-force attack.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "NoHardcodedCredentials",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/fjukstad/kvik/commit/254d8dd1c34e017b1aac1493286a3f3b773ff40c?diff=split#diff-6a37a2c5ea8c5a951b2830b342cc07312e7cfa6eb69afdecc4b5bfce636f28e0L-1",
+                    "lines": [
+                      {
+                        "line": "//addr := \"192.168.99.100:8004\"\n",
+                        "lineNumber": 12,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "addr := \"public.opencpu.org\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "username := \"user\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "password := \"password\"\n",
+                        "lineNumber": 15,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "addr := \"localhost:8181\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "//addr := \"public.opencpu.org\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "username := \"\"\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "password := \"\"\n",
+                        "lineNumber": 16,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/k0kubun/sqldef/commit/5ac0feda25dfa3b4a3e2201c017425beec13a02d?diff=split#diff-ed17e21a49a7d3b117a41187ac6d384ef656de942120f74001fa9b057fde5688L-1",
+                    "lines": [
+                      {
+                        "line": "user := \"postgres\"\n",
+                        "lineNumber": 8,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "password := \"\"\n",
+                        "lineNumber": 9,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "host := \"127.0.0.1:5432\"\n",
+                        "lineNumber": 10,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "user := config.User\n",
+                        "lineNumber": 8,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "password := config.Password\n",
+                        "lineNumber": 9,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "host := fmt.Sprintf(\"%s:%d\", config.Host, config.Port)\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/alfred-zhong/wserver/commit/bc7d33643368e16d9801ab88f7ba2dfdc49467af?diff=split#diff-005f9a0396b938d96245e8fc04dcd633d0716b5610fd4d90c09af361625fb74dL-1",
+                    "lines": [
+                      {
+                        "line": "userID := \"476B40DD-DFE9-4CDE-AD4F-F0A53FE18FA5\"\n",
+                        "lineNumber": 18,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "userID := uuid.New().String()\n",
+                        "lineNumber": 19,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 71,
+                "cwe": [
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "go/NoHardcodedCredentials/test",
+              "name": "NoHardcodedCredentials/test",
+              "shortDescription": {
+                "text": "Use of Hardcoded Credentials"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nDevelopers may use hardcoded credentials for convenience when coding in order to simplify their workflow. While they are responsible for removing these before production, occasionally this task may fall through the cracks. This also becomes a maintenance challenge when credentials are re-used across multiple applications.\n\nOnce attackers gain access, they may take advantage of privilege level to remove or alter data, take down a site or app, or hold any of the above for ransom. The risk across multiple similar projects is even greater. If code containing the credentials is reused across multiple projects, they will all be compromised.\n\n## Best practices for prevention\n* Plan software architecture such that keys and passwords are always stored outside the code, wherever possible.\n* Plan encryption into software architecture for all credential information and ensure proper handling of keys, credentials, and passwords.\n* Prompt for a secure password on first login rather than hard-code a default password.\n* If a hardcoded password or credential must be used, limit its use, for example, to system console users rather than via the network.\n* Use strong hashes for inbound password authentication, ideally with randomly assigned salts to increase the difficulty level in case of brute-force attack.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "NoHardcodedCredentials",
+                  "Security",
+                  "InTest"
+                ],
+                "categories": [
+                  "Security",
+                  "InTest"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/fjukstad/kvik/commit/254d8dd1c34e017b1aac1493286a3f3b773ff40c?diff=split#diff-6a37a2c5ea8c5a951b2830b342cc07312e7cfa6eb69afdecc4b5bfce636f28e0L-1",
+                    "lines": [
+                      {
+                        "line": "//addr := \"192.168.99.100:8004\"\n",
+                        "lineNumber": 12,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "addr := \"public.opencpu.org\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "username := \"user\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "password := \"password\"\n",
+                        "lineNumber": 15,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "addr := \"localhost:8181\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "//addr := \"public.opencpu.org\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "username := \"\"\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "password := \"\"\n",
+                        "lineNumber": 16,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/k0kubun/sqldef/commit/5ac0feda25dfa3b4a3e2201c017425beec13a02d?diff=split#diff-ed17e21a49a7d3b117a41187ac6d384ef656de942120f74001fa9b057fde5688L-1",
+                    "lines": [
+                      {
+                        "line": "user := \"postgres\"\n",
+                        "lineNumber": 8,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "password := \"\"\n",
+                        "lineNumber": 9,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "host := \"127.0.0.1:5432\"\n",
+                        "lineNumber": 10,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "user := config.User\n",
+                        "lineNumber": 8,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "password := config.Password\n",
+                        "lineNumber": 9,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "host := fmt.Sprintf(\"%s:%d\", config.Host, config.Port)\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/alfred-zhong/wserver/commit/bc7d33643368e16d9801ab88f7ba2dfdc49467af?diff=split#diff-005f9a0396b938d96245e8fc04dcd633d0716b5610fd4d90c09af361625fb74dL-1",
+                    "lines": [
+                      {
+                        "line": "userID := \"476B40DD-DFE9-4CDE-AD4F-F0A53FE18FA5\"\n",
+                        "lineNumber": 18,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "userID := uuid.New().String()\n",
+                        "lineNumber": 19,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 71,
+                "cwe": [
+                  "CWE-798"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "go/CommandInjection/test",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Unsanitized input from a CLI argument flows into os.exec.Command, where it is used as a shell command. This may result in a Command Injection vulnerability.",
+            "markdown": "Unsanitized input from {0} {1} into {2}, where it is used as a shell command. This may result in a Command Injection vulnerability.",
+            "arguments": [
+              "[a CLI argument](0)",
+              "[flows](1),(2),(3),(4),(5)",
+              "[os.exec.Command](6)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/daemon/util/cmdreporter_test.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 238,
+                  "endLine": 238,
+                  "startColumn": 9,
+                  "endColumn": 21
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "3cb04a6cc9912fc0c8a390964e8f8ecffc5563fb3c0fcfd6c43783127eaf75a7",
+            "1": "bb031414.348ddf12.45df3e14.ef8f25dc.33cee363.75c1163d.0873598c.a4abc9b0.c8b400c0.348ddf12.45df3e14.9692a5c1.23ef7662.75c1163d.0873598c.545e9171"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 253,
+                            "endLine": 253,
+                            "startColumn": 10,
+                            "endColumn": 17
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 253,
+                            "endLine": 253,
+                            "startColumn": 10,
+                            "endColumn": 17
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 2,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 253,
+                            "endLine": 253,
+                            "startColumn": 2,
+                            "endColumn": 6
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 3,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 255,
+                            "endLine": 255,
+                            "startColumn": 6,
+                            "endColumn": 10
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 4,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 255,
+                            "endLine": 255,
+                            "startColumn": 6,
+                            "endColumn": 13
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 5,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 238,
+                            "endLine": 238,
+                            "startColumn": 22,
+                            "endColumn": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 6,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/util/cmdreporter_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 238,
+                            "endLine": 238,
+                            "startColumn": 9,
+                            "endColumn": 21
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 360,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/CommandInjection/test",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Unsanitized input from a CLI argument flows into os.exec.Command, where it is used as a shell command. This may result in a Command Injection vulnerability.",
+            "markdown": "Unsanitized input from {0} {1} into {2}, where it is used as a shell command. This may result in a Command Injection vulnerability.",
+            "arguments": [
+              "[a CLI argument](0)",
+              "[flows](1)",
+              "[os.exec.Command](2)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/util/exec/test/mockexec.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 110,
+                  "endLine": 110,
+                  "startColumn": 9,
+                  "endColumn": 21
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "40ed1c27f8d197bf64b64a8c4380234d4a654a49c066da709ffa6e663e989824",
+            "1": "f93f09c7.348ddf12.45df3e14.ef8f25dc.b30b958b.75c1163d.0873598c.1bff12d3.f93f09c7.348ddf12.45df3e14.9692a5c1.f1d9f854.75c1163d.0873598c.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/util/exec/test/mockexec.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 110,
+                            "endLine": 110,
+                            "startColumn": 22,
+                            "endColumn": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/util/exec/test/mockexec.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 110,
+                            "endLine": 110,
+                            "startColumn": 22,
+                            "endColumn": 32
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 2,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/util/exec/test/mockexec.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 110,
+                            "endLine": 110,
+                            "startColumn": 9,
+                            "endColumn": 21
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 360,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/HardcodedPassword",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Do not hardcode passwords in code. Found hardcoded saved in dashboardPasswordName.",
+            "markdown": "Do not hardcode passwords in code. Found {0} saved in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[dashboardPasswordName](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 46,
+                  "endLine": 46,
+                  "startColumn": 2,
+                  "endColumn": 23
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "0b437c8e3d00bf1b38be2563506b469dd4a22bd6cd95e98e2956d84c780b59bb",
+            "1": "b1fffe05.ef407988.45df3e14.79502f34.6ee851a6.69434969.8ee950b3.1bff12d3.b1fffe05.ef407988.45df3e14.79502f34.6ee851a6.d8cb1632.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 46,
+                            "endLine": 46,
+                            "startColumn": 35,
+                            "endColumn": 65
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 46,
+                            "endLine": 46,
+                            "startColumn": 2,
+                            "endColumn": 23
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 569,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/HardcodedPassword",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Do not hardcode passwords in code. Found hardcoded saved in dashboardPasswordName.",
+            "markdown": "Do not hardcode passwords in code. Found {0} saved in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[dashboardPasswordName](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 336,
+                  "endLine": 336,
+                  "startColumn": 15,
+                  "endColumn": 36
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "c6312f5f2eed313aa66cc46a6aec8ea3821aeee5c73ce4218e6323d5e360c086",
+            "1": "b1fffe05.98f0ff0f.45df3e14.bfac11f0.6ee851a6.69434969.8ee950b3.a99dc5d3.b1fffe05.98f0ff0f.45df3e14.79502f34.6ee851a6.69434969.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 46,
+                            "endLine": 46,
+                            "startColumn": 35,
+                            "endColumn": 65
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 336,
+                            "endLine": 336,
+                            "startColumn": 15,
+                            "endColumn": 36
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 569,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/TooPermissiveTrustManager/test",
+          "ruleIndex": 2,
+          "level": "note",
+          "message": {
+            "text": "TrustManager might be too permissive: The client will accept any certificate and any host name in that certificate, making it susceptible to man-in-the-middle attacks.",
+            "markdown": "TrustManager might be too permissive: The client will accept any certificate and any host name in that certificate, making it susceptible to man-in-the-middle attacks.",
+            "arguments": []
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "tests/integration/object/bucketowner/bucketowner.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 373,
+                  "endLine": 373,
+                  "startColumn": 7,
+                  "endColumn": 31
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "10fca064aa1f02e2ab7063f954370b2847e362c60f8eecf044d81ce16b67c636",
+            "1": "424eddda.9bf9da8e.8d277033.1c2a3430.c9c1f9d4.6c8feca2.f563e0a5.1f55c1aa.424eddda.9bf9da8e.8d277033.bfac11f0.a0280c3b.67ab4541.8ee950b3.1f55c1aa"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "tests/integration/object/bucketowner/bucketowner.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 373,
+                            "endLine": 373,
+                            "startColumn": 7,
+                            "endColumn": 31
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 364,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/TooPermissiveTrustManager/test",
+          "ruleIndex": 2,
+          "level": "note",
+          "message": {
+            "text": "TrustManager might be too permissive: The client will accept any certificate and any host name in that certificate, making it susceptible to man-in-the-middle attacks.",
+            "markdown": "TrustManager might be too permissive: The client will accept any certificate and any host name in that certificate, making it susceptible to man-in-the-middle attacks.",
+            "arguments": []
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "tests/integration/object/user/userkeys/userkeys.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 402,
+                  "endLine": 402,
+                  "startColumn": 7,
+                  "endColumn": 31
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "47fc54ce96ea34ce05198d5b6feb26ea380ca7f2c5069566e91572e717da5b7f",
+            "1": "424eddda.9bf9da8e.8d277033.1c2a3430.c9c1f9d4.6c8feca2.f563e0a5.1f55c1aa.424eddda.9bf9da8e.8d277033.bfac11f0.a0280c3b.67ab4541.8ee950b3.1f55c1aa"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "tests/integration/object/user/userkeys/userkeys.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 402,
+                            "endLine": 402,
+                            "startColumn": 7,
+                            "endColumn": 31
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 364,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/TooPermissiveTrustManager/test",
+          "ruleIndex": 2,
+          "level": "note",
+          "message": {
+            "text": "TrustManager might be too permissive: The client will accept any certificate and any host name in that certificate, making it susceptible to man-in-the-middle attacks.",
+            "markdown": "TrustManager might be too permissive: The client will accept any certificate and any host name in that certificate, making it susceptible to man-in-the-middle attacks.",
+            "arguments": []
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "tests/integration/object/util/sns/sns.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 99,
+                  "endLine": 99,
+                  "startColumn": 5,
+                  "endColumn": 29
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "e61a5f1407dc30e816618b88b7b28d233f9daef2e22f122ddff04d3b30e61d09",
+            "1": "424eddda.9bf9da8e.8d277033.1c2a3430.c9c1f9d4.6c8feca2.f563e0a5.1f55c1aa.424eddda.9bf9da8e.8d277033.bfac11f0.a0280c3b.67ab4541.8ee950b3.1f55c1aa"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "tests/integration/object/util/sns/sns.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 99,
+                            "endLine": 99,
+                            "startColumn": 5,
+                            "endColumn": 29
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 364,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "python/NoHardcodedCredentials",
+          "ruleIndex": 3,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in a condition.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in a condition.",
+            "arguments": [
+              "[hardcoded](0)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deploy/examples/create-external-cluster-resources.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 2022,
+                  "endLine": 2022,
+                  "startColumn": 20,
+                  "endColumn": 42
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "1939edbaf348cbb0a0d0a9e1107afd848e7a510df3e134021c266f7d116f2d16",
+            "1": "849fd8b0.9aab1943.2683ade8.3d585a12.1d07cee4.a5d7f69f.e39d31a9.ebed174f.2d06e3d6.9aab1943.2683ade8.1e2c0147.f347924b.a5d7f69f.e39d31a9.b673d2e1"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 2022,
+                            "endLine": 2022,
+                            "startColumn": 20,
+                            "endColumn": 42
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 405,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "python/SSLVerificationBypass",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Certificate verification is disabled by setting verify to False in requests.head. This may lead to Man-in-the-middle attacks.",
+            "markdown": "Certificate verification is disabled by setting {0} to {1} in {2}. This may lead to Man-in-the-middle attacks.",
+            "arguments": [
+              "[verify](0)",
+              "[False](1)",
+              "[requests.head](2)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deploy/examples/create-external-cluster-resources.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 605,
+                  "endLine": 605,
+                  "startColumn": 25,
+                  "endColumn": 38
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "164e215a3b5fb7fc03ceb1ed32f6e1e72e555b497773a73b14acc4b7817c2ea9",
+            "1": "101172a8.1441ab4d.3b7b86da.2f70e912.1d07cee4.57d888ee.cbfa2b68.773acf30.101172a8.277c621c.3b7b86da.2f70e912.5ef953d3.ba14daf2.cbfa2b68.773acf30"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 605,
+                            "endLine": 605,
+                            "startColumn": 60,
+                            "endColumn": 66
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 605,
+                            "endLine": 605,
+                            "startColumn": 67,
+                            "endColumn": 72
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 2,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 605,
+                            "endLine": 605,
+                            "startColumn": 25,
+                            "endColumn": 38
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 810,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": true
+          }
+        },
+        {
+          "ruleId": "python/SSLVerificationBypass",
+          "ruleIndex": 4,
+          "level": "error",
+          "message": {
+            "text": "Certificate verification is disabled by setting verify to False in requests.get. This may lead to Man-in-the-middle attacks.",
+            "markdown": "Certificate verification is disabled by setting {0} to {1} in {2}. This may lead to Man-in-the-middle attacks.",
+            "arguments": [
+              "[verify](0)",
+              "[False](1)",
+              "[requests.get](2)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "deploy/examples/create-external-cluster-resources.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1416,
+                  "endLine": 1416,
+                  "startColumn": 17,
+                  "endColumn": 29
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "e0461cee2611d56ca2919fcd22368921d5098cb43a6635cc1519387de1d005b2",
+            "1": "747e3084.94e1a0e6.3b7b86da.b557f680.df8f6a96.f098e553.cc914b1e.773acf30.747e3084.277c621c.3b7b86da.b557f680.df8f6a96.f098e553.cc914b1e.773acf30"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 1419,
+                            "endLine": 1419,
+                            "startColumn": 17,
+                            "endColumn": 23
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 604,
+                            "endLine": 604,
+                            "startColumn": 30,
+                            "endColumn": 35
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 2,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "deploy/examples/create-external-cluster-resources.py",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 1416,
+                            "endLine": 1416,
+                            "startColumn": 17,
+                            "endColumn": 29
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 810,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": true
+          }
+        },
+        {
+          "ruleId": "go/HardcodedPassword",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Do not hardcode passwords in code. Found hardcoded saved in passwordChars.",
+            "markdown": "Do not hardcode passwords in code. Found {0} saved in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[passwordChars](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 356,
+                  "endLine": 356,
+                  "startColumn": 8,
+                  "endColumn": 21
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "35430b4cf7b72eea3cedf1c3c50d5e7c150469cb8b844d8b08a433e4ea588e4e",
+            "1": "63ae0a0a.87538641.45df3e14.9692a5c1.91b7c08c.67ab4541.860c51ff.1bff12d3.63ae0a0a.26fa4e95.bb6e98e1.9692a5c1.91b7c08c.67ab4541.d329198d.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 356,
+                            "endLine": 356,
+                            "startColumn": 24,
+                            "endColumn": 122
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 356,
+                            "endLine": 356,
+                            "startColumn": 8,
+                            "endColumn": 21
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 569,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/HardcodedPassword",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Do not hardcode passwords in code. Found hardcoded saved in passwordChars.",
+            "markdown": "Do not hardcode passwords in code. Found {0} saved in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[passwordChars](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 362,
+                  "endLine": 362,
+                  "startColumn": 15,
+                  "endColumn": 28
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "9b8a6b97558c88290b61f1edba4b7fb91026d49cb33803c02a119e8c9204d6c1",
+            "1": "63ae0a0a.348ddf12.45df3e14.9692a5c1.e0367e33.67ab4541.0873598c.1bff12d3.63ae0a0a.348ddf12.45df3e14.9692a5c1.e0367e33.67ab4541.0873598c.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 356,
+                            "endLine": 356,
+                            "startColumn": 24,
+                            "endColumn": 122
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/cluster/mgr/dashboard.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 362,
+                            "endLine": 362,
+                            "startColumn": 15,
+                            "endColumn": 28
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 569,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in username.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[username](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/daemon/ceph/osd/init.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 33,
+                  "endLine": 33,
+                  "startColumn": 2,
+                  "endColumn": 10
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "3a0e94d4d8209c14aeb48b1fd2310e848ebbed71fa24cc61b86cfabf9b9f27f0",
+            "1": "740e7a20.73eb5804.45df3e14.e22980a8.f1d9f854.995dab92.1e29c53c.1bff12d3.9743398e.1ca37aac.45df3e14.e22980a8.f70e4037.995dab92.1e29c53c.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/ceph/osd/init.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 33,
+                            "endLine": 33,
+                            "startColumn": 14,
+                            "endColumn": 36
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/ceph/osd/init.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 33,
+                            "endLine": 33,
+                            "startColumn": 2,
+                            "endColumn": 10
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 373,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in user.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[user](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/file/mirror/config.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 36,
+                  "endLine": 36,
+                  "startColumn": 2,
+                  "endColumn": 6
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "28fea51a0ccd8dab2f7461d6d3267523894c55c00f37ce31c052e0cd891bf5a6",
+            "1": "8379f5e8.609e2856.45df3e14.79502f34.db7259b9.9ce9112e.105e690d.1bff12d3.8379f5e8.2e958f76.45df3e14.79502f34.db7259b9.9ce9112e.105e690d.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/file/mirror/config.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 36,
+                            "endLine": 36,
+                            "startColumn": 11,
+                            "endColumn": 29
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/file/mirror/config.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 36,
+                            "endLine": 36,
+                            "startColumn": 2,
+                            "endColumn": 6
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 423,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in userID.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[userID](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/file/mirror/config.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 37,
+                  "endLine": 37,
+                  "startColumn": 2,
+                  "endColumn": 8
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "7b6aa5891764c9ed001cb7b8ac84aeeaa1bbc67faf8825e74c6ee00ac1942378",
+            "1": "7ef8ab4d.beb94da5.67f784e6.79502f34.91b7c08c.63a86890.fb9e89bc.1bff12d3.7ef8ab4d.8edf73c3.67f784e6.79502f34.91b7c08c.3a96c8e8.fb9e89bc.8f1168c6"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/file/mirror/config.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 37,
+                            "endLine": 37,
+                            "startColumn": 11,
+                            "endColumn": 22
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/file/mirror/config.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 37,
+                            "endLine": 37,
+                            "startColumn": 2,
+                            "endColumn": 8
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 423,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in _.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[_](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/object/admin.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 468,
+                  "endLine": 468,
+                  "startColumn": 3,
+                  "endColumn": 42
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "0659d88982a319887454e2701dcd76f818f9d2a6649664854df6fc88c3ee98dd",
+            "1": "c0ca975a.98f0ff0f.45df3e14.23e5f3d5.d8391a1f.67ab4541.8ee950b3.1f55c1aa.c0ca975a.98f0ff0f.45df3e14.79502f34.d8391a1f.67ab4541.0ca8e431.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/admin.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 106,
+                            "endLine": 106,
+                            "startColumn": 30,
+                            "endColumn": 50
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/admin.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 468,
+                            "endLine": 468,
+                            "startColumn": 3,
+                            "endColumn": 42
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 373,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in _.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[_](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/object/objectstore.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 1209,
+                  "endLine": 1209,
+                  "startColumn": 3,
+                  "endColumn": 29
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "6b0963e9052a685a9ba3278dc004df6a425db9abc5b8b2b0845ccc175f43126a",
+            "1": "424eddda.98f0ff0f.45df3e14.bfac11f0.6ee851a6.6c8feca2.8ee950b3.1f55c1aa.424eddda.98f0ff0f.45df3e14.79502f34.6ee851a6.6c8feca2.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/objectstore.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 72,
+                            "endLine": 72,
+                            "startColumn": 18,
+                            "endColumn": 35
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/objectstore.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 1209,
+                            "endLine": 1209,
+                            "startColumn": 3,
+                            "endColumn": 29
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 373,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials/test",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in Username.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[Username](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/daemon/ceph/client/config_test.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 95,
+                  "endLine": 95,
+                  "startColumn": 22,
+                  "endColumn": 30
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "d6d7b43ef62c6756beef1fa6771a5a0e47e0121601454a13fe51752877c82598",
+            "1": "424eddda.98f0ff0f.3d13e656.bfac11f0.6ee851a6.67752288.8ee950b3.ff3d0695.424eddda.98f0ff0f.3d13e656.bfac11f0.6ee851a6.2f4e1548.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/ceph/client/config_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 95,
+                            "endLine": 95,
+                            "startColumn": 32,
+                            "endColumn": 39
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/daemon/ceph/client/config_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 95,
+                            "endLine": 95,
+                            "startColumn": 22,
+                            "endColumn": 30
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 373,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials/test",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in Username.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[Username](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/object/spec_test.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 356,
+                  "endLine": 356,
+                  "startColumn": 5,
+                  "endColumn": 13
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "70b5a6c040f93926525882316ba170869ccf1b295a4a18d2fe07eca9d2bd956f",
+            "1": "424eddda.c881768f.3d13e656.bfac11f0.6ee851a6.fc6010db.8ee950b3.ff3d0695.424eddda.c881768f.3d13e656.3efa933a.6ee851a6.fc6010db.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/spec_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 356,
+                            "endLine": 356,
+                            "startColumn": 15,
+                            "endColumn": 29
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/spec_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 356,
+                            "endLine": 356,
+                            "startColumn": 5,
+                            "endColumn": 13
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 373,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials/test",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in User.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[User](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/object/user/controller_test.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 532,
+                  "endLine": 532,
+                  "startColumn": 4,
+                  "endColumn": 8
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "9dacc2f3cf70f1ccadee7a718b66f2ee25543d937d194021bf80dcb49579f59f",
+            "1": "424eddda.98f0ff0f.3d13e656.ecf71d36.797c781d.a198fd55.8ee950b3.ff3d0695.424eddda.98f0ff0f.3d13e656.ecf71d36.797c781d.2f4e1548.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/user/controller_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 532,
+                            "endLine": 532,
+                            "startColumn": 12,
+                            "endColumn": 18
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/user/controller_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 532,
+                            "endLine": 532,
+                            "startColumn": 4,
+                            "endColumn": 8
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 423,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials/test",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in User.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[User](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/operator/ceph/object/user/controller_test.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 582,
+                  "endLine": 582,
+                  "startColumn": 4,
+                  "endColumn": 8
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "7de24629b33f4b61a8195214d86652975eab4f640bc4c85da04ec8456095c109",
+            "1": "424eddda.98f0ff0f.3d13e656.ecf71d36.797c781d.a198fd55.8ee950b3.ff3d0695.424eddda.98f0ff0f.3d13e656.ecf71d36.797c781d.2f4e1548.8ee950b3.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/user/controller_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 582,
+                            "endLine": 582,
+                            "startColumn": 12,
+                            "endColumn": 18
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/operator/ceph/object/user/controller_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 582,
+                            "endLine": 582,
+                            "startColumn": 4,
+                            "endColumn": 8
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 423,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/NoHardcodedCredentials/test",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in userid.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[userid](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "tests/integration/ceph_base_object_test.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 51,
+                  "endLine": 51,
+                  "startColumn": 2,
+                  "endColumn": 8
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "6f98156ddbaf200f0cc12d13ce419044e1c973631931de3109f80219d5807ed9",
+            "1": "8379f5e8.2a3900d1.da163aeb.c51f1e4a.91b7c08c.2a86268a.fb9e89bc.1bff12d3.8379f5e8.2a3900d1.da163aeb.15084c29.57c9c0ff.2a86268a.fb9e89bc.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "tests/integration/ceph_base_object_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 51,
+                            "endLine": 51,
+                            "startColumn": 27,
+                            "endColumn": 38
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "tests/integration/ceph_base_object_test.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 51,
+                            "endLine": 51,
+                            "startColumn": 2,
+                            "endColumn": 8
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 373,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "multipleOccurrence"
+              },
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        }
+      ],
+      "properties": {
+        "coverage": [
+          {
+            "isSupported": true,
+            "lang": "JavaScript",
+            "files": 3,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "Go",
+            "files": 683,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "Python",
+            "files": 4,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "Ruby",
+            "files": 1,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": false,
+            "lang": "HTML",
+            "files": 1,
+            "type": "FAILED_PARSING"
+          }
+        ]
+      }
+    }
+  ]
+}

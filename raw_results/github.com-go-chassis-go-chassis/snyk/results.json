@@ -1,0 +1,919 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SnykCode",
+          "semanticVersion": "1.0.0",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "go/NoHardcodedCredentials",
+              "name": "NoHardcodedCredentials",
+              "shortDescription": {
+                "text": "Use of Hardcoded Credentials"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nDevelopers may use hardcoded credentials for convenience when coding in order to simplify their workflow. While they are responsible for removing these before production, occasionally this task may fall through the cracks. This also becomes a maintenance challenge when credentials are re-used across multiple applications.\n\nOnce attackers gain access, they may take advantage of privilege level to remove or alter data, take down a site or app, or hold any of the above for ransom. The risk across multiple similar projects is even greater. If code containing the credentials is reused across multiple projects, they will all be compromised.\n\n## Best practices for prevention\n* Plan software architecture such that keys and passwords are always stored outside the code, wherever possible.\n* Plan encryption into software architecture for all credential information and ensure proper handling of keys, credentials, and passwords.\n* Prompt for a secure password on first login rather than hard-code a default password.\n* If a hardcoded password or credential must be used, limit its use, for example, to system console users rather than via the network.\n* Use strong hashes for inbound password authentication, ideally with randomly assigned salts to increase the difficulty level in case of brute-force attack.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "NoHardcodedCredentials",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/fjukstad/kvik/commit/254d8dd1c34e017b1aac1493286a3f3b773ff40c?diff=split#diff-6a37a2c5ea8c5a951b2830b342cc07312e7cfa6eb69afdecc4b5bfce636f28e0L-1",
+                    "lines": [
+                      {
+                        "line": "//addr := \"192.168.99.100:8004\"\n",
+                        "lineNumber": 12,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "addr := \"public.opencpu.org\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "username := \"user\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "password := \"password\"\n",
+                        "lineNumber": 15,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "addr := \"localhost:8181\"\n",
+                        "lineNumber": 13,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "//addr := \"public.opencpu.org\"\n",
+                        "lineNumber": 14,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "username := \"\"\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "password := \"\"\n",
+                        "lineNumber": 16,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/k0kubun/sqldef/commit/5ac0feda25dfa3b4a3e2201c017425beec13a02d?diff=split#diff-ed17e21a49a7d3b117a41187ac6d384ef656de942120f74001fa9b057fde5688L-1",
+                    "lines": [
+                      {
+                        "line": "user := \"postgres\"\n",
+                        "lineNumber": 8,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "password := \"\"\n",
+                        "lineNumber": 9,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "host := \"127.0.0.1:5432\"\n",
+                        "lineNumber": 10,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "user := config.User\n",
+                        "lineNumber": 8,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "password := config.Password\n",
+                        "lineNumber": 9,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "host := fmt.Sprintf(\"%s:%d\", config.Host, config.Port)\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/alfred-zhong/wserver/commit/bc7d33643368e16d9801ab88f7ba2dfdc49467af?diff=split#diff-005f9a0396b938d96245e8fc04dcd633d0716b5610fd4d90c09af361625fb74dL-1",
+                    "lines": [
+                      {
+                        "line": "userID := \"476B40DD-DFE9-4CDE-AD4F-F0A53FE18FA5\"\n",
+                        "lineNumber": 18,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "userID := uuid.New().String()\n",
+                        "lineNumber": 19,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 71,
+                "cwe": [
+                  "CWE-798"
+                ]
+              }
+            },
+            {
+              "id": "go/WebCookieMissesCallToSetHttpOnly",
+              "name": "WebCookieMissesCallToSetHttpOnly",
+              "shortDescription": {
+                "text": "Sensitive Cookie Without 'HttpOnly' Flag"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nThe `HttpOnly` flag is a simple parameter used when setting a user cookie to ensure that cookies with sensitive session data are visible only to the browser rather than to scripts. This helps prevent cross-site scripting attacks, in which an attacker gains access to sensitive session information and uses this information to trick legitimate web-based applications into disclosing confidential information or accepting illegitimate requests. When developers use the `HttpOnly` flag to set the cookie, they ensure that this sensitive session information is not readable or writable except by the browser (read) and server (write), respectively. While most modern browsers and versions now recognize the HttpOnly flag, some legacy and custom browsers still do not.\n\n## Best practices for prevention\n* Include the `HttpOnly` attribute in the response header when setting cookies on the client side. Be aware, however, that this crucial step provides only partial remediation.\n* Integrate client-side scripts to determine browser version; require browser compatibility or avoid transmitting sensitive data to browsers that do not support `HttpOnly`.\n* Understand and evaluate risks of third-party components or plugins, which may expose cookies.\n* Educate developers in a zero-trust approach, understanding the risks and best practices to prevent cross-site scripting, such as sanitizing all user input for code and special characters.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "WebCookieMissesCallToSetHttpOnly",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/gravitational/teleport/commit/5e8ecd53b081a8f662bb851f7ca1dab642bb8303?diff=split#diff-db33107c984f027d843546bb3c074008c855ad335812560c3d84b0cbce7fdc6aL-1",
+                    "lines": [
+                      {
+                        "line": "\tHttpOnly: true,\n",
+                        "lineNumber": 59,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tSecure:   true,\n",
+                        "lineNumber": 60,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "}\n",
+                        "lineNumber": 61,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "http.SetCookie(w, c)\n",
+                        "lineNumber": 62,
+                        "lineChange": "none"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/zelenko/go/commit/d9a145654090365f704fbd7e8a82f48a153916ed?diff=split#diff-cde6e818bce4eee6aaa7625a3dd09d690e2152ee4c618771bd3e38c1faf09bc6L-1",
+                    "lines": [
+                      {
+                        "line": "cookie := http.Cookie{Name: \"username\", Value: \"astaxie\", Expires: expiration}\n",
+                        "lineNumber": 32,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "cookie := http.Cookie{Name: \"username\", Value: \"Superuser\", Expires: expiration, HttpOnly: true} //Secure: true,\n",
+                        "lineNumber": 50,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "http.SetCookie(w, &cookie)\n",
+                        "lineNumber": 51,
+                        "lineChange": "none"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/SkygearIO/skygear-server/commit/c2348776f595c01adb197873f1656366121b5617?diff=split#diff-0922d0645790732e749da18d3bc886bb74aadcecc2f5a8ef5c6ba3d682f8d572L-1",
+                    "lines": [
+                      {
+                        "line": "\tSessionWriter     session.Writer     `dependency:\"SessionWriter\"`\n",
+                        "lineNumber": 17,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tAuthInfoStore     authinfo.Store     `dependency:\"AuthInfoStore\"`\n",
+                        "lineNumber": 19,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\tTxContext         db.TxContext       `dependency:\"TxContext\"`\n",
+                        "lineNumber": 20,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "}\n",
+                        "lineNumber": 21,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 22,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "// AuthnMiddlewareFactory creates AuthnMiddleware per request.\n",
+                        "lineNumber": 23,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "type AuthnMiddlewareFactory struct{}\n",
+                        "lineNumber": 24,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 25,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "// NewInjectableMiddleware implements InjectableMiddlewareFactory.\n",
+                        "lineNumber": 26,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "func (f AuthnMiddlewareFactory) NewInjectableMiddleware() InjectableMiddleware {\n",
+                        "lineNumber": 27,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\treturn &AuthnMiddleware{}\n",
+                        "lineNumber": 28,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "}\n",
+                        "lineNumber": 29,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 30,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "// Handle implements InjectableMiddleware.\n",
+                        "lineNumber": 31,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "func (m *AuthnMiddleware) Handle(next http.Handler) http.Handler {\n",
+                        "lineNumber": 32,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\treturn http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n",
+                        "lineNumber": 33,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t\tvar err error\n",
+                        "lineNumber": 34,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t\tdefer func() {\n",
+                        "lineNumber": 35,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t\t\tif err != nil {\n",
+                        "lineNumber": 36,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t\t\t\t// clear session cookie if error occurred\n",
+                        "lineNumber": 37,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\tcookie := &http.Cookie{\n",
+                        "lineNumber": 38,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\t\tName:    coreHttp.CookieNameSession,\n",
+                        "lineNumber": 39,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\t\tPath:    \"/\",\n",
+                        "lineNumber": 40,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\t\tExpires: time.Unix(0, 0),\n",
+                        "lineNumber": 41,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\t}\n",
+                        "lineNumber": 42,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\thttp.SetCookie(w, cookie)\n",
+                        "lineNumber": 43,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\t\t\t// clear session if error occurred\n",
+                        "lineNumber": 36,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\t\t\tm.SessionWriter.ClearSession(w)\n",
+                        "lineNumber": 37,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 30,
+                "cwe": [
+                  "CWE-1004"
+                ]
+              }
+            },
+            {
+              "id": "go/WebCookieSecureDisabledByDefault",
+              "name": "WebCookieSecureDisabledByDefault",
+              "shortDescription": {
+                "text": "Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "\n## Details\n\nIn a session hijacking attack, if a cookie containing sensitive data is set without the `secure` attribute, an attacker might be able to intercept that cookie. Once the attacker has this information, they can potentially impersonate a user, accessing confidential data and performing actions that they would not normally be authorized to do. Attackers often gain access to this sensitive cookie data when it is transmitted insecurely in plain text over a standard HTTP session, rather than being encrypted and sent over an HTTPS session. This type of attack is highly preventable by following best practices when setting sensitive session cookies.\n\n## Best practices for prevention\n* Set the `secure` attribute in the response header when setting cookies on the client side, and use a test tool to verify that secure cookie transmission is in place.\n* Always use HTTPS for all login pages and never redirect from HTTP to HTTPS, which leaves secure session data open to interception.\n* Follow other best practices when it comes to session cookies, such as setting the HttpOnly flag and maintaining highly time-limited sessions.\n* Consider implementing browser checks and providing secure data only within a browser that supports tight cookie security.\n* Generate session IDs in a way that is not easily predictable, invalidate sessions upon logout, and never reuse session IDs.\n* Educate developers to use built-in secure session-management functionality within the development environment instead of taking a DIY approach.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "go",
+                  "WebCookieSecureDisabledByDefault",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/root-gg/plik/commit/2f50dc7f7221defb95e35bdf0b851087589bf251?diff=split#diff-38b7ee080b137a855173718a035d06b8beaf9eaca02d461b945be543c7e46236L-1",
+                    "lines": [
+                      {
+                        "line": "//\tsecureCookie.Secure = true\n",
+                        "lineNumber": 33,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "sessionCookie.Secure = true\n",
+                        "lineNumber": 33,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "sessionCookie.Name = \"plik-session\"\n",
+                        "lineNumber": 34,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "sessionCookie.Value = \"\"\n",
+                        "lineNumber": 35,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "sessionCookie.MaxAge = -1\n",
+                        "lineNumber": 36,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "sessionCookie.Path = \"/\"\n",
+                        "lineNumber": 37,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "http.SetCookie(resp, sessionCookie)\n",
+                        "lineNumber": 38,
+                        "lineChange": "none"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/goanywhere/rex/commit/9942e7c84b69f44981a9981e0e9219c5c6c1088d?diff=split#diff-552f47512a00afe5fc6850cc9ddc830a6daeca162750e50aab4ed549685e0253L-1",
+                    "lines": [
+                      {
+                        "line": "func (self *Context) SetCookie(name, value string) {\n",
+                        "lineNumber": 98,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\tcookie := &http.Cookie{\n",
+                        "lineNumber": 99,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tName:     name,\n",
+                        "lineNumber": 100,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tValue:    value,\n",
+                        "lineNumber": 101,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tPath:     self.Options.Path,\n",
+                        "lineNumber": 102,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tDomain:   self.Options.Domain,\n",
+                        "lineNumber": 103,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tMaxAge:   self.Options.MaxAge,\n",
+                        "lineNumber": 104,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tSecure:   self.Options.Secure,\n",
+                        "lineNumber": 105,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tHttpOnly: self.Options.HttpOnly,\n",
+                        "lineNumber": 106,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 107,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "func (self *Context) SetCookie(name, value string, options ...*http.Cookie) {\n",
+                        "lineNumber": 86,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tvar cookie *http.Cookie\n",
+                        "lineNumber": 87,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tif len(options) > 0 {\n",
+                        "lineNumber": 88,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie = options[0]\n",
+                        "lineNumber": 89,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t} else {\n",
+                        "lineNumber": 90,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie = new(http.Cookie)\n",
+                        "lineNumber": 91,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie.Path = settings.String(\"session.cookie.path\")\n",
+                        "lineNumber": 92,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie.Domain = settings.String(\"session.cookie.domain\")\n",
+                        "lineNumber": 93,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie.MaxAge = settings.Int(\"session.cookie.maxage\")\n",
+                        "lineNumber": 94,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie.Secure = settings.Bool(\"session.cookie.secure\")\n",
+                        "lineNumber": 95,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie.HttpOnly = settings.Bool(\"session.cookie.httponly\")\n",
+                        "lineNumber": 96,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 97,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tcookie.Name = name\n",
+                        "lineNumber": 98,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tcookie.Value = value\n",
+                        "lineNumber": 99,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t// IE 6/7/8 Compatible Mode.\n",
+                        "lineNumber": 100,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tif cookie.MaxAge > 0 {\n",
+                        "lineNumber": 108,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t\tcookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)\n",
+                        "lineNumber": 109,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t} else if cookie.MaxAge < 0 {\n",
+                        "lineNumber": 110,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t\tcookie.Expires = time.Unix(1, 0)\n",
+                        "lineNumber": 111,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 112,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\thttp.SetCookie(self.Writer, cookie)\n",
+                        "lineNumber": 113,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "}\n",
+                        "lineNumber": 114,
+                        "lineChange": "none"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/amborle/featmap/commit/f384318e387e14de4f6ce266cfc474f23f901e62?diff=split#diff-8e10fa7e9c06002d0c8c60174776a27627b88c59a2424f5bf62ef5206e9d3e39L-1",
+                    "lines": [
+                      {
+                        "line": "\t\t// Domain:  \"false\",\n",
+                        "lineNumber": 134,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "\t\tHttpOnly: true,\n",
+                        "lineNumber": 134,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tSecure:   true,\n",
+                        "lineNumber": 135,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 136,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 137,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\tif env == \"development\" {\n",
+                        "lineNumber": 138,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t\tcookie.Secure = false\n",
+                        "lineNumber": 139,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 140,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\t}\n",
+                        "lineNumber": 141,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\thttp.SetCookie(w, &cookie)\n",
+                        "lineNumber": 142,
+                        "lineChange": "none"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 15,
+                "cwe": [
+                  "CWE-614"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "go/NoHardcodedCredentials",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "Do not hardcode credentials in code. Found hardcoded credential used in Auth.",
+            "markdown": "Do not hardcode credentials in code. Found {0} credential used in {1}.",
+            "arguments": [
+              "[hardcoded](0)",
+              "[Auth](1)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "pkg/util/fileutil/fileutil.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 36,
+                  "endLine": 36,
+                  "startColumn": 2,
+                  "endColumn": 6
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "16fa33ffb5665c469f8794a49fb7fdc94c0e73b187c5e0ddbcc9b26c93ea8c2e",
+            "1": "8379f5e8.7c3d77e0.45df3e14.79502f34.91b7c08c.4fffbce4.fb9e89bc.1bff12d3.62883b43.a5630179.45df3e14.79502f34.44e25806.4fffbce4.3417f891.1bff12d3"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/util/fileutil/fileutil.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 36,
+                            "endLine": 36,
+                            "startColumn": 9,
+                            "endColumn": 20
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "location": {
+                        "id": 1,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "pkg/util/fileutil/fileutil.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 36,
+                            "endLine": 36,
+                            "startColumn": 2,
+                            "endColumn": 6
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 384,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "hotFileCodeFlow"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "go/WebCookieMissesCallToSetHttpOnly",
+          "ruleIndex": 1,
+          "level": "note",
+          "message": {
+            "text": "In net.http.SetCookie HttpOnly is not set to true. Set the flag to true to protect the cookie from possible malicious code on client side. A cookie with the HttpOnly attribute is inaccessible to the JavaScript Document.cookie API.",
+            "markdown": "In {0} HttpOnly is not set to true. Set the flag to true to protect the cookie from possible malicious code on client side. A cookie with the HttpOnly attribute is inaccessible to the JavaScript Document.cookie API.",
+            "arguments": [
+              "[net.http.SetCookie](0)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "session/session_manager.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 155,
+                  "endLine": 155,
+                  "startColumn": 2,
+                  "endColumn": 16
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "00872332e0e08d853a71ad3e76bd7ab61425c1f09a7281c98bb286482ff98d90",
+            "1": "40f95799.43be7f94.a3cdcda2.e22980a8.a53428c0.57f89f2f.cf894c96.fdbdf757.40f95799.43be7f94.a3cdcda2.e22980a8.a53428c0.57f89f2f.cf894c96.fdbdf757"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "session/session_manager.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 155,
+                            "endLine": 155,
+                            "startColumn": 2,
+                            "endColumn": 16
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 434,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": true
+          }
+        },
+        {
+          "ruleId": "go/WebCookieSecureDisabledByDefault",
+          "ruleIndex": 2,
+          "level": "note",
+          "message": {
+            "text": "In net.http.SetCookie Secure is not set to true. Set it to true to protect the cookie from man-in-the-middle attacks. A cookie with the Secure attribute is only sent to the server with an encrypted request over the HTTPS protocol.",
+            "markdown": "In {0} Secure is not set to true. Set it to true to protect the cookie from man-in-the-middle attacks. A cookie with the Secure attribute is only sent to the server with an encrypted request over the HTTPS protocol.",
+            "arguments": [
+              "[net.http.SetCookie](0)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "session/session_manager.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 155,
+                  "endLine": 155,
+                  "startColumn": 2,
+                  "endColumn": 16
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "8ae726e79ee5350ca7c8d58b87cefeffa3d2d1e0817e8082eb7b061178ce929a",
+            "1": "40f95799.43be7f94.a3cdcda2.e22980a8.a53428c0.57f89f2f.cf894c96.fdbdf757.40f95799.43be7f94.a3cdcda2.e22980a8.a53428c0.57f89f2f.cf894c96.fdbdf757"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "session/session_manager.go",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 155,
+                            "endLine": 155,
+                            "startColumn": 2,
+                            "endColumn": 16
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 434,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": true
+          }
+        }
+      ],
+      "properties": {
+        "coverage": [
+          {
+            "isSupported": true,
+            "lang": "Go",
+            "files": 322,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "JavaScript",
+            "files": 1,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "Python",
+            "files": 1,
+            "type": "SUPPORTED"
+          }
+        ]
+      }
+    }
+  ]
+}

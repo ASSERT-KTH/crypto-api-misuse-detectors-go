@@ -1,0 +1,258 @@
+[
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\nWe Found: 5",
+		"Slicing_Criteria": {
+			"SourceCode": "h := hmac.New(sha512.New512_256, []byte(tag))",
+			"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+			"SourceLineNum": 17,
+			"ParentFunction": "Hash (tag string, data []byte) []byte"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "h := hmac.New(sha512.New512_256, []byte(tag))",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 17,
+				"ParentFunction": "Hash (tag string, data []byte) []byte"
+			},
+			{
+				"SourceCode": "func Hash(tag string, data []byte) []byte {",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 16,
+				"ParentFunction": "Hash (tag string, data []byte) []byte"
+			},
+			{
+				"SourceCode": "return Hash(\"proto\", bs)",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 41,
+				"ParentFunction": "HashProto (msg google.golang.org/protobuf/reflect/protoreflect.ProtoMessage) []byte"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+		"Slicing_Criteria": {
+			"SourceCode": "h := hmac.New(sha512.New512_256, []byte(tag))",
+			"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+			"SourceLineNum": 17,
+			"ParentFunction": "Hash (tag string, data []byte) []byte"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "h := hmac.New(sha512.New512_256, []byte(tag))",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 17,
+				"ParentFunction": "Hash (tag string, data []byte) []byte"
+			},
+			{
+				"SourceCode": "func Hash(tag string, data []byte) []byte {",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 16,
+				"ParentFunction": "Hash (tag string, data []byte) []byte"
+			},
+			{
+				"SourceCode": "return Hash(\"proto\", bs)",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 41,
+				"ParentFunction": "HashProto (msg google.golang.org/protobuf/reflect/protoreflect.ProtoMessage) []byte"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "crypto/hmac.New",
+		"Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.",
+		"Slicing_Criteria": {
+			"SourceCode": "h := hmac.New(sha512.New512_256, []byte(tag))",
+			"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+			"SourceLineNum": 17,
+			"ParentFunction": "Hash (tag string, data []byte) []byte"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "h := hmac.New(sha512.New512_256, []byte(tag))",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 17,
+				"ParentFunction": "Hash (tag string, data []byte) []byte"
+			},
+			{
+				"SourceCode": "func Hash(tag string, data []byte) []byte {",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/hash.go",
+				"SourceLineNum": 16,
+				"ParentFunction": "Hash (tag string, data []byte) []byte"
+			},
+			{
+				"SourceCode": "return base58.Encode(Hash(\"KeyEncryptionKey\", raw))",
+				"SourceFilename": "/analysis/repo/pkg/cryptutil/kek.go",
+				"SourceLineNum": 63,
+				"ParentFunction": "GetKeyEncryptionKeyID (raw []byte) string"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "transport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+			"SourceFilename": "/analysis/repo/internal/httputil/transport.go",
+			"SourceLineNum": 13,
+			"ParentFunction": "GetInsecureTransport () *net/http.Transport"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "transport.TLSClientConfig = \u0026tls.Config{InsecureSkipVerify: true}",
+				"SourceFilename": "/analysis/repo/internal/httputil/transport.go",
+				"SourceLineNum": 13,
+				"ParentFunction": "GetInsecureTransport () *net/http.Transport"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsClientConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/config/http.go",
+			"SourceLineNum": 72,
+			"ParentFunction": "NewPolicyHTTPTransport (options *github.com/pomerium/pomerium/config.Options, policy *github.com/pomerium/pomerium/config.Policy, disableHTTP2 bool) net/http.RoundTripper"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsClientConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/config/http.go",
+				"SourceLineNum": 72,
+				"ParentFunction": "NewPolicyHTTPTransport (options *github.com/pomerium/pomerium/config.Options, policy *github.com/pomerium/pomerium/config.Policy, disableHTTP2 bool) net/http.RoundTripper"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "github.com/pomerium/pomerium/pkg/cryptutil.Hash",
+		"Message": "The length of the key should be at least the same as the output length of the hash function, otherwise it will reduce the security of the MAC function. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use\n\u003e\u003e/analysis/repo/pkg/cryptutil/hash.go\nHash (tag string, data []byte) []byte\n\t17:\th := hmac.New(sha512.New512_256, []byte(tag))\n\t17:\th := hmac.New(sha512.New512_256, []byte(tag))\n\t16:\tfunc Hash(tag string, data []byte) []byte {\nWe Found: 6",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", cryptutil.Hash(\"script\", []byte(q.script)))",
+			"SourceFilename": "/analysis/repo/authorize/evaluator/policy_evaluator.go",
+			"SourceLineNum": 101,
+			"ParentFunction": "checksum () string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "return fmt.Sprintf(\"%x\", cryptutil.Hash(\"script\", []byte(q.script)))",
+				"SourceFilename": "/analysis/repo/authorize/evaluator/policy_evaluator.go",
+				"SourceLineNum": 101,
+				"ParentFunction": "checksum () string"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "net/http.NewRequestWithContext",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, GCPIdentityDocURL+\"?\"+url.Values{",
+			"SourceFilename": "/analysis/repo/authorize/evaluator/google_cloud_serverless.go",
+			"SourceLineNum": 69,
+			"ParentFunction": "Token$1 () (any, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, GCPIdentityDocURL+\"?\"+url.Values{",
+				"SourceFilename": "/analysis/repo/authorize/evaluator/google_cloud_serverless.go",
+				"SourceLineNum": 69,
+				"ParentFunction": "Token$1 () (any, error)"
+			},
+			{
+				"SourceCode": "req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, GCPIdentityDocURL+\"?\"+url.Values{",
+				"SourceFilename": "/analysis/repo/authorize/evaluator/google_cloud_serverless.go",
+				"SourceLineNum": 69,
+				"ParentFunction": "Token$1 () (any, error)"
+			},
+			{
+				"SourceCode": "req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, GCPIdentityDocURL+\"?\"+url.Values{",
+				"SourceFilename": "/analysis/repo/authorize/evaluator/google_cloud_serverless.go",
+				"SourceLineNum": 69,
+				"ParentFunction": "Token$1 () (any, error)"
+			},
+			{
+				"SourceCode": "GCPIdentityDocURL                = \"http://metadata/computeMetadata/v1/instance/service-accounts/default/identity\"",
+				"SourceFilename": "/analysis/repo/authorize/evaluator/google_cloud_serverless.go",
+				"SourceLineNum": 27,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "github.com/pomerium/pomerium/pkg/cryptutil.Hash",
+		"Message": "HMAC-key should be random. If authentication is not required, the hash function(sha3/sha256/sha512) is sufficient for use.\n\u003e\u003e/analysis/repo/pkg/cryptutil/hash.go\nHash (tag string, data []byte) []byte\n\t17:\th := hmac.New(sha512.New512_256, []byte(tag))\n\t17:\th := hmac.New(sha512.New512_256, []byte(tag))\n\t16:\tfunc Hash(tag string, data []byte) []byte {",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", cryptutil.Hash(\"script\", []byte(q.script)))",
+			"SourceFilename": "/analysis/repo/authorize/evaluator/policy_evaluator.go",
+			"SourceLineNum": 101,
+			"ParentFunction": "checksum () string"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "return fmt.Sprintf(\"%x\", cryptutil.Hash(\"script\", []byte(q.script)))",
+				"SourceFilename": "/analysis/repo/authorize/evaluator/policy_evaluator.go",
+				"SourceLineNum": 101,
+				"ParentFunction": "checksum () string"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/internal/zero/healthcheck/check_routes.go",
+			"SourceLineNum": 54,
+			"ParentFunction": "getPingHTTPClient () *net/http.Client"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/internal/zero/healthcheck/check_routes.go",
+				"SourceLineNum": 54,
+				"ParentFunction": "getPingHTTPClient () *net/http.Client"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.BuildNameToCertificate()",
+			"SourceFilename": "/analysis/repo/examples/mutual-tls/main.go",
+			"SourceLineNum": 92,
+			"ParentFunction": "newClientCertTLSListener (addr string, tlsCert string, tlsKey string, clientCA string) (net.Listener, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/internal/tests/xdserr/cmd/main.go",
+			"SourceLineNum": 36,
+			"ParentFunction": "init ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/internal/tests/xdserr/cmd/main.go",
+				"SourceLineNum": 36,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	}
+]

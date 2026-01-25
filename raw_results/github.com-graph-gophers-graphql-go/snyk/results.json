@@ -1,0 +1,677 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SnykCode",
+          "semanticVersion": "1.0.0",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "javascript/IntrospectionEnabled",
+              "name": "IntrospectionEnabled",
+              "shortDescription": {
+                "text": "Introspection Enabled"
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "help": {
+                "markdown": "## Details\n\nGraphQL introspection enables you to query a GraphQL server for information about the underlying schema. Allowing introspection could allow attackers to enumerate your application revealing sensitive information which could be leveraged for further attacks.\n\n## Best practices for prevention\n* Introspection should primarily be used as a diagnostic tool only in development environments and should be disabled in production.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "javascript",
+                  "IntrospectionEnabled",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/aerogear-attic/data-sync-server/commit/884e0ecb5ae82ebf5d1eb82f874f42c0d079b5f3?diff=split#diff-2844d129fe77b9af6c450a72af0e72a64b6033ecdcaaace72362bf584824cf2cL-1",
+                    "lines": [
+                      {
+                        "line": "const depthLimit = require('graphql-depth-limit')\n",
+                        "lineNumber": 1,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "const { createComplexityLimitRule } = require('graphql-validation-complexity')\n",
+                        "lineNumber": 2,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 3,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "function newApolloServer (app, schema, httpServer, tracing, playgroundConfig, graphqlEndpoint, securityService) {\n",
+                        "lineNumber": 2,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "function newApolloServer (app, schema, httpServer, tracing, playgroundConfig, graphqlEndpoint, securityService, serverSecurity) {\n",
+                        "lineNumber": 4,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "  let AuthContextProvider = null\n",
+                        "lineNumber": 5,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 6,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  if (securityService) {\n",
+                        "lineNumber": 7,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    AuthContextProvider = securityService.getAuthContextProvider()\n",
+                        "lineNumber": 8,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  }\n",
+                        "lineNumber": 9,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 10,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  let apolloServer = new ApolloServer({\n",
+                        "lineNumber": 11,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    schema,\n",
+                        "lineNumber": 12,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    introspection: serverSecurity.introspection,\n",
+                        "lineNumber": 13,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "    validationRules: [\n",
+                        "lineNumber": 14,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "      depthLimit(serverSecurity.depthLimit),\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "      createComplexityLimitRule(serverSecurity.complexityLimit)\n",
+                        "lineNumber": 16,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "    ],\n",
+                        "lineNumber": 17,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/jchapple/apollo-graphql-express-objection-server/commit/d06201aaec0d63c50f68fe4f7903b8e410f6a5f8?diff=split#diff-79f4c7cdc0b026f6e556196f5911a449157807cffdb3f9d33f0b5404b4ffc2f3L-1",
+                    "lines": [
+                      {
+                        "line": "const { NODE_ENV, APOLLO_ENGINE_KEY } = process.env;\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 11,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "const isDev = NODE_ENV !== 'production';\n",
+                        "lineNumber": 12,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 13,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "const server = new ApolloServer({\n",
+                        "lineNumber": 14,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  schema,\n",
+                        "lineNumber": 15,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  introspection: isDev,\n",
+                        "lineNumber": 16,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "  playground: isDev,\n",
+                        "lineNumber": 17,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/sandorTuranszky/production-ready-expressjs-server/commit/c1d715b484bc1738fcf8124610b32801ac9c1f21?diff=split#diff-61eeaea97ab12416b7ba04e550cbd29cfb20053eef51789d71f5e897c0cdd061L-1",
+                    "lines": [
+                      {
+                        "line": "const server = new ApolloServer({\n",
+                        "lineNumber": 22,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  typeDefs,\n",
+                        "lineNumber": 23,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  resolvers,\n",
+                        "lineNumber": 24,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  introspection: true, // Todo: check if required\n",
+                        "lineNumber": 25,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "  playground: true, // Todo: check if required\n",
+                        "lineNumber": 26,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "  tracing: true,\n",
+                        "lineNumber": 27,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "  tracing: true, // Add tracing or cacheControl meta data to the GraphQL response @url https://www.apollographql.com/docs/apollo-server/api/apollo-server.html\n",
+                        "lineNumber": 25,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 17,
+                "cwe": [
+                  "CWE-200"
+                ]
+              }
+            },
+            {
+              "id": "javascript/LimitGraphqlDepth",
+              "name": "LimitGraphqlDepth",
+              "shortDescription": {
+                "text": "Denial of Service (DoS) through Nested GraphQL Queries"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "help": {
+                "markdown": "## Details\n\nIn GraphQL, each query has a depth (e.g. nested objects) and each object requested in a query can have an amount specified (e.g. 99999999 of an object). By default these can both be unlimited which may lead to a  Denial of Service (DoS).\n\n\n## Best practices for prevention\n* Limits on query depth should be set on GraphQL endpoints.",
+                "text": ""
+              },
+              "properties": {
+                "tags": [
+                  "javascript",
+                  "LimitGraphqlDepth",
+                  "Security"
+                ],
+                "categories": [
+                  "Security"
+                ],
+                "exampleCommitFixes": [
+                  {
+                    "commitURL": "https://github.com/withspectrum/spectrum/commit/07f456c3090cd0b7a901a51de43d394c6b0eeccc?diff=split#diff-36d2d1a1a8341d3779ff363088d5fc87340ebb27fbe4064f73a35decf202ded8L-1",
+                    "lines": [
+                      {
+                        "line": "import depthLimit from 'graphql-depth-limit';\n",
+                        "lineNumber": 2,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "import createLoaders from '../../loaders/';\n",
+                        "lineNumber": 3,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 4,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "import createErrorFormatter from '../../utils/create-graphql-error-formatter';\n",
+                        "lineNumber": 5,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "import schema from '../../schema';\n",
+                        "lineNumber": 6,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 7,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "export default graphqlExpress(req => ({\n",
+                        "lineNumber": 8,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  schema,\n",
+                        "lineNumber": 9,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  formatError: createErrorFormatter(req),\n",
+                        "lineNumber": 10,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  context: {\n",
+                        "lineNumber": 11,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    user: req.user,\n",
+                        "lineNumber": 12,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "    loaders: createLoaders(),\n",
+                        "lineNumber": 13,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  },\n",
+                        "lineNumber": 14,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  validationRules: [depthLimit(10)],\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/jgcmarins/graphql-ufc-api/commit/?diff=split#diff-bfe9874d239014961b1ae4e89875a6155667db834a410aaaa2ebe3cf89820556L-1",
+                    "lines": [
+                      {
+                        "line": "import { createComplexityLimitRule } from 'graphql-validation-complexity';\n",
+                        "lineNumber": 3,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "import depthLimit from 'graphql-depth-limit'\n",
+                        "lineNumber": 4,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 5,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "import schema from './schema'\n",
+                        "lineNumber": 6,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 7,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "const PORT = process.env.PORT || 5000\n",
+                        "lineNumber": 8,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 9,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "var app = express()\n",
+                        "lineNumber": 10,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 11,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "app.use(graphQLHTTP({\n",
+                        "lineNumber": 12,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  schema,\n",
+                        "lineNumber": 13,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  graphiql: true\n",
+                        "lineNumber": 12,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "  graphiql: true,\n",
+                        "lineNumber": 14,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "  validationRules: [\n",
+                        "lineNumber": 15,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "    depthLimit(10),\n",
+                        "lineNumber": 16,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "    createComplexityLimitRule(1000, {\n",
+                        "lineNumber": 17,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "      scalarCost: 1,\n",
+                        "lineNumber": 18,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "      objectCost: 10, // Default is 0.\n",
+                        "lineNumber": 19,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "      listFactor: 20, // Default is 10.\n",
+                        "lineNumber": 20,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "    }), \n",
+                        "lineNumber": 21,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "  ]\n",
+                        "lineNumber": 22,
+                        "lineChange": "added"
+                      }
+                    ]
+                  },
+                  {
+                    "commitURL": "https://github.com/mpj/fff-graphql-goodreads/commit/?diff=split#diff-1c4d3bda0a63ce78f940c70e9da1ec32c5ecc29f0cac00897b4b08f48aa3ed17L-1",
+                    "lines": [
+                      {
+                        "line": "const depthLimit = require('graphql-depth-limit');\n",
+                        "lineNumber": 2,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "const app = express()\n",
+                        "lineNumber": 3,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 4,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "const schema = require('./schema')\n",
+                        "lineNumber": 5,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "\n",
+                        "lineNumber": 6,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "app.use('/graphql', graphqlHTTP({\n",
+                        "lineNumber": 7,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  schema,\n",
+                        "lineNumber": 8,
+                        "lineChange": "none"
+                      },
+                      {
+                        "line": "  graphiql: true\n",
+                        "lineNumber": 8,
+                        "lineChange": "removed"
+                      },
+                      {
+                        "line": "  graphiql: true,\n",
+                        "lineNumber": 9,
+                        "lineChange": "added"
+                      },
+                      {
+                        "line": "  validationRules: [ depthLimit(10) ]\n",
+                        "lineNumber": 10,
+                        "lineChange": "added"
+                      }
+                    ]
+                  }
+                ],
+                "exampleCommitDescriptions": [],
+                "precision": "very-high",
+                "repoDatasetSize": 51,
+                "cwe": [
+                  "CWE-400"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "javascript/IntrospectionEnabled",
+          "ruleIndex": 0,
+          "level": "note",
+          "message": {
+            "text": "@apollo/server.ApolloServer has GraphQL introspection enabled which allows querying of information about the underlying schema. Consider disabling this feature to harden your GraphQL endpoint.",
+            "markdown": "{0} has GraphQL introspection enabled which allows querying of information about the underlying schema. Consider disabling this feature to harden your GraphQL endpoint.",
+            "arguments": [
+              "[@apollo/server.ApolloServer](0)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "example/federation/integration/gateway/index.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14,
+                  "startColumn": 20,
+                  "endColumn": 32
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "1a2ed446d5e686eb7af10894893999c0570c6cbee60687275ee789f09b083c26",
+            "1": "40c5fd92.b6e32c83.8b18f948.d7919eeb.79a7d027.5fce695c.1839e89f.89d75565.40c5fd92.b6e32c83.8b18f948.d7919eeb.79a7d027.5fce695c.1839e89f.89d75565"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "example/federation/integration/gateway/index.js",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 14,
+                            "endLine": 14,
+                            "startColumn": 20,
+                            "endColumn": 32
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 450,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": false
+          }
+        },
+        {
+          "ruleId": "javascript/LimitGraphqlDepth",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Consider using graphql-depth-limit middleware for @apollo/server.ApolloServer to protect against attackers submitting nested queries. It is possible attackers to leverage Graphql endpoints to submit complex nested queries resulting in DoS (Denial of Service) conditions.",
+            "markdown": "Consider using graphql-depth-limit middleware for {0} to protect against attackers submitting nested queries. It is possible attackers to leverage Graphql endpoints to submit complex nested queries resulting in DoS (Denial of Service) conditions.",
+            "arguments": [
+              "[@apollo/server.ApolloServer](0)"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "example/federation/integration/gateway/index.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14,
+                  "startColumn": 20,
+                  "endColumn": 32
+                }
+              }
+            }
+          ],
+          "fingerprints": {
+            "0": "3c8f88795c2687363f287f89a4e64e10301a3f4eb62497f5336ea2874b033cc4",
+            "1": "40c5fd92.b6e32c83.8b18f948.d7919eeb.79a7d027.5fce695c.1839e89f.89d75565.40c5fd92.b6e32c83.8b18f948.d7919eeb.79a7d027.5fce695c.1839e89f.89d75565"
+          },
+          "codeFlows": [
+            {
+              "threadFlows": [
+                {
+                  "locations": [
+                    {
+                      "location": {
+                        "id": 0,
+                        "physicalLocation": {
+                          "artifactLocation": {
+                            "uri": "example/federation/integration/gateway/index.js",
+                            "uriBaseId": "%SRCROOT%"
+                          },
+                          "region": {
+                            "startLine": 14,
+                            "endLine": 14,
+                            "startColumn": 20,
+                            "endColumn": 32
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "properties": {
+            "priorityScore": 600,
+            "priorityScoreFactors": [
+              {
+                "label": true,
+                "type": "hotFileSource"
+              },
+              {
+                "label": true,
+                "type": "fixExamples"
+              }
+            ],
+            "isAutofixable": true
+          }
+        }
+      ],
+      "properties": {
+        "coverage": [
+          {
+            "isSupported": true,
+            "lang": "Go",
+            "files": 94,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "HTML",
+            "files": 2,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "JavaScript",
+            "files": 1,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "TypeScript",
+            "files": 1,
+            "type": "SUPPORTED"
+          }
+        ]
+      }
+    }
+  ]
+}

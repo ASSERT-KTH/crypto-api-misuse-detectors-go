@@ -1,0 +1,39 @@
+[
+	{
+		"FuncName": "net/http.NewRequestWithContext",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, err := http.NewRequestWithContext(ctx, method, backendURL(path), body)",
+			"SourceFilename": "/analysis/repo/internal/desktop/client.go",
+			"SourceLineNum": 131,
+			"ParentFunction": "newRequest (ctx context.Context, method string, path string, body io.Reader) (*net/http.Request, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "req, err := http.NewRequestWithContext(ctx, method, backendURL(path), body)",
+				"SourceFilename": "/analysis/repo/internal/desktop/client.go",
+				"SourceLineNum": 131,
+				"ParentFunction": "newRequest (ctx context.Context, method string, path string, body io.Reader) (*net/http.Request, error)"
+			},
+			{
+				"SourceCode": "return \"http://docker-desktop/\" + strings.TrimPrefix(path, \"/\")",
+				"SourceFilename": "/analysis/repo/internal/desktop/client.go",
+				"SourceLineNum": 144,
+				"ParentFunction": "backendURL (path string) string"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "dryRunUUID := fmt.Sprintf(\"dryRun-%x\", sha1.Sum([]byte(name)))",
+			"SourceFilename": "/analysis/repo/pkg/compose/build_buildkit.go",
+			"SourceLineNum": 72,
+			"ParentFunction": "dryRunBuildResponse (ctx context.Context, name string, options github.com/docker/buildx/build.Options) map[string]*github.com/moby/buildkit/client.SolveResponse"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

@@ -1,0 +1,45 @@
+[
+	{
+		"FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+		"Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+		"Slicing_Criteria": {
+			"SourceCode": "cipher, err := chacha20.NewUnauthenticatedCipher(conf.EncryptSk, nonce)",
+			"SourceFilename": "/analysis/repo/client.go",
+			"SourceLineNum": 56,
+			"ParentFunction": "copyOperation (h1 []byte)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/scrypt.Key",
+		"Message": "owasp recommended parameters is N=2^17 (128 MiB), when r=8 (1024 bytes) and p=1. The parameters N, r, and p should be increased as memory latency and CPU parallelism increases\nWe Found: 16384",
+		"Slicing_Criteria": {
+			"SourceCode": "key, err := scrypt.Key(leKey, []byte{}, 16384, 12, 1, poolLen)",
+			"SourceFilename": "/analysis/repo/genkeys.go",
+			"SourceLineNum": 26,
+			"ParentFunction": "initDeterministicRand (leKey []byte, poolLen int)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key, err := scrypt.Key(leKey, []byte{}, 16384, 12, 1, poolLen)",
+				"SourceFilename": "/analysis/repo/genkeys.go",
+				"SourceLineNum": 26,
+				"ParentFunction": "initDeterministicRand (leKey []byte, poolLen int)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/chacha20.NewUnauthenticatedCipher",
+		"Message": "ChaCha20, like all stream ciphers, is not authenticated and allows attackers to silently tamper with the plaintext. For this reason, it is more appropriate as a building block than as a standalone encryption mechanism. Instead, consider using package golang.org/x/crypto/chacha20poly1305.",
+		"Slicing_Criteria": {
+			"SourceCode": "cipher, err := chacha20.NewUnauthenticatedCipher(conf.EncryptSk, nonce)",
+			"SourceFilename": "/analysis/repo/client.go",
+			"SourceLineNum": 153,
+			"ParentFunction": "pasteOperation (h1 []byte, isMove bool)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	}
+]

@@ -1,0 +1,137 @@
+{
+	"Golang errors": {
+		"/analysis/repo/internal/hook/hook.go": [
+			{
+				"line": 29,
+				"column": 2,
+				"error": "could not import github.com/ghodss/yaml (invalid package name: \"\")"
+			}
+		],
+		"/analysis/repo/internal/hook/request.go": [
+			{
+				"line": 11,
+				"column": 2,
+				"error": "could not import github.com/clbanning/mxj/v2 (invalid package name: \"\")"
+			},
+			{
+				"line": 113,
+				"column": 19,
+				"error": "undefined: mxj"
+			}
+		],
+		"/analysis/repo/internal/middleware/logger.go": [
+			{
+				"line": 10,
+				"column": 2,
+				"error": "could not import github.com/dustin/go-humanize (invalid package name: \"\")"
+			},
+			{
+				"line": 11,
+				"column": 2,
+				"error": "could not import github.com/go-chi/chi/v5/middleware (invalid package name: \"\")"
+			},
+			{
+				"line": 48,
+				"column": 50,
+				"error": "undefined: humanize"
+			}
+		],
+		"/analysis/repo/internal/middleware/request_id.go": [
+			{
+				"line": 10,
+				"column": 2,
+				"error": "could not import github.com/gofrs/uuid/v5 (invalid package name: \"\")"
+			},
+			{
+				"line": 38,
+				"column": 10,
+				"error": "undefined: uuid"
+			},
+			{
+				"line": 38,
+				"column": 20,
+				"error": "undefined: uuid"
+			}
+		],
+		"/analysis/repo/platform_unix.go": [
+			{
+				"line": 9,
+				"column": 2,
+				"error": "could not import github.com/coreos/go-systemd/v22/activation (invalid package name: \"\")"
+			}
+		],
+		"/analysis/repo/webhook.go": [
+			{
+				"line": 18,
+				"column": 2,
+				"error": "could not import github.com/adnanh/webhook/internal/hook (invalid package name: \"\")"
+			},
+			{
+				"line": 19,
+				"column": 2,
+				"error": "could not import github.com/adnanh/webhook/internal/middleware (invalid package name: \"\")"
+			},
+			{
+				"line": 20,
+				"column": 2,
+				"error": "could not import github.com/adnanh/webhook/internal/pidfile (invalid package name: \"\")"
+			},
+			{
+				"line": 22,
+				"column": 2,
+				"error": "could not import github.com/fsnotify/fsnotify (invalid package name: \"\")"
+			},
+			{
+				"line": 23,
+				"column": 16,
+				"error": "could not import github.com/go-chi/chi/v5/middleware (invalid package name: \"\")"
+			},
+			{
+				"line": 24,
+				"column": 2,
+				"error": "could not import github.com/gorilla/mux (invalid package name: \"\")"
+			}
+		]
+	},
+	"Issues": [
+		{
+			"severity": "HIGH",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "295",
+				"url": "https://cwe.mitre.org/data/definitions/295.html"
+			},
+			"rule_id": "G402",
+			"details": "TLS MinVersion too low.",
+			"file": "/analysis/repo/webhook.go",
+			"code": "303: \t// Server HTTPS\n304: \tsvr.TLSConfig = \u0026tls.Config{\n305: \t\tCipherSuites:             getTLSCipherSuites(*tlsCipherSuites),\n306: \t\tCurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},\n307: \t\tMinVersion:               getTLSMinVersion(*tlsMinVersion),\n308: \t\tPreferServerCipherSuites: true,\n309: \t}\n310: \tsvr.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler)) // disable http/2\n",
+			"line": "304-309",
+			"column": "19",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "327",
+				"url": "https://cwe.mitre.org/data/definitions/327.html"
+			},
+			"rule_id": "G505",
+			"details": "Blocklisted import crypto/sha1: weak cryptographic primitive",
+			"file": "/analysis/repo/internal/hook/hook.go",
+			"code": "5: \t\"crypto/hmac\"\n6: \t\"crypto/sha1\"\n7: \t\"crypto/sha256\"\n",
+			"line": "6",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 15,
+		"lines": 2507,
+		"nosec": 0,
+		"found": 2
+	},
+	"GosecVersion": "2.22.4"
+}

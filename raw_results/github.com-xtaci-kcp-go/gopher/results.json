@@ -1,0 +1,226 @@
+[
+	{
+		"FuncName": "golang.org/x/crypto/blowfish.NewCipher",
+		"Message": "blowfish - Sweet32: Birthday attacks on 64-bit block ciphers in TLS and OpenVPN",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := blowfish.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 176,
+			"ParentFunction": "NewBlowfishBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/cast5.NewCipher",
+		"Message": "blowfish - Sweet32: Birthday attacks on 64-bit block ciphers in TLS and OpenVPN",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := cast5.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 156,
+			"ParentFunction": "NewCast5BlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/tea.NewCipherWithRounds",
+		"Message": "TEA - Sweet32: Birthday attacks on 64-bit block ciphers in TLS and OpenVPN",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := tea.NewCipherWithRounds(key, 16)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 216,
+			"ParentFunction": "NewTEABlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/xtea.NewCipher",
+		"Message": "XTEA - Sweet32: Birthday attacks on 64-bit block ciphers in TLS and OpenVPN.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := xtea.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 236,
+			"ParentFunction": "NewXTEABlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewTripleDESCipher(key)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 136,
+			"ParentFunction": "NewTripleDESBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 32",
+		"Slicing_Criteria": {
+			"SourceCode": "c.xortbl = pbkdf2.Key(key, []byte(saltxor), 32, mtuLimit, sha1.New)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 254,
+			"ParentFunction": "NewSimpleXORBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "c.xortbl = pbkdf2.Key(key, []byte(saltxor), 32, mtuLimit, sha1.New)",
+				"SourceFilename": "/analysis/repo/crypt.go",
+				"SourceLineNum": 254,
+				"ParentFunction": "NewSimpleXORBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "Salt should be random",
+		"Slicing_Criteria": {
+			"SourceCode": "c.xortbl = pbkdf2.Key(key, []byte(saltxor), 32, mtuLimit, sha1.New)",
+			"SourceFilename": "/analysis/repo/crypt.go",
+			"SourceLineNum": 254,
+			"ParentFunction": "NewSimpleXORBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "c.xortbl = pbkdf2.Key(key, []byte(saltxor), 32, mtuLimit, sha1.New)",
+				"SourceFilename": "/analysis/repo/crypt.go",
+				"SourceLineNum": 254,
+				"ParentFunction": "NewSimpleXORBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+			},
+			{
+				"SourceCode": "c.xortbl = pbkdf2.Key(key, []byte(saltxor), 32, mtuLimit, sha1.New)",
+				"SourceFilename": "/analysis/repo/crypt.go",
+				"SourceLineNum": 254,
+				"ParentFunction": "NewSimpleXORBlockCrypt (key []byte) (github.com/xtaci/kcp-go/v5.BlockCrypt, error)"
+			},
+			{
+				"SourceCode": "saltxor       = `sH3CIVoF#rWLtJo6`",
+				"SourceFilename": "/analysis/repo/crypt.go",
+				"SourceLineNum": 51,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 1024",
+		"Slicing_Criteria": {
+			"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+			"SourceFilename": "/analysis/repo/examples/echo.go",
+			"SourceLineNum": 14,
+			"ParentFunction": "main ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+				"SourceFilename": "/analysis/repo/examples/echo.go",
+				"SourceLineNum": 14,
+				"ParentFunction": "main ()"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\nWe Found: 9",
+		"Slicing_Criteria": {
+			"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+			"SourceFilename": "/analysis/repo/examples/echo.go",
+			"SourceLineNum": 14,
+			"ParentFunction": "main ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+				"SourceFilename": "/analysis/repo/examples/echo.go",
+				"SourceLineNum": 14,
+				"ParentFunction": "main ()"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "Salt should be random",
+		"Slicing_Criteria": {
+			"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+			"SourceFilename": "/analysis/repo/examples/echo.go",
+			"SourceLineNum": 14,
+			"ParentFunction": "main ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+				"SourceFilename": "/analysis/repo/examples/echo.go",
+				"SourceLineNum": 14,
+				"ParentFunction": "main ()"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "In 2023, OWASP recommended to use 600,000 iterations for PBKDF2-HMAC-SHA256, 210,000 for PBKDF2-HMAC-SHA512, 1,300,000 for PBKDF2-HMAC-SHA1.\nWe Found: 1024",
+		"Slicing_Criteria": {
+			"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+			"SourceFilename": "/analysis/repo/examples/echo.go",
+			"SourceLineNum": 50,
+			"ParentFunction": "client ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+				"SourceFilename": "/analysis/repo/examples/echo.go",
+				"SourceLineNum": 50,
+				"ParentFunction": "client ()"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "The US National Institute of Standards and Technology recommends a salt length of at least 128 bits.\nWe Found: 9",
+		"Slicing_Criteria": {
+			"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+			"SourceFilename": "/analysis/repo/examples/echo.go",
+			"SourceLineNum": 50,
+			"ParentFunction": "client ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+				"SourceFilename": "/analysis/repo/examples/echo.go",
+				"SourceLineNum": 50,
+				"ParentFunction": "client ()"
+			}
+		],
+		"Predicate_Type": "BYTE_LENGTH"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/pbkdf2.Key",
+		"Message": "Salt should be random",
+		"Slicing_Criteria": {
+			"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+			"SourceFilename": "/analysis/repo/examples/echo.go",
+			"SourceLineNum": 50,
+			"ParentFunction": "client ()"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "key := pbkdf2.Key([]byte(\"demo pass\"), []byte(\"demo salt\"), 1024, 32, sha1.New)",
+				"SourceFilename": "/analysis/repo/examples/echo.go",
+				"SourceLineNum": 50,
+				"ParentFunction": "client ()"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	}
+]

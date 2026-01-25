@@ -1,0 +1,108 @@
+[
+	{
+		"FuncName": "net/http.NewRequestWithContext",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)",
+			"SourceFilename": "/analysis/repo/cmd/internal/status/command.go",
+			"SourceLineNum": 33,
+			"ParentFunction": "Command$1 (_ *github.com/spf13/cobra.Command, _ []string) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "url := convert(v.GetString(statusHTTPHostPort))",
+				"SourceFilename": "/analysis/repo/cmd/internal/status/command.go",
+				"SourceLineNum": 30,
+				"ParentFunction": "Command$1 (_ *github.com/spf13/cobra.Command, _ []string) error"
+			},
+			{
+				"SourceCode": "return \"http://\" + httpHostPort",
+				"SourceFilename": "/analysis/repo/cmd/internal/status/command.go",
+				"SourceLineNum": 63,
+				"ParentFunction": "convert (httpHostPort string) string"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.Get",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "res, err := http.Get(healthURL)",
+			"SourceFilename": "/analysis/repo/crossdock/main.go",
+			"SourceLineNum": 100,
+			"ParentFunction": "httpHealthCheck (logger *go.uber.org/zap.Logger, service string, healthURL string)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func httpHealthCheck(logger *zap.Logger, service, healthURL string) {",
+				"SourceFilename": "/analysis/repo/crossdock/main.go",
+				"SourceLineNum": 98,
+				"ParentFunction": "httpHealthCheck (logger *go.uber.org/zap.Logger, service string, healthURL string)"
+			},
+			{
+				"SourceCode": "httpHealthCheck(logger, \"jaeger-query\", \"http://\"+queryHealthcheckHostPort)",
+				"SourceFilename": "/analysis/repo/crossdock/main.go",
+				"SourceLineNum": 75,
+				"ParentFunction": "initialize ()"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.Get",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "res, err := http.Get(healthURL)",
+			"SourceFilename": "/analysis/repo/crossdock/main.go",
+			"SourceLineNum": 100,
+			"ParentFunction": "httpHealthCheck (logger *go.uber.org/zap.Logger, service string, healthURL string)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func httpHealthCheck(logger *zap.Logger, service, healthURL string) {",
+				"SourceFilename": "/analysis/repo/crossdock/main.go",
+				"SourceLineNum": 98,
+				"ParentFunction": "httpHealthCheck (logger *go.uber.org/zap.Logger, service string, healthURL string)"
+			},
+			{
+				"SourceCode": "httpHealthCheck(logger, \"jaeger-collector\", \"http://\"+collectorHealthcheckHostPort)",
+				"SourceFilename": "/analysis/repo/crossdock/main.go",
+				"SourceLineNum": 76,
+				"ParentFunction": "initialize ()"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "(*github.com/jaegertracing/jaeger/examples/hotrod/pkg/tracing.HTTPClient).GetJSON",
+		"Message": "HTTP connection is very dangerous\n\u003e\u003e/analysis/repo/examples/hotrod/pkg/tracing/http.go\nGetJSON (ctx context.Context, _ string, url string, out any) error\n\t39:\treq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)\n\t38:\tfunc (c *HTTPClient) GetJSON(ctx context.Context, _ string /* endpoint */, url string, out any) error {",
+		"Slicing_Criteria": {
+			"SourceCode": "if err := c.client.GetJSON(ctx, \"/route\", routeURL, \u0026route); err != nil {",
+			"SourceFilename": "/analysis/repo/examples/hotrod/services/route/client.go",
+			"SourceLineNum": 43,
+			"ParentFunction": "FindRoute (ctx context.Context, pickup string, dropoff string) (*github.com/jaegertracing/jaeger/examples/hotrod/services/route.Route, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "routeURL := \"http://\" + c.hostPort + \"/route?\" + v.Encode()",
+				"SourceFilename": "/analysis/repo/examples/hotrod/services/route/client.go",
+				"SourceLineNum": 41,
+				"ParentFunction": "FindRoute (ctx context.Context, pickup string, dropoff string) (*github.com/jaegertracing/jaeger/examples/hotrod/services/route.Route, error)"
+			},
+			{
+				"SourceCode": "routeURL := \"http://\" + c.hostPort + \"/route?\" + v.Encode()",
+				"SourceFilename": "/analysis/repo/examples/hotrod/services/route/client.go",
+				"SourceLineNum": 41,
+				"ParentFunction": "FindRoute (ctx context.Context, pickup string, dropoff string) (*github.com/jaegertracing/jaeger/examples/hotrod/services/route.Route, error)"
+			},
+			{
+				"SourceCode": "routeURL := \"http://\" + c.hostPort + \"/route?\" + v.Encode()",
+				"SourceFilename": "/analysis/repo/examples/hotrod/services/route/client.go",
+				"SourceLineNum": 41,
+				"ParentFunction": "FindRoute (ctx context.Context, pickup string, dropoff string) (*github.com/jaegertracing/jaeger/examples/hotrod/services/route.Route, error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	}
+]

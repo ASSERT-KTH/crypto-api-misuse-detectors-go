@@ -1,0 +1,140 @@
+[
+	{
+		"FuncName": "golang.org/x/crypto/ssh.InsecureIgnoreHostKey",
+		"Message": "InsecureIgnoreHostKey returns a function that can be used for ClientConfig.HostKeyCallback to accept any host key. It should not be used for production code.",
+		"Slicing_Criteria": {
+			"SourceCode": "HostKeyCallback: ssh.InsecureIgnoreHostKey(),",
+			"SourceFilename": "/analysis/repo/hosts/tunnel.go",
+			"SourceLineNum": 91,
+			"ParentFunction": "getSSHConfig (username string, sshPrivateKeyString string, sshCertificateString string, useAgentAuth bool) (*golang.org/x/crypto/ssh.ClientConfig, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "caKey, err := rsa.GenerateKey(cryptorand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/pki/cert/cert.go",
+			"SourceLineNum": 141,
+			"ParentFunction": "GenerateSelfSignedCertKey (host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "caKey, err := rsa.GenerateKey(cryptorand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/pki/cert/cert.go",
+				"SourceLineNum": 141,
+				"ParentFunction": "GenerateSelfSignedCertKey (host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, err := rsa.GenerateKey(cryptorand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/pki/cert/cert.go",
+			"SourceLineNum": 169,
+			"ParentFunction": "GenerateSelfSignedCertKey (host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "priv, err := rsa.GenerateKey(cryptorand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/pki/cert/cert.go",
+				"SourceLineNum": 169,
+				"ParentFunction": "GenerateSelfSignedCertKey (host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)",
+			"SourceFilename": "/analysis/repo/pki/cert/cert.go",
+			"SourceLineNum": 59,
+			"ParentFunction": "NewPrivateKey () (*crypto/rsa.PrivateKey, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "return rsa.GenerateKey(cryptorand.Reader, rsaKeySize)",
+				"SourceFilename": "/analysis/repo/pki/cert/cert.go",
+				"SourceLineNum": 59,
+				"ParentFunction": "NewPrivateKey () (*crypto/rsa.PrivateKey, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig := \u0026tls.Config{InsecureSkipVerify: true}",
+			"SourceFilename": "/analysis/repo/services/healthcheck.go",
+			"SourceLineNum": 78,
+			"ParentFunction": "getHealthCheckHTTPClient (host *github.com/rancher/rke/hosts.Host, port int, localConnDialerFactory github.com/rancher/rke/hosts.DialerFactory, x509KeyPair *crypto/tls.Certificate) (*net/http.Client, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConfig := \u0026tls.Config{InsecureSkipVerify: true}",
+				"SourceFilename": "/analysis/repo/services/healthcheck.go",
+				"SourceLineNum": 78,
+				"ParentFunction": "getHealthCheckHTTPClient (host *github.com/rancher/rke/hosts.Host, port int, localConnDialerFactory github.com/rancher/rke/hosts.DialerFactory, x509KeyPair *crypto/tls.Certificate) (*net/http.Client, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/services/healthcheck.go",
+			"SourceLineNum": 81,
+			"ParentFunction": "getHealthCheckHTTPClient (host *github.com/rancher/rke/hosts.Host, port int, localConnDialerFactory github.com/rancher/rke/hosts.DialerFactory, x509KeyPair *crypto/tls.Certificate) (*net/http.Client, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/services/healthcheck.go",
+				"SourceLineNum": 81,
+				"ParentFunction": "getHealthCheckHTTPClient (host *github.com/rancher/rke/hosts.Host, port int, localConnDialerFactory github.com/rancher/rke/hosts.DialerFactory, x509KeyPair *crypto/tls.Certificate) (*net/http.Client, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/services/etcd_util.go",
+			"SourceLineNum": 177,
+			"ParentFunction": "getEtcdTLSConfig (certificate []byte, key []byte) (*crypto/tls.Config, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/services/etcd_util.go",
+				"SourceLineNum": 177,
+				"ParentFunction": "getEtcdTLSConfig (certificate []byte, key []byte) (*crypto/tls.Config, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "hasher = md5.New()",
+			"SourceFilename": "/analysis/repo/cluster/plan.go",
+			"SourceLineNum": 1291,
+			"ParentFunction": "getStringChecksum (config string, version string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]

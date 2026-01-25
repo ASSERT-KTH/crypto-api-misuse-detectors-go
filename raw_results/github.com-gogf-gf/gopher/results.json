@@ -1,0 +1,488 @@
+[
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New()",
+			"SourceFilename": "/analysis/repo/debug/gdebug/gdebug_version.go",
+			"SourceLineNum": 50,
+			"ParentFunction": "md5File (path string) (encrypt string, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/cipher.NewCBCEncrypter",
+		"Message": "IVs should be random in CBC mode, it potentially lead to a Padding Oracle attack and CPA attack",
+		"Slicing_Criteria": {
+			"SourceCode": "blockMode := cipher.NewCBCEncrypter(block, ivValue)",
+			"SourceFilename": "/analysis/repo/crypto/gaes/gaes.go",
+			"SourceLineNum": 52,
+			"ParentFunction": "EncryptCBC (plainText []byte, key []byte, iv ...[]byte) ([]byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "ivValue := ([]byte)(nil)",
+				"SourceFilename": "/analysis/repo/crypto/gaes/gaes.go",
+				"SourceLineNum": 46,
+				"ParentFunction": "EncryptCBC (plainText []byte, key []byte, iv ...[]byte) ([]byte, error)"
+			},
+			{
+				"SourceCode": "ivValue = []byte(IVDefaultValue)",
+				"SourceFilename": "/analysis/repo/crypto/gaes/gaes.go",
+				"SourceLineNum": 50,
+				"ParentFunction": "EncryptCBC (plainText []byte, key []byte, iv ...[]byte) ([]byte, error)"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "crypto/cipher.NewCFBEncrypter",
+		"Message": "IVs should be random in CFB mode, otherwise it potentially lead to CPA attack.",
+		"Slicing_Criteria": {
+			"SourceCode": "stream := cipher.NewCFBEncrypter(block, ivValue)",
+			"SourceFilename": "/analysis/repo/crypto/gaes/gaes.go",
+			"SourceLineNum": 163,
+			"ParentFunction": "EncryptCFB (plainText []byte, key []byte, padding *int, iv ...[]byte) ([]byte, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "ivValue := ([]byte)(nil)",
+				"SourceFilename": "/analysis/repo/crypto/gaes/gaes.go",
+				"SourceLineNum": 157,
+				"ParentFunction": "EncryptCFB (plainText []byte, key []byte, padding *int, iv ...[]byte) ([]byte, error)"
+			},
+			{
+				"SourceCode": "ivValue = []byte(IVDefaultValue)",
+				"SourceFilename": "/analysis/repo/crypto/gaes/gaes.go",
+				"SourceLineNum": 161,
+				"ParentFunction": "EncryptCFB (plainText []byte, key []byte, padding *int, iv ...[]byte) ([]byte, error)"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "crypto/des.NewCipher",
+		"Message": "DES - NIST Withdraws Outdated Data Encryption Standard",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 140,
+			"ParentFunction": "EncryptCBC (plainText []byte, key []byte, iv []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewCipher",
+		"Message": "DES - NIST Withdraws Outdated Data Encryption Standard",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 32,
+			"ParentFunction": "EncryptECB (plainText []byte, key []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewCipher",
+		"Message": "DES - NIST Withdraws Outdated Data Encryption Standard",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 164,
+			"ParentFunction": "DecryptCBC (cipherText []byte, key []byte, iv []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewCipher",
+		"Message": "DES - NIST Withdraws Outdated Data Encryption Standard",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewCipher(key)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 49,
+			"ParentFunction": "DecryptECB (cipherText []byte, key []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewTripleDESCipher(newKey)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 236,
+			"ParentFunction": "DecryptCBCTriple (cipherText []byte, key []byte, iv []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewTripleDESCipher(newKey)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 200,
+			"ParentFunction": "EncryptCBCTriple (plainText []byte, key []byte, iv []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewTripleDESCipher(newKey)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 118,
+			"ParentFunction": "DecryptECBTriple (cipherText []byte, key []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/des.NewTripleDESCipher",
+		"Message": "3DES is aceptable but not recommended, AES can be used instead.",
+		"Slicing_Criteria": {
+			"SourceCode": "block, err := des.NewTripleDESCipher(newKey)",
+			"SourceFilename": "/analysis/repo/crypto/gdes/gdes.go",
+			"SourceLineNum": 88,
+			"ParentFunction": "EncryptECBTriple (plainText []byte, key []byte, padding int) ([]byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New()",
+			"SourceFilename": "/analysis/repo/crypto/gmd5/gmd5.go",
+			"SourceLineNum": 80,
+			"ParentFunction": "EncryptFile (path string) (encrypt string, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New()",
+			"SourceFilename": "/analysis/repo/crypto/gmd5/gmd5.go",
+			"SourceLineNum": 39,
+			"ParentFunction": "EncryptBytes (data []byte) (encrypt string, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.New",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "h := sha1.New()",
+			"SourceFilename": "/analysis/repo/crypto/gsha1/gsha1.go",
+			"SourceLineNum": 35,
+			"ParentFunction": "EncryptFile (path string) (encrypt string, err error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/sha1.Sum",
+		"Message": "RFC 9155 - Deprecating SHA-1 Signature Hashes in TLS 1.2 and DTLS 1.2. ",
+		"Slicing_Criteria": {
+			"SourceCode": "r := sha1.Sum(gconv.Bytes(v))",
+			"SourceFilename": "/analysis/repo/crypto/gsha1/gsha1.go",
+			"SourceLineNum": 23,
+			"ParentFunction": "Encrypt (v interface{}) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "if req, err = http.NewRequest(method, url, bodyBuffer); err != nil {",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+			"SourceLineNum": 227,
+			"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = httpProtocolName + `://` + url",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 168,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "if req, err = http.NewRequest(method, url, bodyBuffer); err != nil {",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+			"SourceLineNum": 227,
+			"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = httpProtocolName + `://` + url",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 168,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "if req, err = http.NewRequest(method, url, bodyBuffer); err != nil {",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+			"SourceLineNum": 227,
+			"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = url + \"\u0026\" + params",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 218,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = url + \"\u0026\" + params",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 218,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = httpProtocolName + `://` + url",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 168,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "if req, err = http.NewRequest(method, url, bodyBuffer); err != nil {",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+			"SourceLineNum": 227,
+			"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = url + \"?\" + params",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 220,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = url + \"?\" + params",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 220,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = httpProtocolName + `://` + url",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 168,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "if req, err = http.NewRequest(method, url, bytes.NewReader(paramBytes)); err != nil {",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+			"SourceLineNum": 303,
+			"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = httpProtocolName + `://` + url",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 168,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "net/http.NewRequest",
+		"Message": "HTTP connection is very dangerous",
+		"Slicing_Criteria": {
+			"SourceCode": "if req, err = http.NewRequest(method, url, buffer); err != nil {",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+			"SourceLineNum": 292,
+			"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func (c *Client) prepareRequest(ctx context.Context, method, url string, data ...interface{}) (req *http.Request, err error) {",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 162,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			},
+			{
+				"SourceCode": "url = httpProtocolName + `://` + url",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_request.go",
+				"SourceLineNum": 168,
+				"ParentFunction": "prepareRequest (ctx context.Context, method string, url string, data ...interface{}) (req *net/http.Request, err error)"
+			}
+		],
+		"Predicate_Type": "HTTPS"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient_config.go",
+			"SourceLineNum": 194,
+			"ParentFunction": "SetTLSKeyCrt (crtFile string, keyFile string) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient_config.go",
+				"SourceLineNum": 194,
+				"ParentFunction": "SetTLSKeyCrt (crtFile string, keyFile string) error"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/net/gclient/gclient.go",
+			"SourceLineNum": 67,
+			"ParentFunction": "New () *github.com/gogf/gf/v2/net/gclient.Client"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/net/gclient/gclient.go",
+				"SourceLineNum": 67,
+				"ParentFunction": "New () *github.com/gogf/gf/v2/net/gclient.Client"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "github.com/gogf/gf/v2/crypto/gaes.Encrypt",
+		"Message": "AES-key should be random.\n\u003e\u003e/analysis/repo/crypto/gaes/gaes.go\nEncryptCBC (plainText []byte, key []byte, iv ...[]byte) ([]byte, error)\n\t39:\tblock, err := aes.NewCipher(key)\n\t38:\tfunc EncryptCBC(plainText []byte, key []byte, iv ...[]byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/crypto/gaes/gaes.go\nEncrypt (plainText []byte, key []byte, iv ...[]byte) ([]byte, error)\n\t26:\tfunc Encrypt(plainText []byte, key []byte, iv ...[]byte) ([]byte, error) {",
+		"Slicing_Criteria": {
+			"SourceCode": "content, err = gaes.Encrypt(content, DefaultStorageFileCryptoKey)",
+			"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+			"SourceLineNum": 184,
+			"ParentFunction": "SetSession (ctx context.Context, sessionId string, sessionData *github.com/gogf/gf/v2/container/gmap.StrAnyMap, ttl time.Duration) error"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "content, err = gaes.Encrypt(content, DefaultStorageFileCryptoKey)",
+				"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+				"SourceLineNum": 184,
+				"ParentFunction": "SetSession (ctx context.Context, sessionId string, sessionData *github.com/gogf/gf/v2/container/gmap.StrAnyMap, ttl time.Duration) error"
+			},
+			{
+				"SourceCode": "DefaultStorageFileCryptoKey = []byte(\"Session storage file crypto key!\")",
+				"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+				"SourceLineNum": 46,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	},
+	{
+		"FuncName": "github.com/gogf/gf/v2/crypto/gaes.Decrypt",
+		"Message": "AES-key should be random.\n\u003e\u003e/analysis/repo/crypto/gaes/gaes.go\nDecryptCBC (cipherText []byte, key []byte, iv ...[]byte) ([]byte, error)\n\t63:\tblock, err := aes.NewCipher(key)\n\t62:\tfunc DecryptCBC(cipherText []byte, key []byte, iv ...[]byte) ([]byte, error) {\n\u003e\u003e/analysis/repo/crypto/gaes/gaes.go\nDecrypt (cipherText []byte, key []byte, iv ...[]byte) ([]byte, error)\n\t31:\tfunc Decrypt(cipherText []byte, key []byte, iv ...[]byte) ([]byte, error) {",
+		"Slicing_Criteria": {
+			"SourceCode": "content, err = gaes.Decrypt(content, DefaultStorageFileCryptoKey)",
+			"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+			"SourceLineNum": 155,
+			"ParentFunction": "GetSession (ctx context.Context, sessionId string, ttl time.Duration) (sessionData *github.com/gogf/gf/v2/container/gmap.StrAnyMap, err error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "content, err = gaes.Decrypt(content, DefaultStorageFileCryptoKey)",
+				"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+				"SourceLineNum": 155,
+				"ParentFunction": "GetSession (ctx context.Context, sessionId string, ttl time.Duration) (sessionData *github.com/gogf/gf/v2/container/gmap.StrAnyMap, err error)"
+			},
+			{
+				"SourceCode": "content, err = gaes.Encrypt(content, DefaultStorageFileCryptoKey)",
+				"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+				"SourceLineNum": 184,
+				"ParentFunction": "SetSession (ctx context.Context, sessionId string, sessionData *github.com/gogf/gf/v2/container/gmap.StrAnyMap, ttl time.Duration) error"
+			},
+			{
+				"SourceCode": "DefaultStorageFileCryptoKey = []byte(\"Session storage file crypto key!\")",
+				"SourceFilename": "/analysis/repo/os/gsession/gsession_storage_file.go",
+				"SourceLineNum": 46,
+				"ParentFunction": "init ()"
+			}
+		],
+		"Predicate_Type": "RANDOM_BYTES"
+	}
+]

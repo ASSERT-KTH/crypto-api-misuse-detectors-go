@@ -1,0 +1,508 @@
+[
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 2048",
+		"Slicing_Criteria": {
+			"SourceCode": "priv, _ := rsa.GenerateKey(rand.Reader, 2048)",
+			"SourceFilename": "/analysis/repo/internal/crypto/helpers.go",
+			"SourceLineNum": 48,
+			"ParentFunction": "GenCertificate (template *crypto/x509.Certificate, setLeaf bool) ([]byte, []byte, []byte, crypto/tls.Certificate)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "priv, _ := rsa.GenerateKey(rand.Reader, 2048)",
+				"SourceFilename": "/analysis/repo/internal/crypto/helpers.go",
+				"SourceLineNum": 48,
+				"ParentFunction": "GenCertificate (template *crypto/x509.Certificate, setLeaf bool) ([]byte, []byte, []byte, crypto/tls.Certificate)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/x509.DecryptPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "block.Bytes, err = x509.DecryptPEMBlock(block, []byte(secret))",
+			"SourceFilename": "/analysis/repo/certs/manager.go",
+			"SourceLineNum": 158,
+			"ParentFunction": "ParsePEM (data []byte, secret string) ([]*encoding/pem.Block, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.EncryptPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "encryptedKeyPEMBlock, err := x509.EncryptPEMBlock(rand.Reader, \"ENCRYPTED PRIVATE KEY\", keyRaw, []byte(secret), x509.PEMCipherAES256)",
+			"SourceFilename": "/analysis/repo/certs/manager.go",
+			"SourceLineNum": 376,
+			"ParentFunction": "GetCertIDAndChainPEM (certData []byte, secret string) (string, []byte, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/x509.IsEncryptedPEMBlock",
+		"Message": "Deprecated: Legacy PEM encryption as specified in RFC 1423 is insecure by design. Since it does not authenticate the ciphertext, it is vulnerable to padding oracle attacks that can let an attacker recover the plaintext.",
+		"Slicing_Criteria": {
+			"SourceCode": "if x509.IsEncryptedPEMBlock(block) {",
+			"SourceFilename": "/analysis/repo/certs/manager.go",
+			"SourceLineNum": 156,
+			"ParentFunction": "ParsePEM (data []byte, secret string) ([]*encoding/pem.Block, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "manifest.Checksum = fmt.Sprintf(\"%x\", md5.Sum(bundleBuf.Bytes()))",
+			"SourceFilename": "/analysis/repo/cli/bundler/bundler.go",
+			"SourceLineNum": 88,
+			"ParentFunction": "Build (ctx *github.com/alecthomas/kingpin/v2.ParseContext) error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "return fmt.Sprintf(\"%x\", md5.Sum([]byte(fmt.Sprintf(\"%+v\", s))))",
+			"SourceFilename": "/analysis/repo/user/session.go",
+			"SourceLineNum": 223,
+			"ParentFunction": "MD5Hash () string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "signature := md5.Sum([]byte(token + sharedSecret + strconv.FormatInt(timeStamp, 10)))",
+			"SourceFilename": "/analysis/repo/signature_validator/hash.go",
+			"SourceLineNum": 33,
+			"ParentFunction": "Hash (token string, sharedSecret string, timeStamp int64) []byte"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "InsecureSkipVerify: true,",
+			"SourceFilename": "/analysis/repo/test/tcp.go",
+			"SourceLineNum": 97,
+			"ParentFunction": "TcpMock (useSSL bool, cb "
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "InsecureSkipVerify: true,",
+				"SourceFilename": "/analysis/repo/test/tcp.go",
+				"SourceLineNum": 97,
+				"ParentFunction": "TcpMock (useSSL bool, cb "
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.BuildNameToCertificate()",
+			"SourceFilename": "/analysis/repo/test/tcp.go",
+			"SourceLineNum": 100,
+			"ParentFunction": "TcpMock (useSSL bool, cb "
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 512",
+		"Slicing_Criteria": {
+			"SourceCode": "private, _ := rsa.GenerateKey(rand.Reader, 512)",
+			"SourceFilename": "/analysis/repo/test/tcp.go",
+			"SourceLineNum": 137,
+			"ParentFunction": "Cert (domain string) crypto/tls.Certificate"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "private, _ := rsa.GenerateKey(rand.Reader, 512)",
+				"SourceFilename": "/analysis/repo/test/tcp.go",
+				"SourceLineNum": 137,
+				"ParentFunction": "Cert (domain string) crypto/tls.Certificate"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/mw_js_plugin.go",
+			"SourceLineNum": 558,
+			"ParentFunction": "LoadTykJSApi$7 (call github.com/robertkrimen/otto.FunctionCall) github.com/robertkrimen/otto.Value"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/mw_js_plugin.go",
+				"SourceLineNum": 558,
+				"ParentFunction": "LoadTykJSApi$7 (call github.com/robertkrimen/otto.FunctionCall) github.com/robertkrimen/otto.Value"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "bundleNameHash := md5.New()",
+			"SourceFilename": "/analysis/repo/gateway/coprocess_bundle.go",
+			"SourceLineNum": 348,
+			"ParentFunction": "getHashedBundleName (bundleName string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/mw_js_plugin.go",
+			"SourceLineNum": 562,
+			"ParentFunction": "LoadTykJSApi$7 (call github.com/robertkrimen/otto.FunctionCall) github.com/robertkrimen/otto.Value"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tr.TLSClientConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/mw_js_plugin.go",
+				"SourceLineNum": 562,
+				"ParentFunction": "LoadTykJSApi$7 (call github.com/robertkrimen/otto.FunctionCall) github.com/robertkrimen/otto.Value"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New()",
+			"SourceFilename": "/analysis/repo/gateway/mw_redis_cache.go",
+			"SourceLineNum": 51,
+			"ParentFunction": "CreateCheckSum (req *net/http.Request, keyName string, regex string, additionalKeyFromHeaders string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.New",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "h := md5.New()",
+			"SourceFilename": "/analysis/repo/gateway/event_handler_webhooks.go",
+			"SourceLineNum": 182,
+			"ParentFunction": "Checksum (reqBody string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "keyID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/gateway/mw_openid.go",
+			"SourceLineNum": 174,
+			"ParentFunction": "ProcessRequest (w net/http.ResponseWriter, r *net/http.Request, _ interface{}) (error, int)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "golang.org/x/crypto/bcrypt.GenerateFromPassword",
+		"Message": "The cost should be greater than 12. 10 might be not safe.\nWe Found: 10",
+		"Slicing_Criteria": {
+			"SourceCode": "hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(session.BasicAuthData.Password), 10)",
+			"SourceFilename": "/analysis/repo/gateway/api.go",
+			"SourceLineNum": 406,
+			"ParentFunction": "setBasicAuthSessionPassword (session *github.com/TykTechnologies/tyk/user.SessionState)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "hashedPassBytes, err := bcrypt.GenerateFromPassword([]byte(session.BasicAuthData.Password), 10)",
+				"SourceFilename": "/analysis/repo/gateway/api.go",
+				"SourceLineNum": 406,
+				"ParentFunction": "setBasicAuthSessionPassword (session *github.com/TykTechnologies/tyk/user.SessionState)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "sessionID = k.Gw.generateToken(k.Spec.OrgID, fmt.Sprintf(\"%x\", md5.Sum([]byte(clientID)))+keyID)",
+			"SourceFilename": "/analysis/repo/gateway/mw_openid.go",
+			"SourceLineNum": 180,
+			"ParentFunction": "ProcessRequest (w net/http.ResponseWriter, r *net/http.Request, _ interface{}) (error, int)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "checksum := fmt.Sprintf(\"%x\", md5.Sum(bundleData.Bytes()))",
+			"SourceFilename": "/analysis/repo/gateway/coprocess_bundle.go",
+			"SourceLineNum": 87,
+			"ParentFunction": "Verify () error"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/testutil.go",
+			"SourceLineNum": 1339,
+			"ParentFunction": "GetTLSConfig (cert *crypto/tls.Certificate, caCert []byte) *crypto/tls.Config"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/testutil.go",
+				"SourceLineNum": 1339,
+				"ParentFunction": "GetTLSConfig (cert *crypto/tls.Certificate, caCert []byte) *crypto/tls.Config"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "keyID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/gateway/middleware.go",
+			"SourceLineNum": 945,
+			"ParentFunction": "generateSessionID (id string) string"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "keyID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/gateway/mw_jwt.go",
+			"SourceLineNum": 370,
+			"ParentFunction": "processCentralisedJWT (r *net/http.Request, token *github.com/golang-jwt/jwt/v4.Token) (error, int)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "tokenID := fmt.Sprintf(\"%x\", md5.Sum(data))",
+			"SourceFilename": "/analysis/repo/gateway/coprocess_id_extractor.go",
+			"SourceLineNum": 92,
+			"ParentFunction": "GenerateSessionID (input string, mw *github.com/TykTechnologies/tyk/gateway.BaseMiddleware) (sessionID string)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/rsa.SignPKCS1v15",
+		"Message": "RSA-PKCS1-v1_5 is deprecated, RSASSA-PSS is recommended, that is, \"SignPSS\"",
+		"Slicing_Criteria": {
+			"SourceCode": "rawsignature, err := rsa.SignPKCS1v15(cryptorand.Reader, privateKey, hashType, hashed)",
+			"SourceFilename": "/analysis/repo/gateway/mw_request_signing.go",
+			"SourceLineNum": 198,
+			"ParentFunction": "generateRSAEncodedSignature (signatureString string, privateKey *crypto/rsa.PrivateKey, algorithm string) (string, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+		"Slicing_Criteria": {
+			"SourceCode": "newConfig.BuildNameToCertificate()",
+			"SourceFilename": "/analysis/repo/gateway/cert.go",
+			"SourceLineNum": 367,
+			"ParentFunction": "getTLSConfigForClient$2 (hello *crypto/tls.ClientHelloInfo) (*crypto/tls.Config, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/cert.go",
+			"SourceLineNum": 122,
+			"ParentFunction": "verifyPeerCertificatePinnedCheck (spec *github.com/TykTechnologies/tyk/gateway.APISpec, tlsConfig *crypto/tls.Config) "
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/cert.go",
+				"SourceLineNum": 122,
+				"ParentFunction": "verifyPeerCertificatePinnedCheck (spec *github.com/TykTechnologies/tyk/gateway.APISpec, tlsConfig *crypto/tls.Config) "
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+		"Slicing_Criteria": {
+			"SourceCode": "baseConfig.BuildNameToCertificate()",
+			"SourceFilename": "/analysis/repo/gateway/cert.go",
+			"SourceLineNum": 347,
+			"ParentFunction": "getTLSConfigForClient (baseConfig *crypto/tls.Config, listenPort int) "
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "(*crypto/tls.Config).BuildNameToCertificate",
+		"Message": "Deprecated: NameToCertificate only allows associating a single certificate with a given name. Leave that field nil to let the library select the first compatible chain from Certificates.",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.BuildNameToCertificate()",
+			"SourceFilename": "/analysis/repo/gateway/testutil.go",
+			"SourceLineNum": 1337,
+			"ParentFunction": "GetTLSConfig (cert *crypto/tls.Certificate, caCert []byte) *crypto/tls.Config"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Warning_Function"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+			"SourceLineNum": 688,
+			"ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+				"SourceLineNum": 688,
+				"ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+			"SourceLineNum": 692,
+			"ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "transport.TLSClientConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+				"SourceLineNum": 692,
+				"ParentFunction": "httpTransport (timeOut float64, rw net/http.ResponseWriter, req *net/http.Request, outReq *net/http.Request) *github.com/TykTechnologies/tyk/gateway.TykRoundTripper"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+			"SourceLineNum": 760,
+			"ParentFunction": "setCommonNameVerifyPeerCertificate (tlsConfig *crypto/tls.Config, hostName string)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "tlsConfig.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+				"SourceLineNum": 760,
+				"ParentFunction": "setCommonNameVerifyPeerCertificate (tlsConfig *crypto/tls.Config, hostName string)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "config.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+			"SourceLineNum": 643,
+			"ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "config.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+				"SourceLineNum": 643,
+				"ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "config.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+			"SourceLineNum": 647,
+			"ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "config.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/reverse_proxy.go",
+				"SourceLineNum": 647,
+				"ParentFunction": "tlsClientConfig (s *github.com/TykTechnologies/tyk/gateway.APISpec, gw *github.com/TykTechnologies/tyk/gateway.Gateway) *crypto/tls.Config"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	},
+	{
+		"FuncName": "crypto/tls.Config::InsecureSkipVerify",
+		"Message": "Insecure Verification",
+		"Slicing_Criteria": {
+			"SourceCode": "clone.InsecureSkipVerify = true",
+			"SourceFilename": "/analysis/repo/gateway/cert.go",
+			"SourceLineNum": 209,
+			"ParentFunction": "customDialTLSCheck$1 (network string, addr string) (net.Conn, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "clone.InsecureSkipVerify = true",
+				"SourceFilename": "/analysis/repo/gateway/cert.go",
+				"SourceLineNum": 209,
+				"ParentFunction": "customDialTLSCheck$1 (network string, addr string) (net.Conn, error)"
+			}
+		],
+		"Predicate_Type": "EQ_FALSE"
+	}
+]

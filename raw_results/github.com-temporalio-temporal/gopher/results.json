@@ -1,0 +1,63 @@
+[
+	{
+		"FuncName": "crypto/rsa.GenerateKey",
+		"Message": "RSA-512 and RSA-1024 is insecure, RSA-2048 is Acceptable but not recommended.\nWe Found: 512",
+		"Slicing_Criteria": {
+			"SourceCode": "privateKey, err := rsa.GenerateKey(rand.Reader, keyLengthBits)",
+			"SourceFilename": "/analysis/repo/tests/testutils/certificate.go",
+			"SourceLineNum": 75,
+			"ParentFunction": "generateSelfSignedX509CA (commonName string, extUsage []crypto/x509.ExtKeyUsage, keyLengthBits int) (*crypto/tls.Certificate, error)"
+		},
+		"Def_Use_Link": [
+			{
+				"SourceCode": "func generateSelfSignedX509CA(commonName string, extUsage []x509.ExtKeyUsage, keyLengthBits int) (*tls.Certificate, error) {",
+				"SourceFilename": "/analysis/repo/tests/testutils/certificate.go",
+				"SourceLineNum": 41,
+				"ParentFunction": "generateSelfSignedX509CA (commonName string, extUsage []crypto/x509.ExtKeyUsage, keyLengthBits int) (*crypto/tls.Certificate, error)"
+			},
+			{
+				"SourceCode": "caCert, err := generateSelfSignedX509CA(\"undefined\", nil, 512)",
+				"SourceFilename": "/analysis/repo/tests/testutils/tls.go",
+				"SourceLineNum": 136,
+				"ParentFunction": "GenerateSelfSignedCA (filePath string) (*crypto/tls.Certificate, error)"
+			}
+		],
+		"Predicate_Type": "GEQ"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "Thumbprint: md5.Sum(cert.Raw),",
+			"SourceFilename": "/analysis/repo/common/rpc/encryption/local_store_cert_provider.go",
+			"SourceLineNum": 430,
+			"ParentFunction": "checkCertForExpiration (cert *crypto/x509.Certificate, pointInTime time.Time, expiring go.temporal.io/server/common/rpc/encryption.CertExpirationMap, expired go.temporal.io/server/common/rpc/encryption.CertExpirationMap)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "certThumbprint = fmt.Sprintf(\"%x\", md5.Sum(cert.Raw))",
+			"SourceFilename": "/analysis/repo/common/rpc/interceptor/namespace_logger.go",
+			"SourceLineNum": 74,
+			"ParentFunction": "Intercept (ctx context.Context, req interface{}, info *google.golang.org/grpc.UnaryServerInfo, handler google.golang.org/grpc.UnaryHandler) (interface{}, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	},
+	{
+		"FuncName": "crypto/md5.Sum",
+		"Message": "MD5 - RFC 9155 - Deprecating MD5 Signature Hashes in TLS 1.2 and DTLS 1.2. Use MD5 in HMAC is Acceptable But Not Recommended",
+		"Slicing_Criteria": {
+			"SourceCode": "md5Bytes := md5.Sum(jsonBlob)",
+			"SourceFilename": "/analysis/repo/tools/common/schema/updatetask.go",
+			"SourceLineNum": 343,
+			"ParentFunction": "readManifest (fsys io/fs.FS, dirPath string) (*go.temporal.io/server/tools/common/schema.manifest, error)"
+		},
+		"Def_Use_Link": null,
+		"Predicate_Type": "Dangerous_Function"
+	}
+]
