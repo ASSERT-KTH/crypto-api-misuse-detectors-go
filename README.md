@@ -1,6 +1,19 @@
-# Go CryptoAPI Analysis
+# Crypto API Misuse Detectors for Go - Replication Package
 
-Replication package for Go cryptographic API tool analysis study.
+This repository contains the complete replication package for a comparative study of static analysis tools detecting cryptographic API misuse in Go projects.
+
+**Tools compared:** CodeQL, Gosec, Gopher, Snyk
+
+**Dataset:** 329 open-source Go projects analyzed for crypto API misuse patterns
+
+**Included in this package:**
+- 📊 Complete analysis results (`results/` directory)
+  - 14 rule-specific Venn diagrams + overall tool consensus
+  - Rule-level metrics and sampling data
+- 🔬 Raw tool outputs (`raw_results/` - 206MB, 329 projects)
+- 🐍 Python analysis code (`src/tool_consensus/`)
+- 🐳 Docker composition tooling for running experiments
+- 📝 Experiment orchestration scripts
 
 ## Composer
 
@@ -29,6 +42,8 @@ go run cmd/compose/main.go -tools <toolname> -verbose <datasetpath>
 
 ## Analysis
 
+Analyze tool consensus and generate Venn diagrams from results.
+
 **Setup:**
 ```bash
 pip install -r src/requirements.txt
@@ -38,3 +53,36 @@ pip install -r src/requirements.txt
 ```bash
 uv run analyze-results raw_results --output-dir ./analysis_output
 ```
+
+**Output:** Venn diagrams, metrics, and sampled findings in `analysis_output/`
+
+## Pre-computed Results
+
+Analysis results are already included in the `results/` directory:
+- `venn_diagrams/` - Visual tool overlap analysis
+- `rule_analysis/` - Per-rule metrics and findings
+
+## Repository Structure
+
+```
+.
+├── cmd/              # Compose file generator
+├── data/             # Dataset metadata
+├── internal/         # Tool configurations and Docker setup
+├── scripts/          # Experiment orchestration
+├── src/              # Python analysis code
+├── raw_results/      # Tool outputs (329 projects)
+└── results/          # Pre-computed analysis
+```
+
+## Citation
+
+If you use this replication package, please cite:
+
+```
+[Add your paper citation here]
+```
+
+## License
+
+MIT License - See LICENSE file for details
