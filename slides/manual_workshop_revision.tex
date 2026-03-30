@@ -1,0 +1,239 @@
+\documentclass[10pt]{beamer}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{adjustbox}
+\usepackage{multirow}
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{xspace}
+\usepackage{pifont}
+\usepackage{xcolor}
+\usetheme{Boadilla}
+\usefonttheme{professionalfonts}
+\setbeamertemplate{navigation symbols}{}
+
+\definecolor{KTHBlue}{HTML}{0F4C81}
+\definecolor{KTHLight}{HTML}{EAF2F8}
+\definecolor{KTHAccent}{HTML}{B85C38}
+
+\setbeamercolor{title}{fg=KTHBlue}
+\setbeamercolor{frametitle}{fg=white,bg=KTHBlue}
+\setbeamercolor{structure}{fg=KTHBlue}
+\setbeamercolor{block title}{fg=white,bg=KTHBlue}
+\setbeamercolor{block body}{fg=black,bg=KTHLight}
+\setbeamercolor{item}{fg=KTHAccent}
+\setbeamercolor{section in toc}{fg=KTHBlue}
+
+\newcommand{\CodeQL}{\textsc{CodeQL}\xspace}
+\newcommand{\Gopher}{\textsc{Gopher}\xspace}
+\newcommand{\Gosec}{\textsc{Gosec}\xspace}
+\newcommand{\SnykCode}{\textsc{Snyk Code}\xspace}
+\newcommand{\cmark}{\ding{51}}
+
+\title[Crypto Misuse Detectors for Go]{\textbf{\LARGE Evaluating Cryptographic API Misuse Detectors for Go}}
+\subtitle{Agreement, coverage, and implications for practice}
+\author[Andersson and Monperrus]{Vivi Andersson, Martin Monperrus}
+\institute[KTH]{KTH Royal Institute of Technology, Stockholm, Sweden}
+\date[18 Apr 2026]{April 18, 2026\\Rio de Janeiro, Brazil\\SVM 2026, co-located with ICSE 2026}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+    \frametitle{Motivation}
+    \begin{itemize}
+        \setlength{\itemsep}{0.7em}
+        \item We found 7,473 cryptographic API misuse detections across 328 Go projects.
+        \item Many detections are unique to a single tool rather than confirmed by others.
+        \item The main point is that these tools are useful, but different enough that relying on just one can be misleading.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Why This Matters}
+    \begin{itemize}
+        \setlength{\itemsep}{0.7em}
+        \item Go is heavily used in security-critical infrastructure, cloud systems, and developer tooling.
+        \item Cryptographic API misuse is a high-impact vulnerability class: the code may compile, tests may pass, and the security properties can still be wrong.
+        \item If detectors disagree substantially, both practitioners and evaluators can walk away with the wrong impression of tool quality.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Research Questions and Study Design}
+    \begin{itemize}
+        \setlength{\itemsep}{0.55em}
+        \item \textbf{RQ1.} What is the design space of state-of-the-art tools for detecting cryptographic API misuses in Go?
+        \item \textbf{RQ2.} To what extent are crypto misuse detection tools for Go consistent with each other?
+        \item For RQ1, we compare tool scope and rule support. For RQ2, we run all tools on 328 projects and compare their coverage and overlap.
+    \end{itemize}
+    \vspace{0.6em}
+    \begin{block}{Contribution}
+        First systematic comparison of four Go cryptographic misuse detectors, covering 14 rule classes and 328 security-relevant projects.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{RQ1: Taxonomy and Tool Support}
+    \small
+    \begin{table}
+        \centering
+        \renewcommand{\arraystretch}{1.15}
+        \begin{tabular}{p{2.8cm}p{0.9cm}p{5.8cm}}
+            \textbf{Category} & \textbf{IDs} & \textbf{Rules} \\
+            \hline
+            Cryptographic primitives & 01--03 & insecure algorithms; insecure PRNG; deprecated Go function \\
+            Key management & 04--06 & constant/predictable key; short key length; static/predictable IV \\
+            Password-based KDF & 07--09 & short salt; predictable salt; low iterations \\
+            Transport security & 10--11 & HTTP protocol; TLS/SSL issues \\
+            Secure Shell & 12--13 & insecure SSH suite; no host key validation \\
+            Token auth & 14 & no JWT verification \\
+        \end{tabular}
+    \end{table}
+    \normalsize
+\vspace{0.15em}
+\begin{itemize}
+    \setlength{\itemsep}{0.35em}
+    \item Only rules 02, 05, and 11 are supported by all four tools.
+    \item \Gopher covers the broadest part of the taxonomy, while \CodeQL alone supports rule 14.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Dataset and Scope}
+    \begin{itemize}
+        \setlength{\itemsep}{0.35em}
+        \item 328 security-relevant open-source Go repositories.
+        \item Repository size is strongly right-skewed, with a median of 58,761 LOC.
+        \item Median popularity is 9,096 stars and median contributor count is 167.
+    \end{itemize}
+    \vspace{0.1em}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{output/images/1774885607/repo_metric_loc.png}
+    \end{figure}
+    \vspace{0.03em}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{output/images/1774885607/repo_metric_stars.png}
+    \end{figure}
+    \vspace{0.03em}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{output/images/1774885607/repo_metric_contributors.png}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \frametitle{RQ2: Execution Coverage Across Tools}
+    \small
+    \begin{table}
+        \centering
+        \begin{adjustbox}{width=\textwidth,center}
+            \begin{tabular}{l|c|c|c|c}
+                \toprule
+                & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
+                \midrule
+                \textbf{Projects analyzed (\%)} & 91.8 & 77.1 & 100 & 100 \\
+                \textbf{With findings (\% of analyzed)} & 30.9 & 64.8 & 84.5 & 92.7 \\
+                \textbf{With findings (\% of dataset)} & 28.4 & 50.0 & 84.5 & 92.7 \\
+                \bottomrule
+            \end{tabular}
+        \end{adjustbox}
+    \end{table}
+    \normalsize
+    \vspace{0.3em}
+    \begin{block}{Interpretation}
+        \SnykCode and \Gosec analyze all 328 projects, while \Gopher fails on 75 projects and \CodeQL on 27. So even before comparing findings, the tools are operating on different subsets of projects.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{RQ2: Cross-Tool Agreement Is Low}
+    \begin{itemize}
+        \setlength{\itemsep}{0.45em}
+        \item 7,473 detections collapse to 6,152 unique reported locations.
+        \item Only 1.3\% of detections are shared by all four tools.
+        \item Most findings are tool-specific: 92.6\% of \Gosec detections and 63.5\% of \SnykCode detections are unique locations.
+    \end{itemize}
+    \vspace{0.15em}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.72\textwidth,height=0.48\textheight,keepaspectratio]{output/images/1774885607/overall_venn.png}
+        \caption{Overall overlap across tools shows that much of the detection volume is tool-unique.}
+    \end{figure}
+\end{frame}
+
+\begin{frame}
+    \frametitle{RQ2: Agreement Depends on the Misuse Rule}
+    \begin{itemize}
+        \setlength{\itemsep}{0.4em}
+        \item Rule \#05: all four tools support it, but they still disagree sharply.
+        \item Rule \#11: the largest class, with 2,033 detections total and 1,049 from \Gosec alone.
+        \item Rule \#13: only 59 detections total, making manual inspection feasible.
+    \end{itemize}
+    \vspace{0.2em}
+    \begin{columns}[T]
+        \column{0.33\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{output/images/1774885607/rule_CR05_venn.png}
+            \caption*{\scriptsize Rule 05}
+        \end{figure}
+        \column{0.33\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{output/images/1774885607/rule_CR11_venn.png}
+            \caption*{\scriptsize Rule 11}
+        \end{figure}
+        \column{0.33\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{output/images/1774885607/rule_CR13_venn.png}
+            \caption*{\scriptsize Rule 13}
+        \end{figure}
+    \end{columns}
+\vspace{0.15em}
+\begin{block}{RQ2 takeaway}
+    Agreement varies substantially by misuse class.
+\end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Implications for Practice and Evaluation}
+    \begin{itemize}
+        \setlength{\itemsep}{0.7em}
+        \item \textbf{For practitioners:} using a single detector is likely to leave blind spots; using multiple tools is justified by the low overlap.
+        \item \textbf{For evaluators:} raw finding counts are misleading when tools disagree this much about the same rule class.
+        \item \textbf{For tool builders:} the tools differ in kind, not just in degree: \Gopher covers the broadest rule set, \SnykCode and \Gosec run most reliably, and \CodeQL contributes higher-overlap alerts plus distinct SSH findings.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Limitations and Takeaways}
+    \begin{itemize}
+        \setlength{\itemsep}{0.55em}
+        \item This study covers four tools, 328 open-source Go projects, and a consolidated mapping into 14 rule classes.
+        \item There are three main caveats: the dataset is time-bounded, the rule mapping requires judgment, and the taxonomy reflects current tool support rather than the full space of possible Go misuses.
+    \end{itemize}
+    \vspace{0.5em}
+    \begin{block}{Takeaway}
+        The main takeaway is that these tools are not interchangeable. They differ in what they cover, how reliably they run, and how often they agree, so both tool choice and evaluation methodology matter.
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Questions}
+    \begin{center}
+        \Large Thank you
+
+        \vspace{0.7em}
+        \normalsize
+        Questions, discussion, and criticism are welcome.
+    \end{center}
+\end{frame}
+
+\end{document}
