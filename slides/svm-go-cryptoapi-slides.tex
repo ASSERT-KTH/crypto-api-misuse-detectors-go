@@ -76,8 +76,8 @@
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
         \item Go is widely used in security-critical infrastructure, including certificate services, container platforms, and cloud tooling.
-        \item Cryptographic API misuse remains a high-impact vulnerability class: the code may compile and pass tests while silently violating security assumptions.
-        \item Yet, unlike Java, the landscape of cryptographic misuse detection for Go has not been systematically characterized.
+        \item Cryptographic API misuse remains a consequential vulnerability class: code can compile and pass tests while still violating core security assumptions.
+        \item Unlike Java, the current landscape of cryptographic misuse detection for Go has not been systematically characterized.
     \end{itemize}
 \end{frame}
 
@@ -85,23 +85,23 @@
     \frametitle{Evaluation Challenge}
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
-        \item Existing Go detectors do not expose a common target: they differ in supported rules, reporting granularity, and execution robustness.
-        \item As a result, alert counts are difficult to interpret across tools: more findings may indicate broader coverage, noisier heuristics, or simply a different rule set.
-        \item What is missing is a comparative view that separates tool scope from tool agreement on real Go codebases.
+        \item Existing Go detectors do not operate over a common target: they differ in supported rules, reporting granularity, and execution robustness.
+        \item Raw alert counts are therefore hard to compare: more findings may reflect broader rule coverage, noisier heuristics, or simply a different reporting unit.
+        \item The key question is not only whether these tools detect crypto misuses, but also what they detect and how their outputs should be interpreted.
     \end{itemize}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Prior Work and the Gap}
+    \frametitle{Prior Work}
     \begin{itemize}
         \setlength{\itemsep}{0.6em}
         \item Comparative work already exists for Java crypto misuse detection, including multi-tool evaluation and false-positive analysis [1, 2, 3].
-        \item Go-specific detector work also exists: \textit{CryptoGo} introduced the first Go detector, and \Gopher later extended that line of work [4, 5].
-        \item However, prior Go work does not provide a systematic comparison across the currently available detectors used in practice.
+        \item Go-specific detector work also exists: \textit{CryptoGo} introduced the first Go detector, and \Gopher extended that line of work [4, 5].
+        \item What is still missing is a systematic comparison of the Go detectors currently available in practice.
     \end{itemize}
     \vspace{0.5em}
     \begin{block}{This paper}
-        We compare the currently available Go crypto misuse detectors, instead of studying only one tool at a time.
+        We provide the first comparative study of currently available Go crypto misuse detectors.
     \end{block}
     \vfill
     {\tiny
@@ -120,19 +120,20 @@
     \frametitle{Research Questions}
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
-        \item \textbf{RQ1.} What is the design space of state-of-the-art tools for detecting cryptographic API misuses in Go?
+        \item \textbf{RQ1.} What is the design space of current tools for detecting cryptographic API misuses in Go?
         \item \textbf{RQ2.} To what extent are crypto misuse detection tools for Go consistent with each other?
     \end{itemize}
     \vspace{0.5em}
     \begin{block}{Study Design}
         RQ1 compares tool scope, supported rules, and detection approach.
 
-        RQ2 runs all tools on 328 security-relevant Go projects and compares execution coverage, findings, and overlap.
+        RQ2 runs all tools on 328 security-relevant Go projects and compares coverage and overlap.
     \end{block}
-    \vspace{0.5em}
-    \begin{block}{Contribution}
-        First systematic comparison of four Go cryptographic misuse detectors across 14 rule classes and 328 security-relevant projects.
-    \end{block}
+    \vspace{0.4em}
+    \begin{itemize}
+        \setlength{\itemsep}{0.35em}
+        \item Goal: establish what these tools detect, how they differ, and what follows for practice and evaluation.
+    \end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -157,7 +158,7 @@
 \begin{itemize}
     \setlength{\itemsep}{0.35em}
     \item Only rules 02, 05, and 11 are supported by all four tools.
-    \item \Gopher covers the broadest part of the taxonomy, while \CodeQL alone supports rule 14.
+    \item \Gopher covers the largest share of the taxonomy, while \CodeQL alone supports rule 14.
 \end{itemize}
 \end{frame}
 
@@ -166,7 +167,7 @@
     \begin{itemize}
         \setlength{\itemsep}{0.35em}
         \item 328 security-relevant open-source Go repositories.
-        \item Repository size is strongly right-skewed, with a median of 58,761 LOC.
+        \item Repository size is strongly right-skewed; the median is 58,761 LOC.
         \item Median popularity is 9,096 stars and median contributor count is 167.
     \end{itemize}
     \vspace{0.1em}
@@ -206,7 +207,7 @@
     \normalsize
     \vspace{0.3em}
     \begin{block}{Interpretation}
-        \SnykCode and \Gosec analyze all 328 projects, while \Gopher fails on 75 projects and \CodeQL on 27. So even before comparing findings, the tools are operating on different subsets of projects.
+        \SnykCode and \Gosec analyze all 328 projects, while \Gopher fails on 75 and \CodeQL on 27. Even before comparing findings, the tools operate on different subsets of the dataset.
     \end{block}
 \end{frame}
 
@@ -216,13 +217,13 @@
         \setlength{\itemsep}{0.45em}
         \item 7,473 detections collapse to 6,152 unique reported locations.
         \item Only 1.3\% of detections are shared by all four tools.
-        \item Most findings are tool-specific: 92.6\% of \Gosec detections and 63.5\% of \SnykCode detections are unique locations.
+        \item Most findings are tool-specific: 92.6\% of \Gosec detections and 63.5\% of \SnykCode detections map to unique locations.
     \end{itemize}
     \vspace{0.15em}
     \begin{figure}
         \centering
         \includegraphics[width=0.72\textwidth,height=0.48\textheight,keepaspectratio]{figures/overall_venn.png}
-        \caption{Overall overlap across tools shows that much of the detection volume is tool-unique.}
+        \caption{Most reported locations are unique to a single tool.}
     \end{figure}
 \end{frame}
 
@@ -230,7 +231,7 @@
     \frametitle{RQ2: Agreement Depends on the Misuse Rule}
     \begin{itemize}
         \setlength{\itemsep}{0.4em}
-        \item Rule \#05: all four tools support it, but they still disagree sharply.
+        \item Rule \#05: all four tools support it, yet overlap remains limited.
         \item Rule \#11: the largest class, with 2,033 detections total and 1,049 from \Gosec alone.
         \item Rule \#13: only 59 detections total, making manual inspection feasible.
     \end{itemize}
@@ -257,7 +258,7 @@
     \end{columns}
 \vspace{0.15em}
 \begin{block}{RQ2 takeaway}
-    Agreement varies substantially by misuse class.
+    Agreement depends strongly on the misuse class.
 \end{block}
 \end{frame}
 
@@ -265,13 +266,13 @@
     \frametitle{Manual Analysis}
     \begin{itemize}
         \setlength{\itemsep}{0.6em}
-        \item For Rule \#05, overlap is not automatically correctness: 4 of 5 detections shared by \CodeQL, \Gosec, and \SnykCode but missed by \Gopher are in examples or mock code.
-        \item For Rule \#11, 3 of 5 sampled \Gosec-only detections are false positives; in our \SnykCode sample, we found no clear false positives, and the alerts better reflected actual insecure TLS settings.
-        \item For Rule \#13, \CodeQL contributes unique SSH findings beyond \texttt{InsecureIgnoreHostKey} by reasoning about custom callbacks that return \texttt{nil}.
+        \item For Rule \#05, overlap is not a correctness signal: 4 of 5 detections shared by \CodeQL, \Gosec, and \SnykCode but missed by \Gopher occur in examples or mock code.
+        \item For Rule \#11, 3 of 5 sampled \Gosec-only detections are false positives; in our \SnykCode sample, we found no clear false positives, and the alerts better matched insecure TLS configurations.
+        \item For Rule \#13, \CodeQL contributes unique SSH findings beyond \texttt{InsecureIgnoreHostKey} by reasoning about custom callbacks that always return \texttt{nil}.
     \end{itemize}
     \vspace{0.5em}
     \begin{block}{Interpretation}
-        Cross-tool overlap helps, but the more important result is that the tools differ in what they consider a misuse and how much context they understand.
+        Cross-tool overlap is informative, but the central result is that the tools encode different notions of misuse and different amounts of program context.
     \end{block}
 \end{frame}
 
@@ -280,12 +281,12 @@
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
         \item \textbf{For practitioners:} using a single detector is likely to leave blind spots; using multiple tools is justified by the low overlap.
-        \item \textbf{For evaluators:} raw finding counts are misleading when tools disagree this much about the same rule class.
-        \item \textbf{For tool builders:} the tools differ in kind, not just in degree: \Gopher covers the broadest rule set, \SnykCode and \Gosec run most reliably, and \CodeQL contributes higher-overlap alerts plus distinct SSH findings.
+        \item \textbf{For evaluators:} raw finding counts are misleading when tools disagree this much within the same rule class.
+        \item \textbf{For tool builders:} the differences are qualitative, not only quantitative: \Gopher covers the largest rule set, \SnykCode and \Gosec run most reliably, and \CodeQL contributes higher-overlap alerts plus distinct SSH findings.
     \end{itemize}
     \vspace{0.4em}
     \begin{block}{}
-        The comparative question matters because these detectors vary enough in scope and agreement to change both practical use and experimental conclusions.
+        Detector choice materially affects both deployment decisions and empirical conclusions.
     \end{block}
 \end{frame}
 
@@ -293,9 +294,8 @@
     \frametitle{Takeaways}
     \begin{itemize}
         \setlength{\itemsep}{0.55em}
-        \item The main result is not a winner, but a characterization: current Go crypto misuse detectors occupy different points in the design space.
-        \item Coverage, reliability, and agreement vary enough that detector outputs should be interpreted as complementary rather than interchangeable.
-        \item For this problem, evaluating detectors requires comparing what they are able to detect, not only how much they report.
+        \item Coverage, robustness, and agreement vary enough that detector outputs should be treated as complementary rather than interchangeable.
+        \item For this problem, detector evaluation must compare what tools can detect, not only how much they report.
     \end{itemize}
 \end{frame}
 
@@ -303,8 +303,8 @@
     \frametitle{Future Work}
     \begin{itemize}
         \setlength{\itemsep}{0.55em}
-        \item Future work should move beyond syntax-level alerts toward application-aware security relevance, potentially using AI to infer threat models and deployment context.
-        \item Extend the comparison as tools evolve and new Go misuse classes become detectable.
+        \item Formalize and enforce API-level security invariants beyond today's rule-level checks.
+        \item Extend the comparison as tools evolve and additional Go misuse classes become detectable.
     \end{itemize}
 \end{frame}
 
@@ -315,7 +315,7 @@
 
         \vspace{0.7em}
         \normalsize
-        Questions, discussion, and criticism are welcome.
+        Questions and discussion
     \end{center}
 \end{frame}
 
