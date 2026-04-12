@@ -62,7 +62,7 @@
 \newcommand{\cmark}{\ding{51}}
 
 \title[Crypto Misuse Detectors for Go]{\textbf{\LARGE Evaluating Cryptographic API Misuse Detectors for Go}}
-\subtitle{Agreement, coverage, and implications for practice}
+% \subtitle{Agreement, coverage, and implications for practice} % not liking this 
 \author[Andersson and Monperrus]{Vivi Andersson, Martin Monperrus}
 \institute[KTH]{KTH Royal Institute of Technology, Stockholm, Sweden}
 \date[18 Apr 2026]{April 18, 2026\\Rio de Janeiro, Brazil\\SVM 2026, co-located with ICSE 2026}
@@ -72,36 +72,66 @@
 \frame{\titlepage}
 
 \begin{frame}
-    \frametitle{Motivation}
+    \frametitle{Problem Context}
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
-        \item We found 7,473 cryptographic API misuse detections across 328 Go projects.
-        \item Many detections are unique to a single tool rather than confirmed by others.
-        \item The main point is that these tools are useful, but different enough that relying on just one can be misleading.
+        \item Go is widely used in security-critical infrastructure, including certificate services, container platforms, and cloud tooling.
+        \item Cryptographic API misuse remains a high-impact vulnerability class: the code may compile and pass tests while silently violating security assumptions.
+        \item Yet, unlike Java, the landscape of cryptographic misuse detection for Go has not been systematically characterized.
     \end{itemize}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Why This Matters}
+    \frametitle{Evaluation Challenge}
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
-        \item Go is heavily used in security-critical infrastructure, cloud systems, and developer tooling.
-        \item Cryptographic API misuse is a high-impact vulnerability class: the code may compile, tests may pass, and the security properties can still be wrong.
-        \item If detectors disagree substantially, both practitioners and evaluators can walk away with the wrong impression of tool quality.
+        \item Existing Go detectors do not expose a common target: they differ in supported rules, reporting granularity, and execution robustness.
+        \item As a result, alert counts are difficult to interpret across tools: more findings may indicate broader coverage, noisier heuristics, or simply a different rule set.
+        \item What is missing is a comparative view that separates tool scope from tool agreement on real Go codebases.
     \end{itemize}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Research Questions and Study Design}
+    \frametitle{Prior Work and the Gap}
     \begin{itemize}
-        \setlength{\itemsep}{0.55em}
+        \setlength{\itemsep}{0.6em}
+        \item Comparative work already exists for Java crypto misuse detection, including multi-tool evaluation and false-positive analysis [1, 2, 3].
+        \item Go-specific detector work also exists: \textit{CryptoGo} introduced the first Go detector, and \Gopher later extended that line of work [4, 5].
+        \item However, prior Go work does not provide a systematic comparison across the currently available detectors used in practice.
+    \end{itemize}
+    \vspace{0.5em}
+    \begin{block}{This paper}
+        We compare the currently available Go crypto misuse detectors, instead of studying only one tool at a time.
+    \end{block}
+    \vfill
+    {\tiny
+    \begin{columns}[T,onlytextwidth]
+        \column{0.48\textwidth}
+        [1] Ami et al. ``Why Crypto-detectors Fail: A Systematic Evaluation of Cryptographic Misuse Detection Techniques.'' SP 2022.\\[0.2em]
+        [2] Zhang et al. ``Automatic Detection of Java Cryptographic API Misuses: Are We There Yet?'' TSE 2022.\\[0.2em]
+        [3] Chen et al. ``Towards Precise Reporting of Cryptographic Misuses.'' NDSS 2024.
+        \column{0.48\textwidth}
+        [4] Li et al. ``Cryptogo: Automatic Detection of Go Cryptographic API Misuses.'' ACSAC 2022.\\[0.2em]
+        [5] Zhang et al. ``Gopher: High-Precision and Deep-Dive Detection of Cryptographic API Misuse in the Go Ecosystem.'' CCS 2024.
+    \end{columns}}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Research Questions}
+    \begin{itemize}
+        \setlength{\itemsep}{0.7em}
         \item \textbf{RQ1.} What is the design space of state-of-the-art tools for detecting cryptographic API misuses in Go?
         \item \textbf{RQ2.} To what extent are crypto misuse detection tools for Go consistent with each other?
-        \item For RQ1, we compare tool scope and rule support. For RQ2, we run all tools on 328 projects and compare their coverage and overlap.
     \end{itemize}
-    \vspace{0.6em}
+    \vspace{0.5em}
+    \begin{block}{Study Design}
+        RQ1 compares tool scope, supported rules, and detection approach.
+
+        RQ2 runs all tools on 328 security-relevant Go projects and compares execution coverage, findings, and overlap.
+    \end{block}
+    \vspace{0.5em}
     \begin{block}{Contribution}
-        First systematic comparison of four Go cryptographic misuse detectors, covering 14 rule classes and 328 security-relevant projects.
+        First systematic comparison of four Go cryptographic misuse detectors across 14 rule classes and 328 security-relevant projects.
     \end{block}
 \end{frame}
 
@@ -142,17 +172,17 @@
     \vspace{0.1em}
     \begin{figure}
         \centering
-        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{output/images/1774885607/repo_metric_loc.png}
+        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{figures/repo_metric_loc.png}
     \end{figure}
     \vspace{0.03em}
     \begin{figure}
         \centering
-        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{output/images/1774885607/repo_metric_stars.png}
+        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{figures/repo_metric_stars.png}
     \end{figure}
     \vspace{0.03em}
     \begin{figure}
         \centering
-        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{output/images/1774885607/repo_metric_contributors.png}
+        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{figures/repo_metric_contributors.png}
     \end{figure}
 \end{frame}
 
@@ -191,7 +221,7 @@
     \vspace{0.15em}
     \begin{figure}
         \centering
-        \includegraphics[width=0.72\textwidth,height=0.48\textheight,keepaspectratio]{results/venn_diagrams/overall_venn.png}
+        \includegraphics[width=0.72\textwidth,height=0.48\textheight,keepaspectratio]{figures/overall_venn.png}
         \caption{Overall overlap across tools shows that much of the detection volume is tool-unique.}
     \end{figure}
 \end{frame}
@@ -209,19 +239,19 @@
         \column{0.33\textwidth}
         \begin{figure}
             \centering
-            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{results/venn_diagrams/rule_CR05_venn.png}
+            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{figures/rule_CR05_venn.png}
             \caption*{\scriptsize Rule 05}
         \end{figure}
         \column{0.33\textwidth}
         \begin{figure}
             \centering
-            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{results/venn_diagrams/rule_CR11_venn.png}
+            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{figures/rule_CR11_venn.png}
             \caption*{\scriptsize Rule 11}
         \end{figure}
         \column{0.33\textwidth}
         \begin{figure}
             \centering
-            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{results/venn_diagrams/rule_CR13_venn.png}
+            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{figures/rule_CR13_venn.png}
             \caption*{\scriptsize Rule 13}
         \end{figure}
     \end{columns}
@@ -232,6 +262,20 @@
 \end{frame}
 
 \begin{frame}
+    \frametitle{Manual Analysis}
+    \begin{itemize}
+        \setlength{\itemsep}{0.6em}
+        \item For Rule \#05, overlap is not automatically correctness: 4 of 5 detections shared by \CodeQL, \Gosec, and \SnykCode but missed by \Gopher are in examples or mock code.
+        \item For Rule \#11, 3 of 5 sampled \Gosec-only detections are false positives; in our \SnykCode sample, we found no clear false positives, and the alerts better reflected actual insecure TLS settings.
+        \item For Rule \#13, \CodeQL contributes unique SSH findings beyond \texttt{InsecureIgnoreHostKey} by reasoning about custom callbacks that return \texttt{nil}.
+    \end{itemize}
+    \vspace{0.5em}
+    \begin{block}{Interpretation}
+        Cross-tool overlap helps, but the more important result is that the tools differ in what they consider a misuse and how much context they understand.
+    \end{block}
+\end{frame}
+
+\begin{frame}
     \frametitle{Implications for Practice and Evaluation}
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
@@ -239,19 +283,29 @@
         \item \textbf{For evaluators:} raw finding counts are misleading when tools disagree this much about the same rule class.
         \item \textbf{For tool builders:} the tools differ in kind, not just in degree: \Gopher covers the broadest rule set, \SnykCode and \Gosec run most reliably, and \CodeQL contributes higher-overlap alerts plus distinct SSH findings.
     \end{itemize}
+    \vspace{0.4em}
+    \begin{block}{}
+        The comparative question matters because these detectors vary enough in scope and agreement to change both practical use and experimental conclusions.
+    \end{block}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Limitations and Takeaways}
+    \frametitle{Takeaways}
     \begin{itemize}
         \setlength{\itemsep}{0.55em}
-        \item This study covers four tools, 328 open-source Go projects, and a consolidated mapping into 14 rule classes.
-        \item There are three main caveats: the dataset is time-bounded, the rule mapping requires judgment, and the taxonomy reflects current tool support rather than the full space of possible Go misuses.
+        \item The main result is not a winner, but a characterization: current Go crypto misuse detectors occupy different points in the design space.
+        \item Coverage, reliability, and agreement vary enough that detector outputs should be interpreted as complementary rather than interchangeable.
+        \item For this problem, evaluating detectors requires comparing what they are able to detect, not only how much they report.
     \end{itemize}
-    \vspace{0.5em}
-    \begin{block}{Takeaway}
-        The main takeaway is that these tools are not interchangeable. They differ in what they cover, how reliably they run, and how often they agree, so both tool choice and evaluation methodology matter.
-    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Future Work}
+    \begin{itemize}
+        \setlength{\itemsep}{0.55em}
+        \item Future work should move beyond syntax-level alerts toward application-aware security relevance, potentially using AI to infer threat models and deployment context.
+        \item Extend the comparison as tools evolve and new Go misuse classes become detectable.
+    \end{itemize}
 \end{frame}
 
 \begin{frame}
