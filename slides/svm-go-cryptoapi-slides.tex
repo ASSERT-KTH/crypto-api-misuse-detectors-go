@@ -10,6 +10,7 @@
 \usepackage{xspace}
 \usepackage{pifont}
 \usepackage{xcolor}
+\usepackage{listings}
 
 \usetheme{Boadilla}
 \usefonttheme{professionalfonts}
@@ -59,6 +60,27 @@
     }%
 }
 
+\lstdefinelanguage{Go}{
+  keywords={func,var,type,struct,interface,package,import,return,if,else,for,range,go,defer,select,case,switch,break,continue,const,map,chan,nil,true,false},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+}
+\lstset{
+  language=Go,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{AlbersTeal}\bfseries,
+  stringstyle=\color{CodeAccent},
+  commentstyle=\color{AlbersOlive}\itshape,
+  showstringspaces=false,
+  breaklines=true,
+  frame=none,
+  xleftmargin=1.5em,
+  aboveskip=0.5em,
+  belowskip=0.3em,
+}
+
 \newcommand{\CodeQL}{\textsc{CodeQL}\xspace}
 \newcommand{\Gopher}{\textsc{Gopher}\xspace}
 \newcommand{\Gosec}{\textsc{Gosec}\xspace}
@@ -77,11 +99,9 @@
 
 \begin{frame}
     \frametitle{Problem Context}
-    % TODO . This slide is doing its job but bullet 2 is the weakest line in your opening — "consequential vulnerability class" is the AI lingo we already discussed, and "code can compile and pass tests while still violating core security assumptions" is now redundant with the Traefik slide that follows, which shows exactly that. Cut bullet 2 entirely. Two-bullet slides are fine. The opening will feel sharper for it.
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
         \item Go is widely used in security-critical infrastructure, including certificate services, container platforms, and cloud tooling.
-        \item Cryptographic API misuse remains a consequential vulnerability class: code can compile and pass tests while still violating core security assumptions.
         \item Unlike Java, the current landscape of cryptographic misuse detection for Go has not been systematically characterized.
     \end{itemize}
 \end{frame}
@@ -89,21 +109,17 @@
 \begin{frame}[fragile]
     \frametitle{What Does a Go Crypto Misuse Look Like?}
     \footnotesize
-    \textbf{Traefik, CVE-2025-66491.} Kubernetes ingress provider, one line:
+    \textbf{Traefik, CVE-2025-66491.} Kubernetes ingress provider:
     \vspace{0.5em}
-        % TODO: make look like concret go code snippet. drop the box, we cannot make it work, add some neat syntax highlighting (maybe reusing colors defined already)
         \begin{minipage}{0.78\textwidth}
-        \begin{block}{}
-        \begin{semiverbatim}
-        InsecureSkipVerify: strings.ToLower(
-            ptr.Deref(cfg.ProxySSLVerify, "off")) == "on",
-        \end{semiverbatim}
-        \end{block}
+        \begin{lstlisting}
+InsecureSkipVerify: strings.ToLower(
+    ptr.Deref(cfg.ProxySSLVerify, "off")) == "on",
+        \end{lstlisting}
         \end{minipage}
     \vspace{0.2em}
     \normalsize
     \begin{itemize}
-        % TODO Bullet 2 ("The expression evaluates to true, which sets InsecureSkipVerify to true, disabling verification entirely") has three commas and reads as a logical chain that the audience has to follow with their eyes. When you say it out loud it works, but on the slide it's dense. Consider:
         \setlength{\itemsep}{0.5em}
         \item The user sets the annotation \texttt{proxy-ssl-verify: "on"} expecting TLS verification to be enabled.
         \item The expression evaluates to \texttt{true}, so \texttt{InsecureSkipVerify} becomes \texttt{true} and verification is silently disabled.
@@ -113,58 +129,40 @@
 
 \begin{frame}
     \frametitle{Evaluation Challenge}
-    % TODO maybe reframe "evaluation challenge...:? 
-    % TODO Slide 4: Evaluation Challenge. This slide is fine but bullet 3 ("The key question is not only whether... but also what they detect and how their outputs should be interpreted") is wordy and hides the real claim. The skill says to cut "It is important to note that..." style constructions, and "the key question is not only X but also Y and Z" is the same pattern with more commas. Try:
-    % Tools may differ in coverage, granularity, or robustness. We need to understand what each tool detects, not just how much.
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
         \item Existing Go detectors do not operate over a common target: they differ in supported rules, reporting granularity, and execution robustness.
         \item Raw alert counts are therefore hard to compare: more findings may reflect broader rule coverage, noisier heuristics, or simply a different reporting unit.
-        \item The key question is not only whether these tools detect crypto misuses, but also what they detect and how their outputs should be interpreted.
+        \item Tools may differ in coverage, granularity, or robustness. We need to understand what each tool detects, not just how much.
     \end{itemize}
 \end{frame}
 
 \begin{frame}
-    % TODO Slide 5: Prior Work. This is the slide I'd cut hardest. Right now it's a dense wall of three bullets, a block, and five citations in two columns. The audience will not read the citations, and you have a hard time budget. Prior work belongs here for academic correctness, but it doesn't need to be elaborate. Consider reducing to:
-% ). You buy yourself space and the slide stops feeling like a literature review section. no full citation list (it's in the paper). 
-    
     \frametitle{Prior Work}
     \begin{itemize}
         \setlength{\itemsep}{0.6em}
-        \item Comparative work already exists for Java crypto misuse detection, including multi-tool evaluation and false-positive analysis [1, 2, 3].
-        \item Go-specific detector work also exists: \textit{CryptoGo} introduced the first Go detector, and \Gopher extended that line of work [4, 5].
+        \item Comparative work already exists for Java crypto misuse detection, including multi-tool evaluation and false-positive analysis (Ami et al., SP'22; Zhang et al., TSE'22; Chen et al., NDSS'24).
+        \item Go-specific detector work also exists: \textit{CryptoGo} introduced the first Go detector (Li et al., ACSAC'22), and \Gopher extended that line of work (Zhang et al., CCS'24).
         \item What is still missing is a systematic comparison of the Go detectors currently available in practice.
     \end{itemize}
     \vspace{0.5em}
     \begin{block}{This paper}
         We provide the first comparative study of currently available Go crypto misuse detectors.
     \end{block}
-    \vfill
-    {\tiny
-    \begin{columns}[T,onlytextwidth]
-        \column{0.48\textwidth}
-        [1] Ami et al. ``Why Crypto-detectors Fail: A Systematic Evaluation of Cryptographic Misuse Detection Techniques.'' SP 2022.\\[0.2em]
-        [2] Zhang et al. ``Automatic Detection of Java Cryptographic API Misuses: Are We There Yet?'' TSE 2022.\\[0.2em]
-        [3] Chen et al. ``Towards Precise Reporting of Cryptographic Misuses.'' NDSS 2024.
-        \column{0.48\textwidth}
-        [4] Li et al. ``Cryptogo: Automatic Detection of Go Cryptographic API Misuses.'' ACSAC 2022.\\[0.2em]
-        [5] Zhang et al. ``Gopher: High-Precision and Deep-Dive Detection of Cryptographic API Misuse in the Go Ecosystem.'' CCS 2024.
-    \end{columns}}
 \end{frame}
 
 \begin{frame}
     \frametitle{Research Questions}
-    % TODO cross check with the paper (main.tex) that RQs are correct.
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
-        \item \textbf{RQ1.} What is the design space of current tools for detecting cryptographic API misuses in Go?
+        \item \textbf{RQ1.} What is the design space of state-of-the-art tools for detecting cryptographic API misuses in Go?
         \item \textbf{RQ2.} To what extent are crypto misuse detection tools for Go consistent with each other?
     \end{itemize}
     \vspace{0.5em}
     \begin{block}{Study Design}
         RQ1 compares tool scope, supported rules, and detection approach.
 
-        RQ2 runs all tools on 328 security-relevant Go projects and compares coverage and overlap.
+        RQ2 runs all tools on 328 security-relevant Go projects and compares execution coverage, findings, and overlap.
     \end{block}
     \vspace{0.4em}
     \begin{itemize}
@@ -220,27 +218,16 @@
 
 \begin{frame}
     \frametitle{Dataset and Scope}
-    % TODO  Three plots stacked vertically is too many. Pick one — the LOC distribution is the most informative because it's the one that justifies "we ran tools across a dataset that ranges from tiny to huge." Stars and contributors are correlated with each other and don't add much. Or, alternatively, put all three in a single horizontal row of three small plots, which fits the slide's natural width and looks intentional rather than stacked.
     \begin{itemize}
         \setlength{\itemsep}{0.35em}
         \item 328 security-relevant open-source Go repositories.
         \item Repository size is strongly right-skewed; the median is 58,761 LOC.
         \item Median popularity is 9,096 stars and median contributor count is 167.
     \end{itemize}
-    \vspace{0.1em}
+    \vspace{0.3em}
     \begin{figure}
         \centering
-        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{figures/repo_metric_loc.png}
-    \end{figure}
-    \vspace{0.03em}
-    \begin{figure}
-        \centering
-        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{figures/repo_metric_stars.png}
-    \end{figure}
-    \vspace{0.03em}
-    \begin{figure}
-        \centering
-        \safeincludegraphics[width=0.74\textwidth,height=0.14\textheight,keepaspectratio]{figures/repo_metric_contributors.png}
+        \safeincludegraphics[width=0.82\textwidth,keepaspectratio]{figures/repo_metric_loc.png}
     \end{figure}
 \end{frame}
 
@@ -304,7 +291,6 @@
 %         \caption{Most reported locations are unique to a single tool.}
 %     \end{figure}
 % \end{frame}
-
 \begin{frame}
     \frametitle{RQ2: Agreement Depends on the Misuse Rule}
     \begin{itemize}
@@ -341,7 +327,6 @@
 \end{frame}
 
 
-% TODO p2
 \begin{frame}
     \frametitle{Manual Analysis: When Does Agreement Mean Truth?}
     \begin{itemize}
@@ -400,10 +385,15 @@
 \begin{frame}
     \frametitle{Implications}
     \begin{itemize}
-        \setlength{\itemsep}{0.9em}
-        \item \textbf{For practitioners and tool builders:} no single detector is enough. Cross-tool agreement tracks true positives in our manual analysis — ensemble approaches are the most promising near-term direction.
-        \item \textbf{For evaluators:} raw counts mislead. On insecure PRNG detection, \Gosec reports 2,517 findings where \Gopher reports 0 — on the same code, for the same rule.
+        \setlength{\itemsep}{0.75em}
+        \item \textbf{For practitioners:} no single detector is enough. The tools miss different things, so relying on one leaves systematic blind spots.
+        \item \textbf{For evaluators:} raw counts mislead. On insecure PRNG detection, \Gosec reports 2,517 findings where \Gopher reports 0, on the same code and for the same rule.
+        \item \textbf{For tool builders:} the gap is qualitative, not only quantitative. Better detectors need shared misuse definitions and more program context.
     \end{itemize}
+    \vspace{0.45em}
+    \begin{block}{Closing claim}
+        Detector choice changes both what practitioners see in code review and what researchers conclude in evaluation.
+    \end{block}
 \end{frame}
 
 \begin{frame}
