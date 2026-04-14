@@ -150,13 +150,13 @@ InsecureSkipVerify: strings.ToLower(
     \frametitle{Why Go}
     \begin{itemize}
         \setlength{\itemsep}{0.9em}
-        \item Go runs critical infrastructure: Kubernetes, Terraform, Traefik, Let's Encrypt's Boulder.
+        \item \textbf{Go runs critical infrastructure:} Kubernetes, Terraform, Traefik, Let's Encrypt's Boulder.
         \item Cryptographic misuses reach production, for example CVE-2025-66491 in Traefik and CVE-2024-45337 in \texttt{golang.org/x/ssh}.
-        \item Four Go detectors exist (\Gopher, \CodeQL, \Gosec, \SnykCode), but none have been systematically compared.
+        \item Four Go detectors exist (\Gopher, \CodeQL, \Gosec, \SnykCode), but none have been systematically evaluated.
         % \item Four detectors exist for Go (\Gopher, \CodeQL, \Gosec, \SnykCode), spanning academic, open-source, and commercial origins. None has been compared against the others.
     \end{itemize}
     \vspace{0.6em}
-    \begin{block}{This paper}
+    \begin{block}{Contribution}
         The first comparative study of cryptographic API misuse detectors for Go.
     \end{block}
 \end{frame}
@@ -223,21 +223,97 @@ InsecureSkipVerify: strings.ToLower(
 
 \begin{frame}
     \frametitle{Sourced Tools}
-    \begin{itemize}
-        \setlength{\itemsep}{0.9em}
-        \item \textbf{\CodeQL{}} (GitHub, open source). Datalog queries over a fact database, with data-flow reasoning.
-        \item \textbf{\Gopher{}} (academic, CCS '24). Taint tracking on SSA, with dynamically updatable rules.
-        \item \textbf{\Gosec{}} (community, open source). SSA for some rules, AST pattern matching for others.
-        \item \textbf{\SnykCode{}} (commercial). Proprietary static analysis; implementation details undisclosed.
-    \end{itemize}
-    % \vspace{0.6em}
-    % {\small Selected via systematic literature + web search; inclusion criteria: Go support, active maintenance, available documentation.}
+    \footnotesize
+    \begin{columns}[T]
+        \column{0.5\textwidth}
+        \fcolorbox{AlbersMist}{AlbersPale}{%
+            \begin{minipage}[t][0.245\textheight][t]{0.94\linewidth}
+                \vspace{0.4em}
+                \centering
+                {\color{AlbersTeal}\Large\bfseries CodeQL\par}
+                \vspace{0.1em}
+                {\scriptsize GitHub $\bullet$ Open source\par}
+                \vspace{0.45em}
+                \begin{columns}[T,totalwidth=0.88\linewidth]
+                    \column{0.24\linewidth}
+                    \centering
+                    \vspace{0pt}
+                    \safeincludegraphics[width=\linewidth,height=0.85cm,keepaspectratio]{figures/logos/github-invertocat.png}
+                    \column{0.68\linewidth}
+                    \parbox[t][1.55cm][t]{\linewidth}{\raggedright\footnotesize Datalog queries over a fact database, with data-flow reasoning.}
+                \end{columns}
+            \end{minipage}
+        }
+
+        \vspace{0.45em}
+
+        \fcolorbox{AlbersMist}{AlbersPale}{%
+            \begin{minipage}[t][0.245\textheight][t]{0.94\linewidth}
+                \vspace{0.4em}
+                \centering
+                {\color{AlbersTeal}\Large\bfseries Gopher\par}
+                \vspace{0.1em}
+           
+                {\scriptsize Academic $\bullet$ Binary-only \par}
+                \vspace{0.45em}
+                \begin{columns}[T,totalwidth=0.88\linewidth]
+                    \column{0.24\linewidth}
+                    \centering
+                    \vspace{0pt}
+                    \safeincludegraphics[width=\linewidth,height=0.5cm,keepaspectratio]{figures/gopher.png}
+                    \column{0.68\linewidth}
+                    \parbox[t][1.55cm][t]{\linewidth}{\raggedright\footnotesize SSA-based taint tracking, with dynamically updatable rules.}
+                \end{columns}
+            \end{minipage}
+        }
+
+        \column{0.5\textwidth}
+        \fcolorbox{AlbersMist}{AlbersPale}{%
+            \begin{minipage}[t][0.245\textheight][t]{0.94\linewidth}
+                \vspace{0.4em}
+                \centering
+                {\color{AlbersTeal}\Large\bfseries Gosec\par}
+                \vspace{0.1em}
+                {\scriptsize Community $\bullet$ Open source\par}
+                \vspace{0.45em}
+                \begin{columns}[T,totalwidth=0.88\linewidth]
+                    \column{0.24\linewidth}
+                    \centering
+                    \vspace{0pt}
+                    \safeincludegraphics[width=\linewidth,height=1.0cm,keepaspectratio]{figures/logos/gosec.png}
+                    \column{0.68\linewidth}
+                    \parbox[t][1.55cm][t]{\linewidth}{\raggedright\footnotesize SSA for some rules, AST pattern matching for others.}
+                \end{columns}
+            \end{minipage}
+        }
+
+        \vspace{0.45em}
+
+        \fcolorbox{AlbersMist}{AlbersPale}{%
+            \begin{minipage}[t][0.245\textheight][t]{0.94\linewidth}
+                \vspace{0.4em}
+                \centering
+                {\color{AlbersTeal}\Large\bfseries Snyk Code\par}
+                \vspace{0.1em}
+                {\scriptsize Commercial $\bullet$ Proprietary\par}
+                \vspace{0.45em}
+                \begin{columns}[T,totalwidth=0.88\linewidth]
+                    \column{0.24\linewidth}
+                    \centering
+                    \vspace{0pt}
+                    \safeincludegraphics[width=\linewidth,height=0.85cm,keepaspectratio]{figures/logos/snyk-avatar.png}
+                    \column{0.68\linewidth}
+                    \parbox[t][1.55cm][t]{\linewidth}{\raggedright\footnotesize Static analysis product; implementation details undisclosed.}
+                \end{columns}
+            \end{minipage}
+        }
+    \end{columns}
 \end{frame}
 
 
 \begin{frame}
     \frametitle{RQ1: Taxonomy and Tool Coverage}
-    \footnotesize
+    \scriptsize
     \renewcommand{\arraystretch}{1.15}
     \begin{center}
         \begin{tabular}{l c l cccc}
@@ -272,48 +348,11 @@ InsecureSkipVerify: strings.ToLower(
         \end{tabular}
     \end{center}
     \vspace{0.4em}
-    Only 3 of 14 rules (insecure PRNG, short key, TLS/SSL) are covered by all four tools.
-\end{frame}
-
-\begin{frame}
-    \frametitle{RQ1: Taxonomy and Tool Coverage}
-    \footnotesize
-    \renewcommand{\arraystretch}{1.15}
-    \begin{center}
-        \begin{tabular}{l c l cccc}
-            \toprule
-            \textbf{Category} & \textbf{\#} & \textbf{Rule} & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
-            \midrule
-            \multirow{3}{*}{Primitives}
-                & 01 & Insecure algorithms & & \checkmark & \checkmark & \checkmark \\
-                & 02 & Insecure PRNG & \checkmark & \checkmark & \checkmark & \checkmark \\
-                & 03 & Deprecated Go function & & \checkmark & & \\
-            \midrule
-            \multirow{3}{*}{Key mgmt}
-                & 04 & Constant/predictable key & & \checkmark & & \\
-                & \textbf{\textcolor{blue}{05}} & \textbf{\textcolor{blue}{Short key length}} & \checkmark & \checkmark & \checkmark & \checkmark \\
-                & 06 & Static/predictable IV & & \checkmark & \checkmark & \\
-            \midrule
-            \multirow{3}{*}{PBKDF}
-                & 07 & Short salt length & & \checkmark & & \\
-                & 08 & Predictable salt & & \checkmark & & \\
-                & 09 & Low hash iterations & & \checkmark & & \\
-            \midrule
-            \multirow{2}{*}{Transport}
-                & 10 & HTTP protocol & & \checkmark & & \\
-                & \textbf{\textcolor{blue}{11}} & \textbf{\textcolor{blue}{TLS/SSL issues}} & \checkmark & \checkmark & \checkmark & \checkmark \\
-            \midrule
-            \multirow{2}{*}{SSH}
-                & 12 & Insecure SSH suite & & \checkmark & & \\
-                & \textbf{\textcolor{blue}{13}} & \textbf{\textcolor{blue}{No host key validation}} & \checkmark & \checkmark & \checkmark & \\
-            \midrule
-            Token & 14 & No JWT verification & \checkmark & & & \\
-            \bottomrule
-        \end{tabular}
-    \end{center}
-    \vspace{0.4em}
-    \footnotesize
-    \textbf{\#05} all four tools support it. \textbf{\#11} the largest class by detection volume. \textbf{\#13} rare enough for full manual analysis.
+    \begin{itemize}
+        \setlength{\itemsep}{0.6em}
+        \item \textbf{Coverage:} Gopher (13) $>$ Gosec (6) $>$ CodeQL (5) $>$ Snyk Code (4)   
+        \item \textbf{All tools:} 3 of 14 rules (\#02, \#05, \#11) are covered by all
+    \end{itemize}
 \end{frame}
 
 
@@ -349,7 +388,7 @@ InsecureSkipVerify: strings.ToLower(
 % \end{frame}
 
 \begin{frame}
-    \frametitle{RQ2: Execution Success and Detection}
+    \frametitle{RQ2: Tool Execution and Coverage}
     \small
     \begin{table}
         \centering
@@ -374,17 +413,18 @@ InsecureSkipVerify: strings.ToLower(
 
 
 \begin{frame}
-    \frametitle{RQ2: Detection Magnitude}
+    \frametitle{RQ2: Raw Findings by Tool}
 
     \begin{itemize}
         \setlength{\itemsep}{0.45em}
-        \item 7,473 total detections across 328 projects
+        \item 7,473 raw findings across 328 projects
         \item \Gopher uniquely detects issues for 6/14 rules (\#03$_\text{u}$, \#04, \#07-\#10$_\text{u}$, and \#12$_\text{u}$)
         \item Excessive detections for low-severity rules (e.g. \#02 Insecure PRNG) esp. from \Gosec
     \end{itemize}
     \vspace{0.3em}
     \begin{figure}
     \centering
+    \textcolor{red}{TODO: change color of chart.}
     \safeincludegraphics[width=0.9\textwidth,keepaspectratio]{figures/magnitude_stacked.png}
     \end{figure}
 \end{frame}
@@ -408,103 +448,228 @@ InsecureSkipVerify: strings.ToLower(
 
 
 \begin{frame}
-    \frametitle{RQ2: Detection Agreement}
+    \frametitle{RQ2: Overall Line-Level Agreement}
     \begin{itemize}
         \setlength{\itemsep}{0.45em}
-        \item 7,473 detections across 328 projects, collapsing to 6,152 unique locations.
-        \item Only \textbf{1.3\% of detections} are shared by all four tools.
-        \item 92.6\% of \Gosec detections and 63.5\% of \SnykCode detections are unique to that tool.
+        \item 6,152 unique flagged lines after deduplicating by project, file, and line
+        \item Only \textbf{1.3\% of flagged lines} are shared by all four tools
+        \item 92.6\% of \Gosec and 63.5\% of \SnykCode flagged lines are unique to that tool
     \end{itemize}
-    \vspace{0.3em}
+    \vspace{0.1em}
+    \begin{figure}
+        \centering
+        \safeincludegraphics[width=0.84\textwidth,height=0.62\textheight,keepaspectratio]{figures/overall_venn.png}
+    \end{figure}
 \end{frame}
 
-\begin{frame}
-\footnotesize
-\renewcommand{\arraystretch}{1.15}
-\begin{center}
-    \begin{tabular}{l c l cccc}
-        \toprule
-        \textbf{Category} & \textbf{\#} & \textbf{Rule} & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
-        \midrule
-        \multirow{3}{*}{Primitives}
-            & 01 & Insecure algorithms & & \checkmark & \checkmark & \checkmark \\
-            & 02 & Insecure PRNG & \checkmark & \checkmark & \checkmark & \checkmark \\
-            & 03 & Deprecated Go function & & \checkmark & & \\
-        \midrule
-        \multirow{3}{*}{Key mgmt}
-            & 04 & Constant/predictable key & & \checkmark & & \\
-            & \textbf{\textcolor{blue}{05}} & \textbf{\textcolor{blue}{Short key length}} & \checkmark & \checkmark & \checkmark & \checkmark \\
-            & 06 & Static/predictable IV & & \checkmark & \checkmark & \\
-        \midrule
-        \multirow{3}{*}{PBKDF}
-            & 07 & Short salt length & & \checkmark & & \\
-            & 08 & Predictable salt & & \checkmark & & \\
-            & 09 & Low hash iterations & & \checkmark & & \\
-        \midrule
-        \multirow{2}{*}{Transport}
-            & 10 & HTTP protocol & & \checkmark & & \\
-            & \textbf{\textcolor{blue}{11}} & \textbf{\textcolor{blue}{TLS/SSL issues}} & \checkmark & \checkmark & \checkmark & \checkmark \\
-        \midrule
-        \multirow{2}{*}{SSH}
-            & 12 & Insecure SSH suite & & \checkmark & & \\
-            & \textbf{\textcolor{blue}{13}} & \textbf{\textcolor{blue}{No host key validation}} & \checkmark & \checkmark & \checkmark & \\
-        \midrule
-        Token & 14 & No JWT verification & \checkmark & & & \\
-        \bottomrule
-    \end{tabular}
-\end{center}
-\end{frame}
+% \begin{frame}
+% \footnotesize
+% \renewcommand{\arraystretch}{1.15}
+% \begin{center}
+%     \begin{tabular}{l c l cccc}
+%         \toprule
+%         \textbf{Category} & \textbf{\#} & \textbf{Rule} & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
+%         \midrule
+%         \multirow{3}{*}{Primitives}
+%             & 01 & Insecure algorithms & & \checkmark & \checkmark & \checkmark \\
+%             & 02 & Insecure PRNG & \checkmark & \checkmark & \checkmark & \checkmark \\
+%             & 03 & Deprecated Go function & & \checkmark & & \\
+%         \midrule
+%         \multirow{3}{*}{Key mgmt}
+%             & 04 & Constant/predictable key & & \checkmark & & \\
+%             & \textbf{\textcolor{blue}{05}} & \textbf{\textcolor{blue}{Short key length}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+%             & 06 & Static/predictable IV & & \checkmark & \checkmark & \\
+%         \midrule
+%         \multirow{3}{*}{PBKDF}
+%             & 07 & Short salt length & & \checkmark & & \\
+%             & 08 & Predictable salt & & \checkmark & & \\
+%             & 09 & Low hash iterations & & \checkmark & & \\
+%         \midrule
+%         \multirow{2}{*}{Transport}
+%             & 10 & HTTP protocol & & \checkmark & & \\
+%             & \textbf{\textcolor{blue}{11}} & \textbf{\textcolor{blue}{TLS/SSL issues}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+%         \midrule
+%         \multirow{2}{*}{SSH}
+%             & 12 & Insecure SSH suite & & \checkmark & & \\
+%             & \textbf{\textcolor{blue}{13}} & \textbf{\textcolor{blue}{No host key validation}} & \checkmark & \checkmark & \checkmark & \\
+%         \midrule
+%         Token & 14 & No JWT verification & \checkmark & & & \\
+%         \bottomrule
+%     \end{tabular}
+% \end{center}
+% \end{frame}
 
 
+% TODO change this to the image with some focus on those that we will discuss.
 \begin{frame}
-    \frametitle{RQ2: Detection Agreement ()}
-    \begin{itemize}
-        \setlength{\itemsep}{0.4em}
-        \item Rule \#05: all four tools support it, yet overlap remains limited.
-        \item Rule \#11: the largest class, with 2,033 detections total and 1,049 from \Gosec alone.
-        \item Rule \#13: only 59 detections total, making manual inspection feasible.
-    \end{itemize}
+    \frametitle{RQ2: Per-Rule Agreement}
+    \scriptsize
+    \renewcommand{\arraystretch}{1.15}
+    \begin{center}
+        \begin{tabular}{l c l cccc}
+            \toprule
+            \textcolor{gray}{\textbf{Category}} & \textcolor{gray}{\textbf{\#}} & \textcolor{gray}{\textbf{Rule}} & \textcolor{gray}{\textbf{CodeQL}} & \textcolor{gray}{\textbf{Gopher}} & \textcolor{gray}{\textbf{Gosec}} & \textcolor{gray}{\textbf{Snyk}} \\
+            \midrule
+            \multirow{3}{*}{\textcolor{gray}{Primitives}}
+                & \textcolor{gray}{01} & \textcolor{gray}{Insecure algorithms} & & \textcolor{gray}{\checkmark} & \textcolor{gray}{\checkmark} & \textcolor{gray}{\checkmark} \\
+                & \textcolor{gray}{02} & \textcolor{gray}{Insecure PRNG} & \checkmark & \checkmark & \checkmark & \checkmark \\
+                & \textcolor{gray}{03} & \textcolor{gray}{Deprecated Go function} & & \textcolor{gray}{\checkmark} & & \\
+            \midrule
+            \multirow{3}{*}{\textcolor{gray}{Key mgmt}}
+                & \textcolor{gray}{04} & \textcolor{gray}{Constant/predictable key} & & \textcolor{gray}{\checkmark} & & \\
+                & \textbf{\textcolor{blue}{05}} & \textbf{\textcolor{blue}{Short key length}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+                & \textcolor{gray}{06} & \textcolor{gray}{Static/predictable IV} & & \textcolor{gray}{\checkmark} & \textcolor{gray}{\checkmark} & \\
+            \midrule
+            \multirow{3}{*}{\textcolor{gray}{PBKDF}}
+                & \textcolor{gray}{07} & \textcolor{gray}{Short salt length} & & \textcolor{gray}{\checkmark} & & \\
+                & \textcolor{gray}{08} & \textcolor{gray}{Predictable salt} & & \textcolor{gray}{\checkmark} & & \\
+                & \textcolor{gray}{09} & \textcolor{gray}{Low hash iterations} & & \textcolor{gray}{\checkmark} & & \\
+            \midrule
+            \multirow{2}{*}{\textcolor{gray}{Transport}}
+                & \textcolor{gray}{10} & \textcolor{gray}{HTTP protocol} & & \textcolor{gray}{\checkmark} & & \\
+                & \textbf{\textcolor{blue}{11}} & \textbf{\textcolor{blue}{TLS/SSL issues}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+            \midrule
+            \multirow{2}{*}{\textcolor{gray}{SSH}}
+                & \textcolor{gray}{12} & \textcolor{gray}{Insecure SSH suite} & & \textcolor{gray}{\checkmark} & & \\
+                & \textbf{\textcolor{blue}{13}} & \textbf{\textcolor{blue}{No host key validation}} & \checkmark & \checkmark & \checkmark & \\
+            \midrule
+            \textcolor{gray}{Token} & \textcolor{gray}{14} & \textcolor{gray}{No JWT verification} & \checkmark & & & \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
     \vspace{0.2em}
+    \footnotesize
+    \begin{itemize}
+        \item Per-rule agreement matches on \texttt{(project, file, line, rule)}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{RQ2: Agreement on Rule \#05}
+    \textcolor{red}{WIP}
     \begin{columns}[T]
-        \column{0.33\textwidth}
+        \column{0.53\textwidth}
+        {\small\textbf{Concrete misuse: short RSA key}}
+        \begin{lstlisting}
+priv, err := rsa.GenerateKey(
+    rand.Reader, 1024)
+        \end{lstlisting}
+        \vspace{-0.4em}
+        \begin{itemize}
+            \setlength{\itemsep}{0.35em}
+            \item 1024-bit RSA is below current recommendations.
+            \item Weak keys make long-term impersonation or decryption more realistic.
+        \end{itemize}
+        \vspace{0.15em}
+        {\footnotesize\textbf{Overlap.} All four tools support Rule \#05, but agreement is still low: they differ on whether mock/example code and broader patterns should count.}
+        \column{0.47\textwidth}
         \begin{figure}
             \centering
-            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{figures/rule_CR05_venn.png}
-            \caption*{\scriptsize Rule 05}
-        \end{figure}
-        \column{0.33\textwidth}
-        \begin{figure}
-            \centering
-            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{figures/rule_CR11_venn.png}
-            \caption*{\scriptsize Rule 11}
-        \end{figure}
-        \column{0.33\textwidth}
-        \begin{figure}
-            \centering
-            \includegraphics[width=\textwidth,height=0.28\textheight,keepaspectratio]{figures/rule_CR13_venn.png}
-            \caption*{\scriptsize Rule 13}
+            \safeincludegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{figures/rule_CR05_venn.png}
         \end{figure}
     \end{columns}
-\vspace{0.15em}
-\begin{block}{RQ2 takeaway}
-    Agreement depends strongly on the misuse class.
-\end{block}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{RQ2: Agreement on Rule \#11}
+    \textcolor{red}{WIP}
+    \begin{columns}[T]
+        \column{0.53\textwidth}
+        {\small\textbf{Concrete misuse: TLS certificate checks disabled}}
+        \begin{lstlisting}
+tls.Config{
+    InsecureSkipVerify: true,
+}
+        \end{lstlisting}
+        \vspace{-0.4em}
+        \begin{itemize}
+            \setlength{\itemsep}{0.35em}
+            \item TLS stays encrypted, but peer authentication is gone.
+            \item A machine-in-the-middle can present its own certificate and be trusted.
+        \end{itemize}
+        \vspace{0.15em}
+        {\footnotesize\textbf{Overlap.} This is the largest class. All tools find true positives here, but \Gosec and \SnykCode contribute many tool-unique alerts, with different precision levels.}
+        \column{0.47\textwidth}
+        \begin{figure}
+            \centering
+            \safeincludegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{figures/rule_CR11_venn.png}
+        \end{figure}
+    \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{RQ2: Agreement on Rule \#13}
+    \textcolor{red}{WIP}
+    \begin{columns}[T]
+        \column{0.58\textwidth}
+        {\small\textbf{Concrete misuse: SSH host key verification disabled in \texttt{keadm batch}}}
+        {\footnotesize
+        \begin{lstlisting}
+HostKeyCallback: func(...) error {
+    return nil
+},
+        \end{lstlisting}
+        }
+        \vspace{-0.4em}
+        \begin{itemize}
+            \setlength{\itemsep}{0.25em}
+            \item The SSH client accepts any server host key, so the remote node identity is never authenticated.
+            \item If an attacker redirects the connection, \texttt{keadm batch} may connect to the wrong host; with password authentication, SSH credentials may be exposed.
+        \end{itemize}
+        \vspace{0.15em}
+        {\footnotesize\textbf{Overlap.} \Gosec primarily matches \texttt{InsecureIgnoreHostKey}. \CodeQL also detects equivalent custom callbacks, so the low overlap reflects deeper semantic coverage.}
+        \column{0.42\textwidth}
+        \begin{figure}
+            \centering
+            \safeincludegraphics[width=\textwidth,height=0.46\textheight,keepaspectratio]{figures/rule_CR13_venn.png}
+        \end{figure}
+    \end{columns}
 \end{frame}
 
 
-\begin{frame}
-    \frametitle{Manual Analysis}
-    \begin{itemize}
-        \setlength{\itemsep}{0.6em}
-        \item \textbf{Rule \#05.} 4 of 5 detections shared by three tools (missed by \Gopher) are in mock or example code. Overlap is not always a correctness signal.
-        \item \textbf{Rule \#11.} 3 of 5 sampled \Gosec-only detections are false positives. \SnykCode-only sample: no clear false positives.
-        \item \textbf{Rule \#13.} All 5 detections shared across tools are true positives. \CodeQL uniquely catches custom callbacks beyond known patterns.
-    \end{itemize}
-    % \vspace{0.5em}
-    % \begin{block}{}
-    %     Cross-tool agreement correlates with true positives — but the disagreements reveal what each tool can and cannot see.
-    % \end{block}
-\end{frame}
+% \begin{frame}[fragile]
+%     \frametitle{RQ2: Agreement on Rule \#13}
+%     \begin{columns}[T]
+%         \column{0.58\textwidth}
+%         {\small\textbf{Concrete misuse: SSH host key accepted unconditionally}}
+%         {\footnotesize
+%         \begin{lstlisting}
+% HostKeyCallback: func(...) error {
+%     return nil
+% },
+%         \end{lstlisting}
+%         }
+%         \vspace{-0.4em}
+%         \begin{itemize}
+%             \setlength{\itemsep}{0.2em}
+%             \item Accepts any SSH host key without verification.
+%             \item If traffic is redirected, the client can trust an attacker-controlled host and expose SSH credentials.
+%         \end{itemize}
+%         \begin{block}{Overlap}
+%             \Gosec mainly catches \texttt{InsecureIgnoreHostKey}. \CodeQL also catches custom callbacks like this one, so low overlap reflects analysis depth, not just noise.
+%         \end{block}
+%         \column{0.42\textwidth}
+%         \begin{figure}
+%             \centering
+%             \safeincludegraphics[width=\textwidth,height=0.46\textheight,keepaspectratio]{figures/rule_CR13_venn.png}
+%         \end{figure}
+%     \end{columns}
+% \end{frame}
+
+
+% \begin{frame}
+%     \frametitle{Manual Analysis}
+%     \begin{itemize}
+%         \setlength{\itemsep}{0.6em}
+%         \item \textbf{Rule \#05.} 4 of 5 detections shared by three tools (missed by \Gopher) are in mock or example code. Overlap is not always a correctness signal.
+%         \item \textbf{Rule \#11.} 3 of 5 sampled \Gosec-only detections are false positives. \SnykCode-only sample: no clear false positives.
+%         \item \textbf{Rule \#13.} All 5 detections shared across tools are true positives. \CodeQL uniquely catches custom callbacks beyond known patterns.
+%     \end{itemize}
+%     % \vspace{0.5em}
+%     % \begin{block}{}
+%     %     Cross-tool agreement correlates with true positives — but the disagreements reveal what each tool can and cannot see.
+%     % \end{block}
+% \end{frame}
 
 % \begin{frame}
 %     \frametitle{Manual Analysis}
@@ -521,6 +686,7 @@ InsecureSkipVerify: strings.ToLower(
 % \end{frame}
 
 \begin{frame}[fragile]
+    \textcolor{red}{WIP, maybe covered in the examples.?}
     \frametitle{Issues in Practice}
     \footnotesize
     \vspace{-0.3em}
@@ -551,16 +717,17 @@ InsecureSkipVerify: strings.ToLower(
 
 \begin{frame}
     \frametitle{Implications}
+    \textcolor{red}{WIP, add takeaway or something.}
     \begin{itemize}
         \setlength{\itemsep}{0.75em}
         \item \textbf{For practitioners:} no single detector is enough. The tools miss different things, so relying on one leaves systematic blind spots.
         \item \textbf{For evaluators:} raw counts mislead. On insecure PRNG detection, \Gosec reports 2,517 findings where \Gopher reports 0, on the same code and for the same rule.
         \item \textbf{For tool builders:} the gap is qualitative, not only quantitative. The tools differ in rule coverage and in how much program context they model.
     \end{itemize}
-    \vspace{0.45em}
-    \begin{block}{Closing claim}
-        Detector choice changes both what practitioners see in code review and what researchers conclude in evaluation.
-    \end{block}
+    % \vspace{0.45em}
+    % \begin{block}{Takeaway}
+    %     todo
+    % \end{block}
 \end{frame}
 
 \begin{frame}
