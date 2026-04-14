@@ -409,7 +409,6 @@ InsecureSkipVerify: strings.ToLower(
 
 \begin{frame}
     \frametitle{RQ2: Detection Agreement}
-
     \begin{itemize}
         \setlength{\itemsep}{0.45em}
         \item 7,473 detections across 328 projects, collapsing to 6,152 unique locations.
@@ -419,9 +418,46 @@ InsecureSkipVerify: strings.ToLower(
     \vspace{0.3em}
 \end{frame}
 
+\begin{frame}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{center}
+    \begin{tabular}{l c l cccc}
+        \toprule
+        \textbf{Category} & \textbf{\#} & \textbf{Rule} & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
+        \midrule
+        \multirow{3}{*}{Primitives}
+            & 01 & Insecure algorithms & & \checkmark & \checkmark & \checkmark \\
+            & 02 & Insecure PRNG & \checkmark & \checkmark & \checkmark & \checkmark \\
+            & 03 & Deprecated Go function & & \checkmark & & \\
+        \midrule
+        \multirow{3}{*}{Key mgmt}
+            & 04 & Constant/predictable key & & \checkmark & & \\
+            & \textbf{\textcolor{blue}{05}} & \textbf{\textcolor{blue}{Short key length}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+            & 06 & Static/predictable IV & & \checkmark & \checkmark & \\
+        \midrule
+        \multirow{3}{*}{PBKDF}
+            & 07 & Short salt length & & \checkmark & & \\
+            & 08 & Predictable salt & & \checkmark & & \\
+            & 09 & Low hash iterations & & \checkmark & & \\
+        \midrule
+        \multirow{2}{*}{Transport}
+            & 10 & HTTP protocol & & \checkmark & & \\
+            & \textbf{\textcolor{blue}{11}} & \textbf{\textcolor{blue}{TLS/SSL issues}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+        \midrule
+        \multirow{2}{*}{SSH}
+            & 12 & Insecure SSH suite & & \checkmark & & \\
+            & \textbf{\textcolor{blue}{13}} & \textbf{\textcolor{blue}{No host key validation}} & \checkmark & \checkmark & \checkmark & \\
+        \midrule
+        Token & 14 & No JWT verification & \checkmark & & & \\
+        \bottomrule
+    \end{tabular}
+\end{center}
+\end{frame}
+
 
 \begin{frame}
-    \frametitle{RQ2: Agreement Depends on the Misuse Rule}
+    \frametitle{RQ2: Detection Agreement ()}
     \begin{itemize}
         \setlength{\itemsep}{0.4em}
         \item Rule \#05: all four tools support it, yet overlap remains limited.
@@ -457,7 +493,7 @@ InsecureSkipVerify: strings.ToLower(
 
 
 \begin{frame}
-    \frametitle{Manual Analysis: When Does Agreement Mean Truth?}
+    \frametitle{Manual Analysis}
     \begin{itemize}
         \setlength{\itemsep}{0.6em}
         \item \textbf{Rule \#05.} 4 of 5 detections shared by three tools (missed by \Gopher) are in mock or example code. Overlap is not always a correctness signal.
@@ -485,18 +521,19 @@ InsecureSkipVerify: strings.ToLower(
 % \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{What Goes Wrong: Three Examples}
+    \frametitle{Issues in Practice}
     \footnotesize
     \vspace{-0.3em}
 
-    \textbf{1. Same call, different meaning} \hfill \textit{Rule \#05, flagged by \Gopher}
+    \textbf{1. Context-dependent usage} \hfill \textit{Rule \#05, flagged by \Gopher}
     \begin{verbatim}
     h := blake2b.New512(nil)   // bug if used as a MAC
                                // fine for content hashing
     \end{verbatim}
-    Static analysis cannot tell which one this is.
+    Static analysis cannot distinguish security-critical vs. benign usage.
     \vspace{0.4em}
 
+    % TODO what is this about.....
     \textbf{2. Pattern match misses the equivalent} \hfill \textit{Rule \#13, only \CodeQL}
     \begin{verbatim}
     cfg.HostKeyCallback = func(...) error { return nil }
@@ -506,9 +543,10 @@ InsecureSkipVerify: strings.ToLower(
 
     \textbf{3. Field name flagged, value ignored} \hfill \textit{Rule \#11, \Gosec false positive}
     \begin{verbatim}
-    tls.Config{MinVersion: tls.VersionTLS12}   // safe
+    tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}, RootCAs: roots} // flagged
+	setTLSDefaults(tlsConfig) // MinVersion 1.2 = OK
     \end{verbatim}
-    In our manual sample, \Gosec flags this pattern even when the configured value is TLS 1.2.
+    \Gosec lacks data flow capabilities and flags false positives.
 \end{frame}
 
 \begin{frame}
