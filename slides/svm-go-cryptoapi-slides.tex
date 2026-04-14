@@ -91,25 +91,24 @@
 % \subtitle{Agreement, coverage, and implications for practice} % not liking this 
 \author[Andersson and Monperrus]{Vivi Andersson, Martin Monperrus}
 \institute[KTH]{KTH Royal Institute of Technology, Stockholm, Sweden}
-\date[18 Apr 2026]{April 18, 2026\\Rio de Janeiro, Brazil\\SVM 2026, co-located with ICSE 2026}
+\date[18 Apr 2026]{April 18, 2026\\Rio de Janeiro, Brazil\\SVM 2026}
 
 \begin{document}
 
 \frame{\titlepage}
 
-\begin{frame}
-    \frametitle{Problem Context}
-    \begin{itemize}
-        \setlength{\itemsep}{0.7em}
-        \item Go is widely used in security-critical infrastructure, including certificate services, container platforms, and cloud tooling.
-        \item Unlike Java, the current landscape of cryptographic misuse detection for Go has not been systematically characterized.
-    \end{itemize}
-\end{frame}
+% \begin{frame}
+%     \frametitle{Problem Context}
+%     \begin{itemize}
+%         \setlength{\itemsep}{0.7em}
+%         \item Go is widely used in security-critical infrastructure, including certificate services, container platforms, and cloud tooling.
+%         \item Unlike Java, the current landscape of cryptographic misuse detection for Go has not been systematically characterized.
+%     \end{itemize}
+% \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{What Does a Go Crypto Misuse Look Like?}
-    \footnotesize
-    \textbf{Traefik, CVE-2025-66491.} Kubernetes ingress provider:
+    \frametitle{Cryptographic API Misuse}
+    {\large\textbf{Traefik, CVE-2025-66491.} ingress-nginx provider:}
     \vspace{0.5em}
         \begin{minipage}{0.78\textwidth}
         \begin{lstlisting}
@@ -121,21 +120,23 @@ InsecureSkipVerify: strings.ToLower(
     \normalsize
     \begin{itemize}
         \setlength{\itemsep}{0.5em}
-        \item The user sets the annotation \texttt{proxy-ssl-verify: "on"} expecting TLS verification to be enabled.
-        \item The expression evaluates to \texttt{true}, so \texttt{InsecureSkipVerify} becomes \texttt{true} and verification is silently disabled.
-        \item Compiles, passes tests, ships to production with the security guarantee inverted.
+        \item The user sets \texttt{proxy-ssl-verify: "on"}, expecting TLS verification to be \textbf{enabled}.
+        \item Expression evaluates to \texttt{true}, \texttt{InsecureSkipVerify} becomes \texttt{true}, inverting security assumptions.
+        %\item Disables SSL certificate verification between traefik instance and backend.
+        \item TLS encryption remains, but backend authentication is disabled: Traefik may trust a spoofed backend.    
     \end{itemize}
 \end{frame}
 
-\begin{frame}
-    \frametitle{Evaluation Challenge}
-    \begin{itemize}
-        \setlength{\itemsep}{0.7em}
-        \item Existing Go detectors do not operate over a common target: they differ in supported rules, reporting granularity, and execution robustness.
-        \item Raw alert counts are therefore hard to compare: more findings may reflect broader rule coverage, noisier heuristics, or simply a different reporting unit.
-        \item Tools may differ in coverage, granularity, or robustness. We need to understand what each tool detects, not just how much.
-    \end{itemize}
-\end{frame}
+
+% \begin{frame}
+%     \frametitle{Evaluation Challenge}
+%     \begin{itemize}
+%         \setlength{\itemsep}{0.7em}
+%         \item Existing Go detectors do not operate over a common target: they differ in supported rules, reporting granularity, and execution robustness.
+%         \item Raw alert counts are therefore hard to compare: more findings may reflect broader rule coverage, noisier heuristics, or simply a different reporting unit.
+%         \item Tools may differ in coverage, granularity, or robustness. We need to understand what each tool detects, not just how much.
+%     \end{itemize}
+% \end{frame}
 
 \begin{frame}
     \frametitle{Prior Work}
@@ -209,7 +210,7 @@ InsecureSkipVerify: strings.ToLower(
             \textbf{\CodeQL} & Datalog queries over a fact database, with data-flow reasoning. \\
             \textbf{\Gopher} & Taint tracking on SSA, with dynamically added rules. \\
             \textbf{\Gosec} & SSA for some rules, AST pattern matching for others. \\
-            \textbf{\SnykCode} & Proprietary, with an undisclosed ``AI engine''. \\
+            \textbf{\SnykCode} & Proprietary static analysis; implementation details are undisclosed. \\
         \end{tabular}
     \end{table}
     % \vspace{0.8em}
@@ -374,14 +375,14 @@ InsecureSkipVerify: strings.ToLower(
     \begin{verbatim}
     cfg.HostKeyCallback = func(...) error { return nil }
     \end{verbatim}
-    \Gosec and \Gopher look for \texttt{InsecureIgnoreHostKey} by name and miss this.
+    \CodeQL detects this pattern; the other tools do not report it in our study.
     \vspace{0.4em}
 
     \textbf{3. Field name flagged, value ignored} \hfill \textit{Rule \#11, \Gosec false positive}
     \begin{verbatim}
     tls.Config{MinVersion: tls.VersionTLS12}   // safe
     \end{verbatim}
-    \Gosec sees \texttt{MinVersion} and fires regardless of the value.
+    In our manual sample, \Gosec flags this pattern even when the configured value is TLS 1.2.
 \end{frame}
 
 \begin{frame}
@@ -390,7 +391,7 @@ InsecureSkipVerify: strings.ToLower(
         \setlength{\itemsep}{0.75em}
         \item \textbf{For practitioners:} no single detector is enough. The tools miss different things, so relying on one leaves systematic blind spots.
         \item \textbf{For evaluators:} raw counts mislead. On insecure PRNG detection, \Gosec reports 2,517 findings where \Gopher reports 0, on the same code and for the same rule.
-        \item \textbf{For tool builders:} the gap is qualitative, not only quantitative. Better detectors need shared misuse definitions and more program context.
+        \item \textbf{For tool builders:} the gap is qualitative, not only quantitative. The tools differ in rule coverage and in how much program context they model.
     \end{itemize}
     \vspace{0.45em}
     \begin{block}{Closing claim}
@@ -402,8 +403,8 @@ InsecureSkipVerify: strings.ToLower(
     \frametitle{Future Work}
     \begin{itemize}
         \setlength{\itemsep}{0.55em}
-        \item \textbf{Shared definitions of misuse}. Without ground-truth benchmarks that tool authors agree on, the field cannot measure whether detectors are actually improving.
-        \item \textbf{Context-aware detection}. Tools need to reason about how a value is used, not just which API produced it.
+        \item \textbf{API-level security invariants}. The paper points to formalization and enforcement of API-level security invariants as a research need.
+        \item \textbf{More precise static reasoning}. Several disagreements come from limited context sensitivity around how values are configured and used.
     \end{itemize}
 \end{frame}
 
