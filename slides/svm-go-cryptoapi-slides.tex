@@ -127,6 +127,13 @@ InsecureSkipVerify: strings.ToLower(
     \end{itemize}
 \end{frame}
 
+% NOTES
+% Here is a concrete API misuse vulnerability: CVE-2025-66491 in Traefik, a Go reverse proxy and load balancer.
+% The vulnerable code maps the annotation proxy-ssl-verify: "on" to InsecureSkipVerify = true, which reverses the intended meaning.
+% So instead of enabling backend certificate verification, it silently disables it.
+% TLS encryption still exists, but backend authentication is lost: Traefik may trust a spoofed or man-in-the-middle backend.
+% Certificate-validation flaws have been exploited in the wild before, e.g., in a 2020 Windows CVE.
+
 
 % \begin{frame}
 %     \frametitle{Evaluation Challenge}
@@ -139,20 +146,40 @@ InsecureSkipVerify: strings.ToLower(
 % \end{frame}
 
 \begin{frame}
-    \frametitle{Prior Work}
+    \frametitle{Why Go}
     \begin{itemize}
         \setlength{\itemsep}{0.6em}
-        \item Java already has comparative studies of crypto misuse detectors.
-        \item Go also has detector work: \textit{CryptoGo} introduced the first Go detector, and \Gopher extended that line of work.
-        \item What is still missing is a systematic comparison of the Go detectors currently available in practice.
+        \item Go is major stack for security-critical infrastructure software (Let's Encrypt's Boulder, Kubernetes, Traefik, Terraform, ...)
+        \item Crypto misuses are observed in the ecosystem:
+        \begin{itemize}
+            \item CVE-2025-66491 in Traefik
+            \item CVE-2024-45337 in \texttt{golang.org/x/ssh}
+        \end{itemize}
+        \item Tools have been proposed (\Gopher, \Gosec, \CodeQL, \SnykCode), but no systematic comparison of them.
     \end{itemize}
-    \vspace{0.5em}
+    \vspace{0.6em}
     \begin{block}{This paper}
-        We provide the first comparative study of currently available Go crypto misuse detectors.
+        The first comparative study of capabilities of cryptographic API misuse detectors for Go.
     \end{block}
-\vspace{0.35em}
-{\tiny Full citations are in the paper.}
+    % \vspace{0.35em}
+    % {\tiny Full citations in the paper.}
 \end{frame}
+
+% \begin{frame}
+%     \frametitle{Prior Work}
+%     \begin{itemize}
+%         \setlength{\itemsep}{0.6em}
+%         \item Java already has comparative studies of crypto misuse detectors.
+%         \item Go also has detector work: \textit{CryptoGo} introduced the first Go detector, and \Gopher extended that line of work.
+%         \item What is still missing is a systematic comparison of the Go detectors currently available in practice.
+%     \end{itemize}
+%     \vspace{0.5em}
+%     \begin{block}{This paper}
+%         We provide the first comparative study of currently available Go crypto misuse detectors.
+%     \end{block}
+% \vspace{0.35em}
+% {\tiny Full citations are in the paper.}
+% \end{frame}
 
 \begin{frame}
     \frametitle{Research Questions}
