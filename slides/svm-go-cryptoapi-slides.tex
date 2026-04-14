@@ -107,7 +107,7 @@
 % \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Cryptographic API Misuse}
+    \frametitle{A Cryptographic API Misuse}
     {\large\textbf{Traefik, CVE-2025-66491.} ingress-nginx provider:}
     \vspace{0.5em}
         \begin{minipage}{0.78\textwidth}
@@ -145,25 +145,41 @@ InsecureSkipVerify: strings.ToLower(
 %     \end{itemize}
 % \end{frame}
 
+
 \begin{frame}
     \frametitle{Why Go}
     \begin{itemize}
-        \setlength{\itemsep}{0.6em}
-        \item Go is major stack for security-critical infrastructure software (Let's Encrypt's Boulder, Kubernetes, Traefik, Terraform, ...)
-        \item Crypto misuses are observed in the ecosystem:
-        \begin{itemize}
-            \item CVE-2025-66491 in Traefik
-            \item CVE-2024-45337 in \texttt{golang.org/x/ssh}
-        \end{itemize}
-        \item Tools have been proposed (\Gopher, \Gosec, \CodeQL, \SnykCode), but no systematic comparison of them.
+        \setlength{\itemsep}{0.9em}
+        \item Go runs critical infrastructure: Kubernetes, Terraform, Traefik, Let's Encrypt's Boulder.
+        \item Cryptographic misuses reach production, for example CVE-2025-66491 in Traefik and CVE-2024-45337 in \texttt{golang.org/x/ssh}.
+        \item Four Go detectors exist (\Gopher, \CodeQL, \Gosec, \SnykCode), but none have been systematically compared.
+        % \item Four detectors exist for Go (\Gopher, \CodeQL, \Gosec, \SnykCode), spanning academic, open-source, and commercial origins. None has been compared against the others.
     \end{itemize}
     \vspace{0.6em}
     \begin{block}{This paper}
-        The first comparative study of capabilities of cryptographic API misuse detectors for Go.
+        The first comparative study of cryptographic API misuse detectors for Go.
     \end{block}
-    % \vspace{0.35em}
-    % {\tiny Full citations in the paper.}
 \end{frame}
+
+% \begin{frame}
+%     \frametitle{Why Go}
+%     \begin{itemize}
+%         \setlength{\itemsep}{0.6em}
+%         \item Go is major stack for security-critical infrastructure software (Let's Encrypt's Boulder, Kubernetes, Terraform, ...)
+%         \item Crypto misuses are observed in the ecosystem:
+%         \begin{itemize}
+%             \item CVE-2025-66491 in Traefik
+%             \item CVE-2024-45337 in \texttt{golang.org/x/ssh}
+%         \end{itemize}
+%         \item Four tools exist across academic, open source, and commercial origins (\Gopher, \CodeQL, \Gosec, \SnykCode), but no systematic comparison.
+%     \end{itemize}
+%     \vspace{0.6em}
+%     \begin{block}{This paper}
+%         The first comparative study of capabilities of cryptographic API misuse detectors for Go.
+%     \end{block}
+%     % \vspace{0.35em}
+%     % {\tiny Full citations in the paper.}
+% \end{frame}
 
 % \begin{frame}
 %     \frametitle{Prior Work}
@@ -186,65 +202,79 @@ InsecureSkipVerify: strings.ToLower(
     \begin{itemize}
         \setlength{\itemsep}{0.7em}
         \item \textbf{RQ1.} What is the design space of state-of-the-art tools for detecting cryptographic API misuses in Go?
+        \begin{itemize}
+            % \item[i.e.,] tool scope, supported rules, and detection approach.
+            \item We survey the tools and consolidate a taxonomy of 14 Go crypto misuse classes.
+        \end{itemize}
+        \vspace{0.5em}
         \item \textbf{RQ2.} To what extent are crypto misuse detection tools for Go consistent with each other?
+        \begin{itemize}
+            % \item[i.e.,] Where do their detection results agree or disagree?
+            \item We run all four tools on 328 security-relevant Go projects and compare their findings.
+        \end{itemize}
     \end{itemize}
-    \vspace{0.5em}
-    \begin{block}{Study Design}
-        RQ1 compares tool scope, supported rules, and detection approach.
-
-        RQ2 runs all tools on 328 security-relevant Go projects and compares execution coverage, findings, and overlap.
-    \end{block}
-    \vspace{0.4em}
-    \begin{itemize}
-        \setlength{\itemsep}{0.35em}
-        \item Goal: establish what these tools detect, how they differ, and what follows for practice and evaluation.
-    \end{itemize}
-\end{frame}
-
-\begin{frame}
-    \frametitle{RQ1: Taxonomy and Tool Support}
-    \small
-    \begin{table}
-        \centering
-        \renewcommand{\arraystretch}{1.15}
-        \begin{tabular}{p{2.8cm}p{0.9cm}p{5.8cm}}
-            \textbf{Category} & \textbf{IDs} & \textbf{Rules} \\
-            \hline
-            Cryptographic primitives & 01--03 & insecure algorithms; insecure PRNG; deprecated Go function \\
-            Key management & 04--06 & constant/predictable key; short key length; static/predictable IV \\
-            Password-based KDF & 07--09 & short salt; predictable salt; low iterations \\
-            Transport security & 10--11 & HTTP protocol; TLS/SSL issues \\
-            Secure Shell & 12--13 & insecure SSH suite; no host key validation \\
-            Token auth & 14 & no JWT verification \\
-        \end{tabular}
-    \end{table}
-    \normalsize
-\vspace{0.15em}
-\begin{itemize}
-    \setlength{\itemsep}{0.35em}
-    \item Only rules 02, 05, and 11 are supported by all four tools.
-    \item \Gopher covers the largest share of the taxonomy, while \CodeQL alone supports rule 14.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-    \frametitle{RQ1: How the Tools Work}
-    \vspace{0.3em}
-    \begin{table}
-        \centering
-        \renewcommand{\arraystretch}{1.6}
-        \begin{tabular}{p{1.8cm}p{8cm}}
-            \textbf{\CodeQL} & Datalog queries over a fact database, with data-flow reasoning. \\
-            \textbf{\Gopher} & Taint tracking on SSA, with dynamically added rules. \\
-            \textbf{\Gosec} & SSA for some rules, AST pattern matching for others. \\
-            \textbf{\SnykCode} & Proprietary static analysis; implementation details are undisclosed. \\
-        \end{tabular}
-    \end{table}
-    % \vspace{0.8em}
+    % \vspace{0.4em}
     % \begin{itemize}
-    %     \item Four different analysis substrates running on the same code.
+    %     \setlength{\itemsep}{0.35em}
+    %     \item Goal: establish what these tools detect, how they differ, and what follows for practice and evaluation.
     % \end{itemize}
 \end{frame}
+
+
+\begin{frame}
+    \frametitle{Sourced Tools}
+    \begin{itemize}
+        \setlength{\itemsep}{0.9em}
+        \item \textbf{\CodeQL{}} (GitHub, open source). Datalog queries over a fact database, with data-flow reasoning.
+        \item \textbf{\Gopher{}} (academic, CCS '24). Taint tracking on SSA, with dynamically updatable rules.
+        \item \textbf{\Gosec{}} (community, open source). SSA for some rules, AST pattern matching for others.
+        \item \textbf{\SnykCode{}} (commercial). Proprietary static analysis; implementation details undisclosed.
+    \end{itemize}
+    % \vspace{0.6em}
+    % {\small Selected via systematic literature + web search; inclusion criteria: Go support, active maintenance, available documentation.}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{RQ1: Taxonomy and Tool Coverage}
+    \footnotesize
+    \renewcommand{\arraystretch}{1.15}
+    \begin{center}
+        \begin{tabular}{l c l cccc}
+            \toprule
+            \textbf{Category} & \textbf{\#} & \textbf{Rule} & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
+            \midrule
+            \multirow{3}{*}{Primitives}
+                & 01 & Insecure algorithms & & \checkmark & \checkmark & \checkmark \\
+                & 02 & Insecure PRNG & \checkmark & \checkmark & \checkmark & \checkmark \\
+                & 03 & Deprecated Go function & & \checkmark & & \\
+            \midrule
+            \multirow{3}{*}{Key mgmt}
+                & 04 & Constant/predictable key & & \checkmark & & \\
+                & 05 & Short key length & \checkmark & \checkmark & \checkmark & \checkmark \\
+                & 06 & Static/predictable IV & & \checkmark & \checkmark & \\
+            \midrule
+            \multirow{3}{*}{PBKDF}
+                & 07 & Short salt length & & \checkmark & & \\
+                & 08 & Predictable salt & & \checkmark & & \\
+                & 09 & Low hash iterations & & \checkmark & & \\
+            \midrule
+            \multirow{2}{*}{Transport}
+                & 10 & HTTP protocol & & \checkmark & & \\
+                & 11 & TLS/SSL issues & \checkmark & \checkmark & \checkmark & \checkmark \\
+            \midrule
+            \multirow{2}{*}{SSH}
+                & 12 & Insecure SSH suite & & \checkmark & & \\
+                & 13 & No host key validation & \checkmark & \checkmark & \checkmark & \\
+            \midrule
+            Token & 14 & No JWT verification & \checkmark & & & \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    % \vspace{0.6em}
+    % Only 3 of 14 rules (insecure PRNG, short key, TLS/SSL) are covered by all four tools.
+\end{frame}
+
 
 \begin{frame}
     \frametitle{Dataset and Scope}
