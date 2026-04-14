@@ -271,28 +271,85 @@ InsecureSkipVerify: strings.ToLower(
             \bottomrule
         \end{tabular}
     \end{center}
-    % \vspace{0.6em}
-    % Only 3 of 14 rules (insecure PRNG, short key, TLS/SSL) are covered by all four tools.
+    \vspace{0.4em}
+    Only 3 of 14 rules (insecure PRNG, short key, TLS/SSL) are covered by all four tools.
+\end{frame}
+
+\begin{frame}
+    \frametitle{RQ1: Taxonomy and Tool Coverage}
+    \footnotesize
+    \renewcommand{\arraystretch}{1.15}
+    \begin{center}
+        \begin{tabular}{l c l cccc}
+            \toprule
+            \textbf{Category} & \textbf{\#} & \textbf{Rule} & \textbf{CodeQL} & \textbf{Gopher} & \textbf{Gosec} & \textbf{Snyk} \\
+            \midrule
+            \multirow{3}{*}{Primitives}
+                & 01 & Insecure algorithms & & \checkmark & \checkmark & \checkmark \\
+                & 02 & Insecure PRNG & \checkmark & \checkmark & \checkmark & \checkmark \\
+                & 03 & Deprecated Go function & & \checkmark & & \\
+            \midrule
+            \multirow{3}{*}{Key mgmt}
+                & 04 & Constant/predictable key & & \checkmark & & \\
+                & \textbf{\textcolor{blue}{05}} & \textbf{\textcolor{blue}{Short key length}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+                & 06 & Static/predictable IV & & \checkmark & \checkmark & \\
+            \midrule
+            \multirow{3}{*}{PBKDF}
+                & 07 & Short salt length & & \checkmark & & \\
+                & 08 & Predictable salt & & \checkmark & & \\
+                & 09 & Low hash iterations & & \checkmark & & \\
+            \midrule
+            \multirow{2}{*}{Transport}
+                & 10 & HTTP protocol & & \checkmark & & \\
+                & \textbf{\textcolor{blue}{11}} & \textbf{\textcolor{blue}{TLS/SSL issues}} & \checkmark & \checkmark & \checkmark & \checkmark \\
+            \midrule
+            \multirow{2}{*}{SSH}
+                & 12 & Insecure SSH suite & & \checkmark & & \\
+                & \textbf{\textcolor{blue}{13}} & \textbf{\textcolor{blue}{No host key validation}} & \checkmark & \checkmark & \checkmark & \\
+            \midrule
+            Token & 14 & No JWT verification & \checkmark & & & \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \vspace{0.4em}
+    \footnotesize
+    \textbf{\#05} all four tools support it. \textbf{\#11} the largest class by detection volume. \textbf{\#13} rare enough for full manual analysis.
 \end{frame}
 
 
 \begin{frame}
-    \frametitle{Dataset and Scope}
+    \frametitle{RQ2: Dataset}
     \begin{itemize}
-        \setlength{\itemsep}{0.35em}
-        \item 328 security-relevant open-source Go repositories.
-        \item Repository size is strongly right-skewed; the median is 58,761 LOC.
-        \item Median popularity is 9,096 stars and median contributor count is 167.
+        \setlength{\itemsep}{0.6em}
+        \item \textbf{328 open-source Go repositories}, filtered from a curated set of 920 popular projects.
+        \item Kept only actively maintained projects (commit within the past year, stable release) where cryptography is core.
+        \item Size is right-skewed: median 58,761 LOC.
     \end{itemize}
-    \vspace{0.3em}
-    \begin{figure}
-        \centering
-        \safeincludegraphics[width=0.82\textwidth,keepaspectratio]{figures/repo_metric_loc.png}
-    \end{figure}
+    \vspace{0.4em}
+    \begin{center}
+        \safeincludegraphics[width=0.75\textwidth,keepaspectratio]{figures/repo_metric_loc.png}
+    \end{center}
 \end{frame}
+% \begin{frame}
+%     \frametitle{RQ2: Dataset}
+%     \begin{itemize}
+%         \setlength{\itemsep}{0.35em}
+%         \item 328 manually filtered security-relevant open-source Go repositories.
+%         \item
+%         \item Repository size is right-skewed; the median is 58,761 LOC.
+%         \item Median contributor count is 167 and median popularity is 9,096 stars.
+%     \end{itemize}
+%     \vspace{0.3em}
+%     \begin{figure}
+%         \centering
+%         \safeincludegraphics[width=0.7\textwidth,keepaspectratio]{figures/repo_metric_loc.png}
+%         \vspace{0.4em}
+%         \safeincludegraphics[width=0.7\textwidth,keepaspectratio]{figures/repo_metric_contributors.png}
+%     \end{figure}
+% \end{frame}
 
 \begin{frame}
-    \frametitle{RQ2: Execution Coverage Across Tools}
+    \frametitle{RQ2: Execution Success and Detection}
     \small
     \begin{table}
         \centering
@@ -310,30 +367,26 @@ InsecureSkipVerify: strings.ToLower(
     \end{table}
     \normalsize
     \vspace{0.3em}
-    \begin{block}{Interpretation}
-        \SnykCode and \Gosec analyze all 328 projects, while \Gopher fails on 75 and \CodeQL on 27. Even before comparing findings, the tools operate on different subsets of the dataset.
+    \begin{block}{Coverage}
+        \SnykCode and \Gosec analyze all 328 projects, while \Gopher fails on 75 (runtime errors) and \CodeQL on 27 (database build erros). 
     \end{block}
 \end{frame}
 
 
 \begin{frame}
-    \frametitle{RQ2: Tools Disagree on the Same Code}
+    \frametitle{RQ2: Detection Magnitude}
+
     \begin{itemize}
         \setlength{\itemsep}{0.45em}
-        \item 7,473 detections across 328 projects, collapsing to 6,152 unique locations.
-        \item Only 1.3\% of detections are shared by all four tools.
-        \item 92.6\% of \Gosec detections and 63.5\% of \SnykCode detections are unique to that tool.
+        \item 7,473 total detections across 328 projects
+        \item \Gopher uniquely detects issues for 6/14 rules (\#03$_\text{u}$, \#04, \#07-\#10$_\text{u}$, and \#12$_\text{u}$)
+        \item Excessive detections for low-severity rules (e.g. \#02 Insecure PRNG) esp. from \Gosec
     \end{itemize}
-    \vspace{0.4em}
-    \begin{block}{Rule \#02: insecure PRNG detection}
-        \centering
-        \large
-        \CodeQL: 14 \quad \Gopher: 0 \quad \Gosec: 2,517 \quad \SnykCode: 17
-        \normalsize
-
-        % \vspace{0.3em}
-        % \footnotesize The simplest rule in the taxonomy.
-    \end{block}
+    \vspace{0.3em}
+    \begin{figure}
+    \centering
+    \safeincludegraphics[width=0.9\textwidth,keepaspectratio]{figures/magnitude_stacked.png}
+    \end{figure}
 \end{frame}
 
 % \begin{frame}
@@ -351,6 +404,22 @@ InsecureSkipVerify: strings.ToLower(
 %         \caption{Most reported locations are unique to a single tool.}
 %     \end{figure}
 % \end{frame}
+
+
+
+\begin{frame}
+    \frametitle{RQ2: Detection Agreement}
+
+    \begin{itemize}
+        \setlength{\itemsep}{0.45em}
+        \item 7,473 detections across 328 projects, collapsing to 6,152 unique locations.
+        \item Only \textbf{1.3\% of detections} are shared by all four tools.
+        \item 92.6\% of \Gosec detections and 63.5\% of \SnykCode detections are unique to that tool.
+    \end{itemize}
+    \vspace{0.3em}
+\end{frame}
+
+
 \begin{frame}
     \frametitle{RQ2: Agreement Depends on the Misuse Rule}
     \begin{itemize}
