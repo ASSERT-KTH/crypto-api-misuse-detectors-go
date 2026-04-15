@@ -599,8 +599,24 @@ tls.Config{
     \end{columns}
 \end{frame}
 
+
+
 \begin{frame}[fragile]
-    \frametitle{RQ2: Agreement on Rule \#13}
+    \frametitle{CodeQL finds misuses the others miss}
+    \vspace{0.5em}
+    Example from \texttt{keadm batch} (Rule \#13, no SSH host key check):
+    \vspace{0.5em}
+    \begin{lstlisting}
+HostKeyCallback: func(...) error {
+    return nil
+},
+    \end{lstlisting}
+    \vspace{0.5em}
+    A custom callback that accepts every host key. Only \CodeQL{} flags this; \Gosec{} and \Gopher{} only match the obvious \texttt{InsecureIgnoreHostKey}.
+\end{frame}
+
+\begin{frame}[fragile]
+    \frametitle{RQ2: Rule \#13}
     \textcolor{red}{WIP}
     \begin{columns}[T]
         \column{0.58\textwidth}
@@ -687,6 +703,7 @@ HostKeyCallback: func(...) error {
 %     \end{block}
 % \end{frame}
 
+
 \begin{frame}[fragile]
     \textcolor{red}{WIP, maybe covered in the examples.?}
     \frametitle{Issues in Practice}
@@ -743,12 +760,16 @@ HostKeyCallback: func(...) error {
 \end{frame}
 
 \begin{frame}
-    \frametitle{Open Questions}
+    \frametitle{Takeaways}
     \begin{itemize}
-        \setlength{\itemsep}{0.55em}
-        \item \textbf{Standardization of misuse}. Tools currently disagree because each defines rules its own way. A shared specification would give detectors a common target.
-        \item \textbf{Context-sensitive analysis}. Several disagreements come from limited context sensitivity around how values are configured and used.
+        \setlength{\itemsep}{0.85em}
+        \item We present the first systematic comparative study of cryptographic API misuse detection in Go, covering four state-of-the-art tools.
+        \item We consolidate a shared view of the problem space: 14 misuse classes and a large-scale evaluation on 328 security-relevant open-source Go projects, yielding 7,473 detections.
+        \item The central result is that current tools capture different slices of the problem. Their overlap is low, so no single detector gives a reliable picture on its own.
     \end{itemize}
+
+    \vspace{0.6em}
+    \textbf{Takeaway:} for Go today, combining detectors is the practical strategy, while better standardization remains an open need.
 \end{frame}
 
 % \begin{frame}
