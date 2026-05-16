@@ -1,6 +1,17 @@
 # Crypto API Misuse Detectors for Go - Replication Package
 
-This repository contains the complete replication package for a comparative study of static analysis tools detecting cryptographic API misuse in Go projects.
+This repository contains the complete replication package for [a comparative study of static analysis tools detecting cryptographic API misuse in Go projects](http://oadoi.org/10.1145/3786165.3788440).
+
+```bibtex
+@inproceedings{10.1145-3786165.3788440,
+ title = {Evaluating Cryptographic API Misuse Detectors for Go},
+ year = {2026},
+ doi = {10.1145/3786165.3788440},
+ author = {Vivi Andersson and Martin Monperrus},
+ url = {http://oadoi.org/10.1145/3786165.3788440},
+ booktitle = {Proceedings of the 2026 IEEE/ACM 4th International Workshop on Software Vulnerability Management},
+}
+```
 
 **Tools compared:** CodeQL, Gosec, Gopher, Snyk
 
