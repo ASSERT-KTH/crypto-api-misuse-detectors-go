@@ -86,14 +86,6 @@ Analysis results are already included in the `results/` directory:
 └── results/          # Pre-computed analysis
 ```
 
-## Citation
-
-If you use this replication package, please cite:
-
-```
-[Add your paper citation here]
-```
-
 ## License
 
 MIT License - See LICENSE file for details
